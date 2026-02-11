@@ -31,15 +31,15 @@ const reassuranceBlocks = [
   {
     image: 'https://wp.laboutiquedemorgane.com/wp-content/uploads/2025/12/La-boutique-de-Morgane-Allo-Morgane.png',
     href: '/allo-morgane',
-    title: 'Allô Morgane ?',
-    description: 'Plus qu\'un site, un accompagnement. Morgane vous guide personnellement dans vos choix mode et beauté.'
+    title: 'Allô André ?',
+    description: 'Plus qu\'un site, un accompagnement. André vous guide personnellement dans vos choix mode et beauté.'
   }
 ];
 
 const categories = [
   { name: 'Nouveautés', href: '/category/nouveautes' },
   { name: 'Mode', href: '/category/mode' },
-  { name: 'Les looks de Morgane', href: '/category/les-looks-de-morgane' },
+  { name: 'Les looks d\'André', href: '/category/les-looks-de-morgane' },
   { name: 'Maison', href: '/category/maison' },
   { name: 'Beauté et Senteurs', href: '/category/beaute-et-senteurs' },
   { name: 'Bonnes affaires', href: '/category/bonnes-affaires' },
@@ -51,8 +51,8 @@ const informations = [
   { name: 'Le droit à l\'erreur', href: '/le-droit-a-lerreur' },
   { name: 'Vite chez vous', href: '/vite-chez-vous' },
   { name: 'Transactions protégées', href: '/transactions-protegees' },
-  { name: 'Allô Morgane', href: '/allo-morgane' },
-  { name: 'Le carnet de Morgane', href: '/actualites' },
+  { name: 'Allô André', href: '/allo-morgane' },
+  { name: 'Actus', href: '/actualites' },
   { name: 'Le livre d\'or', href: '/livre-dor' },
   { name: 'Lives', href: '/live' },
 ];

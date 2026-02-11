@@ -21,7 +21,7 @@ export const CUSTOM_TEXTS = {
     label: 'Colis Chouchouté 📦',
   },
   stockAlert: {
-    success: 'C\'est noté ! Doudou vous enverra un mail dès que cette pépite est de retour en stock. 🤞',
+    success: 'C\'est noté ! André vous enverra un mail dès que cette pépite est de retour en stock. 🤞',
   },
   size: {
     matchBadge: 'C\'est votre taille !',

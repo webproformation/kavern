@@ -80,7 +80,7 @@ return (
         
         {/* NOUVEAU TITRE HARMONISÉ */}
         <SectionTitle 
-          title="Elles ont adoré Morgane" 
+          title="Vous avez adoré KAVERN" 
           subtitle="Vos mots doux sont notre plus belle récompense"
           icon={Heart}
         />
