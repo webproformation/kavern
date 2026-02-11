@@ -154,12 +154,6 @@ export function SiteFooter() {
                   <Phone className="h-5 w-5 flex-shrink-0 mt-0.5" />
                   <div className="text-base md:text-sm space-y-1">
                     <div>
-                      <strong>Morgane</strong>:{' '}
-                      <a href="tel:+33641456671" className="hover:text-white transition-colors">
-                        +33 6 41 45 66 71
-                      </a>
-                    </div>
-                    <div>
                       <strong>André</strong>:{' '}
                       <a href="tel:+33603489662" className="hover:text-white transition-colors">
                         +33 6 03 48 96 62
@@ -171,10 +165,10 @@ export function SiteFooter() {
                 <div className="flex items-start gap-2 justify-center md:justify-start">
                   <Mail className="h-5 w-5 flex-shrink-0 mt-0.5" />
                   <a
-                    href="mailto:contact@laboutiquedemorgane.com"
+                    href="mailto:contact@kavern-france.fr"
                     className="text-base md:text-sm hover:text-white transition-colors break-all"
                   >
-                    contact@laboutiquedemorgane.com
+                    contact@kavern-france.fr
                   </a>
                 </div>
               </div>
@@ -276,7 +270,7 @@ export function SiteFooter() {
                 <h4 className="text-white font-semibold mb-3">Suivez-nous</h4>
                 <div className="flex gap-3 justify-center md:justify-start">
                   <a
-                    href="https://www.facebook.com/p/La-boutique-de-Morgane-100057420760713/?locale=fr_FR"
+                    href="https://www.facebook.com/p/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="bg-gray-800 hover:bg-gray-700 p-3 rounded-full transition-colors"
@@ -284,7 +278,7 @@ export function SiteFooter() {
                     <Facebook className="h-5 w-5" />
                   </a>
                   <a
-                    href="https://www.instagram.com/la.boutique.de.morgane/"
+                    href="https://www.instagram.com/kavern-france/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="bg-gray-800 hover:bg-gray-700 p-3 rounded-full transition-colors"
@@ -292,7 +286,7 @@ export function SiteFooter() {
                     <Instagram className="h-5 w-5" />
                   </a>
                   <a
-                    href="https://www.tiktok.com/@laboutiquedemorgane"
+                    href="https://www.tiktok.com/@kavern-france"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="bg-gray-800 hover:bg-gray-700 p-3 rounded-full transition-colors"
@@ -329,7 +323,7 @@ export function SiteFooter() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-300 text-center md:text-left">
             <div>
-              © {new Date().getFullYear()} La Boutique de Morgane. Tous droits réservés.
+              © {new Date().getFullYear()} Kavern. Tous droits réservés.
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2">
               <Link href="/mentions-legales" className="hover:text-white transition-colors">

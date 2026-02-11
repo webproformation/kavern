@@ -40,13 +40,13 @@ export const OpenPackageAddEmail = ({
         </Text>
       </Section>
 
-      <Button href={process.env.NEXT_PUBLIC_SITE_URL || 'https://laboutiqudemorgane.fr'} style={button}>
+      <Button href={process.env.NEXT_PUBLIC_SITE_URL || 'https://kavern-france.fr'} style={button}>
         Voir les nouveautés
       </Button>
 
       <Text style={signature}>
         Bisous,<br />
-        <strong>L'équipe Logistique (Morgane & Doudou)</strong> ✨
+        <strong>L'équipe Logistique (Kavern)</strong> ✨
       </Text>
     </EmailLayout>
   );

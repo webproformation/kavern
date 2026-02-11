@@ -33,7 +33,7 @@ export const WelcomeEmail = ({ firstName }: WelcomeEmailProps) => {
         </Text>
       </Section>
 
-      <Button href={process.env.NEXT_PUBLIC_SITE_URL || 'https://laboutiqudemorgane.fr'} style={button}>
+      <Button href={process.env.NEXT_PUBLIC_SITE_URL || 'https://kavern-france.fr'} style={button}>
         Je découvre la boutique
       </Button>
 
@@ -43,7 +43,7 @@ export const WelcomeEmail = ({ firstName }: WelcomeEmailProps) => {
 
       <Text style={signature}>
         À très vite,<br />
-        <strong>Morgane & Doudou</strong> ✨
+        <strong>Kavern</strong> ✨
       </Text>
     </EmailLayout>
   );

@@ -11,9 +11,9 @@ interface GDPRConsentProps {
 
 export function GDPRConsent({ type, checked, onCheckedChange }: GDPRConsentProps) {
   const texts = {
-    newsletter: "J'accepte de recevoir des communications marketing de La Boutique de Morgane et confirme avoir lu la politique de confidentialité.",
+    newsletter: "J'accepte de recevoir des communications marketing de kavern-France et confirme avoir lu la politique de confidentialité.",
     contact: "J'accepte que mes données soient utilisées pour traiter ma demande de contact conformément à la politique de confidentialité.",
-    account: "J'accepte les conditions générales d'utilisation et la politique de confidentialité de La Boutique de Morgane."
+    account: "J'accepte les conditions générales d'utilisation et la politique de confidentialité de kavern-France."
   };
 
   return (

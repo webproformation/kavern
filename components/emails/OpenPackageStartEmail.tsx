@@ -45,13 +45,13 @@ export const OpenPackageStartEmail = ({
         Prends le temps de flâner, on garde tout ça précieusement pour toi.
       </Text>
 
-      <Button href={process.env.NEXT_PUBLIC_SITE_URL || 'https://laboutiqudemorgane.fr'} style={button}>
+      <Button href={process.env.NEXT_PUBLIC_SITE_URL || 'https://kavern-france.fr'} style={button}>
         Continuer mes achats
       </Button>
 
       <Text style={signature}>
         À très vite pour la suite,<br />
-        <strong>Morgane</strong> ✨
+        <strong>Kavern</strong> ✨
       </Text>
     </EmailLayout>
   );
