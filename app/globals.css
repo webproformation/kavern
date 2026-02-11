@@ -128,19 +128,16 @@
   
   .page-content h1, .news-content h1 {
     @apply text-4xl font-extrabold text-[#d4af37] mb-4 mt-6 text-center;
-    font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
     line-height: 1.2;
   }
 
   .page-content h2, .news-content h2 {
     @apply text-3xl font-bold text-[#d4af37] mb-3 mt-5;
-    font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
     line-height: 1.3;
   }
 
   .page-content h3, .news-content h3 {
     @apply text-2xl font-semibold text-[#d4af37] mb-3 mt-4;
-    font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
     line-height: 1.4;
   }
 
@@ -171,7 +168,6 @@
 
   .page-content pre, .news-content pre {
     @apply bg-gray-50 border border-gray-200 rounded-lg p-5 overflow-x-auto my-6 text-sm text-gray-900;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
 
   .page-content a, .news-content a {

@@ -1,12 +1,13 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Pangolin } from 'next/font/google';
+import { Inter } from 'next/font/google'; // 1. On importe Inter
 import { LayoutWrapper } from '@/components/layout-wrapper';
 
-const pangolin = Pangolin({ weight: '400', subsets: ['latin'] });
+// 2. On configure la police avec le sous-ensemble latin
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Kavern', // Assurez-vous que le titre est bon ici
+  title: 'Kavern',
   description: 'Des prix mini, des choix en or',
   icons: {
     icon: '/kavern-icone.png',
@@ -22,7 +23,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr">
-      <body className={pangolin.className}>
+      {/* 3. On applique la classe de la police au body */}
+      <body className={inter.className}>
         <LayoutWrapper>{children}</LayoutWrapper>
       </body>
     </html>
