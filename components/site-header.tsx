@@ -40,7 +40,7 @@ import { CUSTOM_TEXTS } from '@/lib/texts';
 const STATIC_LINKS = [
   { name: 'Live Shopping et Replay', href: '/live', slug: 'live', hasMegaMenu: false },
   { name: 'Carte cadeau', href: '/carte-cadeau', slug: 'carte-cadeau', hasMegaMenu: false },
-  { name: 'Le carnet de Morgane', href: '/actualites', slug: 'actualites', hasMegaMenu: false },
+  { name: 'Actus', href: '/actualites', slug: 'actualites', hasMegaMenu: false },
 ];
 
 interface NavigationItem {
@@ -149,10 +149,11 @@ export function SiteHeader() {
                 <Menu className="h-6 w-6" />
               </Button>
 
+              {/* MODIFICATION ICI : Nouveau Logo Kavern */}
               <Link href="/" className="flex-shrink-0">
                 <img
-                  src="/lbdm-logoboutique.png"
-                  alt="La Boutique De Morgane"
+                  src="/kavern-logo.png"
+                  alt="Kavern"
                   className="h-12 md:h-16 w-auto"
                 />
               </Link>
@@ -299,8 +300,6 @@ export function SiteHeader() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* J'AI SUPPRIMÉ LE BLOC DU BOUTON SETTINGS ICI */}
-
               <Link href="/cart">
                 <Button
                   variant="ghost"
@@ -337,7 +336,6 @@ export function SiteHeader() {
           </div>
         )}
       </header>
-
 
       <MobileMenu isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
       <SearchModal isOpen={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
