@@ -13,7 +13,6 @@ import {
   Package,
   MapPin,
   LogOut,
-  Settings,
   Play
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,7 +28,6 @@ import { Badge } from '@/components/ui/badge';
 import { MegaMenu } from '@/components/mega-menu';
 import { MobileMenu } from '@/components/mobile-menu';
 import { SearchModal } from '@/components/search-modal';
-import { useAuth } from '@/context/AuthContext';
 import { useAuthStore } from '@/stores/auth-store';
 import { useWishlist } from '@/context/WishlistContext';
 import { useCart } from '@/context/CartContext';
@@ -108,13 +106,6 @@ export function SiteHeader() {
     }
   }
 
-  useEffect(() => {
-    console.log("🔍 SiteHeader - État Auth:", {
-      user: user?.email,
-      profile: profile ? { first_name: profile.first_name, last_name: profile.last_name, is_admin: profile.is_admin } : null
-    });
-  }, [user, profile]);
-
   const handleSignOut = async () => {
     await authStoreSignOut();
     router.push('/');
@@ -136,20 +127,21 @@ export function SiteHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-[100] bg-black shadow-lg">
+      {/* MODIF: Fond dégradé blanc/gris clair au lieu de noir */}
+      <header className="sticky top-0 z-[100] bg-gradient-to-b from-white to-gray-50 shadow-md border-b border-gray-100">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-20">
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
                 size="icon"
-                className="md:hidden text-white hover:text-[#D4AF37] hover:bg-transparent"
+                // MODIF: Couleur texte noire
+                className="md:hidden text-gray-900 hover:text-[#D4AF37] hover:bg-transparent"
                 onClick={() => setMobileMenuOpen(true)}
               >
                 <Menu className="h-6 w-6" />
               </Button>
 
-              {/* MODIFICATION ICI : Nouveau Logo Kavern */}
               <Link href="/" className="flex-shrink-0">
                 <img
                   src="/kavern-logo.png"
@@ -161,7 +153,8 @@ export function SiteHeader() {
 
             <nav className="hidden md:flex items-center gap-3 lg:gap-4 flex-1 justify-center">
               {loading ? (
-                <div className="text-white text-xs">Chargement...</div>
+                // MODIF: Texte chargement foncé
+                <div className="text-gray-400 text-xs">Chargement...</div>
               ) : (
                 navigation.map((item) => (
                   <div
@@ -177,7 +170,8 @@ export function SiteHeader() {
                           ? 'text-[#D4AF37] hover:text-[#C5A028] font-bold'
                           : pathname === item.href || pathname.startsWith(item.href + '/')
                           ? 'text-[#D4AF37]'
-                          : 'text-white hover:text-[#D4AF37]'
+                          // MODIF: Texte par défaut noir/gris foncé
+                          : 'text-gray-900 hover:text-[#D4AF37]'
                       }`}
                     >
                       {item.slug === 'live' && <Play className="h-3.5 w-3.5 lg:h-4 lg:w-4 fill-current" />}
@@ -193,7 +187,8 @@ export function SiteHeader() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setSearchModalOpen(true)}
-                className="hidden md:flex text-white hover:text-[#D4AF37] hover:bg-transparent"
+                // MODIF: Couleur icône noire
+                className="hidden md:flex text-gray-900 hover:text-[#D4AF37] hover:bg-transparent"
               >
                 <Search className="h-5 w-5" />
               </Button>
@@ -202,7 +197,8 @@ export function SiteHeader() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="relative text-white hover:text-[#D4AF37] hover:bg-transparent"
+                  // MODIF: Couleur icône noire
+                  className="relative text-gray-900 hover:text-[#D4AF37] hover:bg-transparent"
                 >
                   <Heart className="h-5 w-5" />
                   {wishlistCount > 0 && (
@@ -217,7 +213,8 @@ export function SiteHeader() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="relative text-white hover:text-[#D4AF37] hover:bg-transparent"
+                  // MODIF: Couleur icône noire
+                  className="relative text-gray-900 hover:text-[#D4AF37] hover:bg-transparent"
                 >
                   <Heart className="h-5 w-5" />
                   {wishlistCount > 0 && (
@@ -233,7 +230,8 @@ export function SiteHeader() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-white hover:text-[#D4AF37] hover:bg-transparent"
+                    // MODIF: Couleur icône noire
+                    className="text-gray-900 hover:text-[#D4AF37] hover:bg-transparent"
                   >
                     <User className="h-5 w-5" />
                   </Button>
@@ -303,7 +301,8 @@ export function SiteHeader() {
               <Link href="/cart">
                 <Button
                   variant="ghost"
-                  className="relative text-white hover:text-[#D4AF37] hover:bg-transparent gap-2"
+                  // MODIF: Texte et icône noirs
+                  className="relative text-gray-900 hover:text-[#D4AF37] hover:bg-transparent gap-2"
                 >
                   <ShoppingCart className="h-5 w-5" />
                   <span className="hidden md:inline text-sm">{CUSTOM_TEXTS.buttons.cart}</span>
