@@ -1,21 +1,18 @@
 import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js';
 
-// ⚠️ VERROUILLAGE ANTI-REVERT - NE PAS MODIFIER
-// Projet: qcqbtmvbvipsxwjlgjvk.supabase.co
-// Les IDs produits sont en TEXT (héritage: "571", "102", etc.)
-// INTERDICTION de revenir à un autre projet ou d'utiliser process.env sans failsafe
+// ⚠️ VERROUILLAGE ANTI-REVERT - PROJET KAVERN ACTIF
+// Projet: dckbrlxqmgfzaacxqiio.supabase.co
+// Configuration stricte pour le nouveau projet uniquement.
 const LOCKED_SUPABASE_URL = 'https://dckbrlxqmgfzaacxqiio.supabase.co';
 const LOCKED_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRja2JybHhxbWdmemFhY3hxaWlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4NzMyOTcsImV4cCI6MjA4NjQ0OTI5N30.j3NSU12BpK47htrGGNyytoZq2WjO7X_BqxBN0PflhmY';
 
-// 🛡️ PROTECTION DE SÉCURITÉ - Vérification au démarrage
+// 🛡️ PROTECTION DE SÉCURITÉ - Vérification stricte du domaine
 if (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_SUPABASE_URL) {
   const envUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!envUrl.includes('dckbrlxqmgfzaacxqiio')) {
     throw new Error(
-      `🚨 ERREUR DE SÉCURITÉ: Tentative d'utilisation d'un projet non autorisé.\n` +
-      `URL détectée: ${envUrl}\n` +
-      `Seul le projet dckbrlxqmgfzaacxqiio est autorisé.\n` +
-      `INTERDICTION FORMELLE de revenir sur mcstv ou tout autre projet.`
+      `🚨 ERREUR DE SÉCURITÉ: Projet non autorisé détecté (${envUrl}).\n` +
+      `Seul le projet dckbrlxqmgfzaacxqiio est valide pour Kavern.`
     );
   }
 }
@@ -24,9 +21,9 @@ let supabaseInstance: SupabaseClient | null = null;
 
 function getSupabaseInstance(): SupabaseClient {
   if (!supabaseInstance) {
-    // Double vérification de sécurité
+    // Failsafe de dernière minute
     if (!LOCKED_SUPABASE_URL.includes('dckbrlxqmgfzaacxqiio')) {
-      throw new Error('🚨 ERREUR CRITIQUE: URL Supabase corrompue détectée');
+      throw new Error('🚨 ERREUR CRITIQUE: Configuration URL compromise');
     }
 
     supabaseInstance = createSupabaseClient(LOCKED_SUPABASE_URL, LOCKED_SUPABASE_ANON_KEY, {
@@ -46,6 +43,8 @@ export const supabase = getSupabaseInstance();
 export function createClient() {
   return getSupabaseInstance();
 }
+
+// --- TYPES ---
 
 export type Product = {
   id: string;
