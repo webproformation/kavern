@@ -4,17 +4,17 @@ import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/
 // Projet: qcqbtmvbvipsxwjlgjvk.supabase.co
 // Les IDs produits sont en TEXT (héritage: "571", "102", etc.)
 // INTERDICTION de revenir à un autre projet ou d'utiliser process.env sans failsafe
-const LOCKED_SUPABASE_URL = 'https://qcqbtmvbvipsxwjlgjvk.supabase.co';
-const LOCKED_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjcWJ0bXZidmlwc3h3amxnanZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5MzIzNjAsImV4cCI6MjA4MjUwODM2MH0.q-4uGaHsuojj3ejo5IG4V-z2fx-ER9grHsRzYNkYn0c';
+const LOCKED_SUPABASE_URL = 'https://dckbrlxqmgfzaacxqiio.supabase.co';
+const LOCKED_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRja2JybHhxbWdmemFhY3hxaWlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4NzMyOTcsImV4cCI6MjA4NjQ0OTI5N30.j3NSU12BpK47htrGGNyytoZq2WjO7X_BqxBN0PflhmY';
 
 // 🛡️ PROTECTION DE SÉCURITÉ - Vérification au démarrage
 if (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_SUPABASE_URL) {
   const envUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!envUrl.includes('qcqbtmvbvipsxwjlgjvk')) {
+  if (!envUrl.includes('dckbrlxqmgfzaacxqiio')) {
     throw new Error(
       `🚨 ERREUR DE SÉCURITÉ: Tentative d'utilisation d'un projet non autorisé.\n` +
       `URL détectée: ${envUrl}\n` +
-      `Seul le projet qcqbtmvbvipsxwjlgjvk est autorisé.\n` +
+      `Seul le projet dckbrlxqmgfzaacxqiio est autorisé.\n` +
       `INTERDICTION FORMELLE de revenir sur mcstv ou tout autre projet.`
     );
   }
@@ -25,7 +25,7 @@ let supabaseInstance: SupabaseClient | null = null;
 function getSupabaseInstance(): SupabaseClient {
   if (!supabaseInstance) {
     // Double vérification de sécurité
-    if (!LOCKED_SUPABASE_URL.includes('qcqbtmvbvipsxwjlgjvk')) {
+    if (!LOCKED_SUPABASE_URL.includes('dckbrlxqmgfzaacxqiio')) {
       throw new Error('🚨 ERREUR CRITIQUE: URL Supabase corrompue détectée');
     }
 
