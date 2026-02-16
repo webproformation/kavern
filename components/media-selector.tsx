@@ -181,6 +181,10 @@ export function MediaSelector({ currentImageUrl, onSelect, label = "Image" }: Me
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle>Sélectionner une image</DialogTitle>
+              {/* 👇 AJOUTEZ CETTE LIGNE JUSTE ICI 👇 */}
+    <DialogDescription className="sr-only">
+      Gestionnaire de fichiers multimédias
+    </DialogDescription>
               <DialogDescription>
                 Choisissez une image depuis la médiathèque ou les images existantes
               </DialogDescription>

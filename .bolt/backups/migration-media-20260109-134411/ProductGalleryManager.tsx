@@ -66,6 +66,10 @@ export default function ProductGalleryManager({ images, onChange }: ProductGalle
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>Choisir une image pour la galerie</DialogTitle>
+            {/* 👇 AJOUTEZ CETTE LIGNE JUSTE ICI 👇 */}
+    <DialogDescription className="sr-only">
+      Gestionnaire de fichiers multimédias
+    </DialogDescription>
           </DialogHeader>
           <MediaLibrary
             bucket="product-images"

@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
-import { Gem, Heart, Loader2, Crown, Upload, CheckCircle2, BookHeart } from 'lucide-react'
+import { Gem, Heart, Loader2, Crown, Upload, CheckCircle2, BookHeart, Sparkles, Shirt, Box, Wand2 } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import PageHeader from '@/components/PageHeader'
@@ -67,7 +67,7 @@ export default function LivreDorPage() {
     e.preventDefault()
 
     if (!user) {
-      toast.error('Vous devez être connectée pour signer le Livre d\'Or')
+      toast.error('Vous devez être connecté(e) pour signer le Livre d\'Or')
       return
     }
 
@@ -84,7 +84,7 @@ export default function LivreDorPage() {
         return
       }
 
-      const entry = await submitGuestbookEntry({
+      await submitGuestbookEntry({
         order_number: formData.order_number,
         rating: formData.rating,
         message: formData.message,
@@ -142,85 +142,57 @@ export default function LivreDorPage() {
         <PageHeader
           icon={BookHeart}
           title="Livre d'Or"
-          description="Partagez votre expérience et devenez notre Ambassadrice de la Semaine !"
+          description="Bienvenue dans la galerie de la famille Kavern !"
         />
 
-        <div className="bg-gradient-to-r from-[#C6A15B]/10 to-pink-50 rounded-3xl p-8 mb-12">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-full mb-4 shadow-lg">
-              <Crown className="h-10 w-10 text-[#C6A15B]" />
-            </div>
-            <h2 className="text-3xl font-bold mb-4">Challenge de la Semaine</h2>
-          </div>
-
-          <div className="prose prose-lg max-w-4xl mx-auto text-gray-700 space-y-4">
-            <p>
-              Vous aimez vos pépites ? Vous adorez partager vos looks ? Alors, préparez-vous à briller !
-              Chaque semaine, nous mettons l&apos;une d&apos;entre vous à l&apos;honneur sur la boutique.
-            </p>
-
-            <div className="bg-white rounded-xl p-6 shadow-md">
-              <h3 className="text-xl font-bold text-[#C6A15B] mb-3 flex items-center gap-2">
-                <Gem className="h-6 w-6" /> Comment participer ?
-              </h3>
-              <ol className="list-decimal list-inside space-y-2">
-                <li>Faites pétiller votre look : Prenez une jolie photo de vous portant vos pépites préférées</li>
-                <li>Signez le Livre d&apos;Or : Déposez votre photo et votre petit mot doux (Bonus : 0,20 € immédiat dans votre cagnotte)</li>
-                <li>Récoltez des cœurs : Invitez les autres visiteuses à cliquer sur le Cœur sous votre avis</li>
-              </ol>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 shadow-md">
-              <h3 className="text-xl font-bold text-pink-600 mb-3 flex items-center gap-2">
-                <Heart className="h-6 w-6" /> Comment gagner ?
-              </h3>
+        {/* SECTION INTRODUCTION PERSONNALISÉE */}
+        <div className="bg-white rounded-3xl p-8 mb-12 shadow-sm border border-gray-100">
+          <div className="prose prose-lg max-w-4xl mx-auto text-gray-700 space-y-6">
+            <div className="text-center space-y-4">
+              <h2 className="text-2xl font-bold text-gray-900">Ici, ce n'est pas nous qui parlons, c'est VOUS.</h2>
+              <p className="text-lg">
+                Vous avez déniché une veste vintage incroyable ? Votre bougie &quot;Dimanche Matin&quot; trône fièrement sur votre table basse ? 
+                Ou vous avez rempli vos placards grâce au rayon Garde-Manger ?
+              </p>
+              <p className="font-semibold text-[#C6A15B] text-xl">Montrez-nous tout !</p>
               <p>
-                Chaque lundi matin, nous regardons quelle photo a fait battre le plus de cœurs sur les 7 derniers jours.
-                La cliente qui a récolté le plus de votes devient officiellement notre Ambassadrice de la Semaine.
+                On adore voir nos pépites vivre leur deuxième vie chez vous. Vos photos sont nos plus belles récompenses et elles inspirent les autres visiteurs.
               </p>
             </div>
 
-            <div className="bg-[#C6A15B] text-white rounded-xl p-6 shadow-md">
-              <h3 className="text-xl font-bold mb-3 flex items-center gap-2">
-                <Crown className="h-6 w-6" /> Votre couronne de cadeaux
-              </h3>
-              <ul className="space-y-2">
-                <li className="flex items-start gap-2">
-                  <span className="text-2xl">💰</span>
-                  <span>5,00 € offerts immédiatement sur votre Cagnotte</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-2xl">👑</span>
-                  <span>Votre Badge &quot;Couronne Dorée&quot; affiché à côté de votre prénom</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-2xl">🌟</span>
-                  <span>Votre photo et avis affichés en grand sur la page d&apos;accueil pendant toute la semaine</span>
-                </li>
-              </ul>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
+              <div className="flex items-center gap-3 bg-amber-50 p-4 rounded-xl border border-amber-100">
+                <Sparkles className="h-6 w-6 text-amber-600 shrink-0" />
+                <span className="text-sm font-medium"><strong>L&apos;Atelier en Action :</strong> Vos bougies allumées en situation cocooning.</span>
+              </div>
+              <div className="flex items-center gap-3 bg-blue-50 p-4 rounded-xl border border-blue-100">
+                <Shirt className="h-6 w-6 text-blue-600 shrink-0" />
+                <span className="text-sm font-medium"><strong>Le Look du Jour :</strong> Comment vous portez vos trouvailles Friperie.</span>
+              </div>
+              <div className="flex items-center gap-3 bg-purple-50 p-4 rounded-xl border border-purple-100">
+                <Box className="h-6 w-6 text-purple-600 shrink-0" />
+                <span className="text-sm font-medium"><strong>L&apos;Unboxing :</strong> La joie de l&apos;ouverture du colis (et la montagne de goodies !).</span>
+              </div>
+              <div className="flex items-center gap-3 bg-green-50 p-4 rounded-xl border border-green-100">
+                <Wand2 className="h-6 w-6 text-green-600 shrink-0" />
+                <span className="text-sm font-medium"><strong>Avant / Après :</strong> Pour les produits ménagers (ex: &quot;Merci la Pierre d&apos;Argent !&quot;).</span>
+              </div>
             </div>
           </div>
 
-          {user && (
-            <div className="text-center mt-8">
-              <Button
-                onClick={() => setShowForm(!showForm)}
-                size="lg"
-                className="bg-[#C6A15B] hover:bg-[#B59149] text-white"
-              >
-                <Gem className="mr-2 h-5 w-5" />
-                Signer le Livre d&apos;Or
-              </Button>
-            </div>
-          )}
-
-          {!user && (
-            <p className="text-center mt-6 text-gray-600">
-              Connectez-vous pour signer le Livre d&apos;Or et participer au concours !
-            </p>
-          )}
+          <div className="text-center mt-10">
+            <Button
+              onClick={() => setShowForm(!showForm)}
+              size="lg"
+              className="bg-[#C6A15B] hover:bg-[#B59149] text-white px-10"
+            >
+              <Gem className="mr-2 h-5 w-5" />
+              Signer le Livre d&apos;Or
+            </Button>
+          </div>
         </div>
 
+        {/* SECTION AMBASSADRICE (Keep if active) */}
         {!ambassadorLoading && currentAmbassador && currentAmbassador.entry && (
           <Card className="mb-12 border-4 border-[#C6A15B] shadow-xl">
             <CardContent className="p-8">
@@ -233,7 +205,7 @@ export default function LivreDorPage() {
               </div>
               <div className="grid md:grid-cols-2 gap-8">
                 {currentAmbassador.entry.customer_photo_url && (
-                  <div className="relative h-96 rounded-xl overflow-hidden">
+                  <div className="relative h-96 rounded-xl overflow-hidden shadow-inner">
                     <Image
                       src={currentAmbassador.entry.customer_photo_url}
                       alt={currentAmbassador.entry.customer_name}
@@ -248,7 +220,7 @@ export default function LivreDorPage() {
                     <Crown className="h-6 w-6 text-[#C6A15B] fill-[#C6A15B]" />
                   </div>
                   {renderPepites(currentAmbassador.entry.rating)}
-                  <p className="text-gray-700 mt-4 text-lg">{currentAmbassador.entry.message}</p>
+                  <p className="text-gray-700 mt-4 text-lg italic leading-relaxed">&quot;{currentAmbassador.entry.message}&quot;</p>
                   <div className="flex items-center gap-4 mt-6">
                     <Heart className="h-6 w-6 text-pink-500 fill-pink-500" />
                     <span className="font-bold text-xl">{currentAmbassador.hearts_count} cœurs</span>
@@ -259,122 +231,130 @@ export default function LivreDorPage() {
           </Card>
         )}
 
-        {showForm && user && (
-          <Card className="mb-12">
+        {/* FORMULAIRE DE SIGNATURE */}
+        {showForm && (
+          <Card className="mb-12 animate-in fade-in slide-in-from-top-4">
             <CardContent className="p-8">
-              <h2 className="text-2xl font-bold mb-6">Laissez votre mot doux</h2>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="customer_name">Votre prénom</Label>
-                    <Input
-                      id="customer_name"
-                      value={formData.customer_name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, customer_name: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="order_number">Numéro de commande</Label>
-                    <Input
-                      id="order_number"
-                      value={formData.order_number}
-                      onChange={(e) => setFormData(prev => ({ ...prev, order_number: e.target.value }))}
-                      placeholder="#12345"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label>Note en Pépites</Label>
-                  <div className="mt-2">
-                    {renderPepites(formData.rating, true, (rating) => setFormData(prev => ({ ...prev, rating })))}
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="message">Votre message (max 500 caractères)</Label>
-                  <Textarea
-                    id="message"
-                    value={formData.message}
-                    onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value.slice(0, 500) }))}
-                    placeholder="Partagez votre expérience..."
-                    rows={5}
-                    required
-                  />
-                  <p className="text-sm text-gray-500 mt-1">{formData.message.length}/500 caractères</p>
-                </div>
-
-                <div>
-                  <Label htmlFor="photo">Votre photo (optionnel)</Label>
-                  <div className="mt-2">
-                    {formData.customer_photo_url ? (
-                      <div className="relative w-40 h-40 rounded-lg overflow-hidden">
-                        <Image src={formData.customer_photo_url} alt="Preview" fill className="object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, customer_photo_url: '' }))}
-                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                        <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                        <Label htmlFor="photo-upload" className="cursor-pointer text-[#C6A15B] hover:underline">
-                          {uploading ? 'Upload en cours...' : 'Cliquez pour ajouter une photo'}
-                        </Label>
+              {!user ? (
+                 <div className="text-center py-4">
+                   <p className="text-gray-600 mb-4">Connectez-vous pour signer le Livre d&apos;Or et participer à la galerie !</p>
+                   <Button asChild variant="outline">
+                     <Link href="/auth/login">Se connecter</Link>
+                   </Button>
+                 </div>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-bold mb-6">Laissez votre mot doux</h2>
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor="customer_name">Votre prénom</Label>
                         <Input
-                          id="photo-upload"
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handlePhotoUpload}
-                          disabled={uploading}
+                          id="customer_name"
+                          value={formData.customer_name}
+                          onChange={(e) => setFormData(prev => ({ ...prev, customer_name: e.target.value }))}
+                          required
                         />
                       </div>
-                    )}
-                  </div>
-                </div>
+                      <div>
+                        <Label htmlFor="order_number">Numéro de commande</Label>
+                        <Input
+                          id="order_number"
+                          value={formData.order_number}
+                          onChange={(e) => setFormData(prev => ({ ...prev, order_number: e.target.value }))}
+                          placeholder="#12345"
+                          required
+                        />
+                      </div>
+                    </div>
 
-                <div className="flex items-start gap-2">
-                  <Checkbox
-                    id="gdpr"
-                    checked={formData.gdpr_consent}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, gdpr_consent: checked as boolean }))}
-                  />
-                  <Label htmlFor="gdpr" className="text-sm cursor-pointer">
-                    J&apos;accepte que mon message et ma photo soient publiés sur le Livre d&apos;Or de la boutique.
-                  </Label>
-                </div>
+                    <div>
+                      <Label>Note en Pépites</Label>
+                      <div className="mt-2">
+                        {renderPepites(formData.rating, true, (rating) => setFormData(prev => ({ ...prev, rating })))}
+                      </div>
+                    </div>
 
-                <Button type="submit" disabled={submitting} className="w-full" size="lg">
-                  {submitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Envoi en cours...
-                    </>
-                  ) : (
-                    <>
-                      <Gem className="mr-2 h-5 w-5" />
-                      Publier mon mot doux
-                    </>
-                  )}
-                </Button>
+                    <div>
+                      <Label htmlFor="message">Votre message (max 500 caractères)</Label>
+                      <Textarea
+                        id="message"
+                        value={formData.message}
+                        onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value.slice(0, 500) }))}
+                        placeholder="Partagez votre expérience..."
+                        rows={5}
+                        required
+                      />
+                      <p className="text-sm text-gray-500 mt-1">{formData.message.length}/500 caractères</p>
+                    </div>
 
-                <p className="text-sm text-gray-500 text-center">
-                  Pour garantir l&apos;authenticité du Livre d&apos;Or, votre message sera publié après une vérification
-                  anti-spam de notre équipe. Merci de votre patience !
-                </p>
-              </form>
+                    <div>
+                      <Label htmlFor="photo">Votre photo</Label>
+                      <div className="mt-2">
+                        {formData.customer_photo_url ? (
+                          <div className="relative w-40 h-40 rounded-lg overflow-hidden border">
+                            <Image src={formData.customer_photo_url} alt="Preview" fill className="object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => setFormData(prev => ({ ...prev, customer_photo_url: '' }))}
+                              className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50">
+                            <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                            <Label htmlFor="photo-upload" className="cursor-pointer text-[#C6A15B] hover:underline font-semibold">
+                              {uploading ? 'Upload en cours...' : 'Cliquez pour ajouter une photo de vos pépites'}
+                            </Label>
+                            <Input
+                              id="photo-upload"
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handlePhotoUpload}
+                              disabled={uploading}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="gdpr"
+                        checked={formData.gdpr_consent}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, gdpr_consent: checked as boolean }))}
+                      />
+                      <Label htmlFor="gdpr" className="text-sm cursor-pointer leading-snug text-gray-600">
+                        J&apos;accepte que mon message et ma photo soient publiés sur le Livre d&apos;Or de la boutique.
+                      </Label>
+                    </div>
+
+                    <Button type="submit" disabled={submitting} className="w-full bg-[#C6A15B] hover:bg-[#B59149]" size="lg">
+                      {submitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Envoi en cours...
+                        </>
+                      ) : (
+                        <>
+                          <Gem className="mr-2 h-5 w-5" />
+                          Publier mon mot doux
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                </>
+              )}
             </CardContent>
           </Card>
         )}
 
+        {/* LISTE DES MESSAGES */}
         <div className="space-y-6">
-          <h2 className="text-3xl font-bold">Nos Mots Doux</h2>
+          <h2 className="text-3xl font-bold text-gray-900">Nos Mots Doux</h2>
 
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -404,22 +384,22 @@ function GuestbookCard({ entry }: { entry: any }) {
   const { user } = useAuth()
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 border-gray-100 flex flex-col h-full">
       {entry.customer_photo_url && (
-        <div className="relative h-64 w-full">
+        <div className="relative h-64 w-full overflow-hidden">
           <Image
             src={entry.customer_photo_url}
             alt={entry.customer_name}
             fill
-            className="object-cover"
+            className="object-cover transition-transform duration-500 hover:scale-110"
           />
         </div>
       )}
-      <CardContent className="p-6">
+      <CardContent className="p-6 flex flex-col flex-1">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <h3 className="font-bold text-lg">{entry.customer_name}</h3>
-            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px] h-5">
               <CheckCircle2 className="h-3 w-3 mr-1" />
               Achat Vérifié
             </Badge>
@@ -440,31 +420,31 @@ function GuestbookCard({ entry }: { entry: any }) {
           ))}
         </div>
 
-        <p className="text-gray-700 text-sm mb-4 line-clamp-4">{entry.message}</p>
+        <p className="text-gray-700 text-sm mb-4 leading-relaxed line-clamp-4 flex-1 italic">&quot;{entry.message}&quot;</p>
 
         {entry.admin_response && (
           <div className="bg-[#C6A15B]/5 rounded-lg p-3 mb-4 border-l-4 border-[#C6A15B]">
-            <p className="text-xs font-semibold text-[#C6A15B] mb-1">Réponse de Morgane</p>
+            <p className="text-xs font-semibold text-[#C6A15B] mb-1">Réponse d&apos;André</p>
             <p className="text-sm text-gray-700">{entry.admin_response}</p>
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-4 border-t">
-          <span className="text-xs text-gray-500">
+        <div className="flex items-center justify-between pt-4 border-t mt-auto">
+          <span className="text-[10px] text-gray-400 uppercase tracking-wider">
             {new Date(entry.created_at).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
           </span>
           {user && (
             <button
               onClick={toggleHeart}
               disabled={loading}
-              className="flex items-center gap-2 hover:scale-110 transition-transform"
+              className="flex items-center gap-2 hover:scale-110 transition-transform p-1"
             >
               <Heart
                 className={`h-5 w-5 ${
-                  hasHearted ? 'fill-pink-500 text-pink-500' : 'text-gray-400'
+                  hasHearted ? 'fill-pink-500 text-pink-500' : 'text-gray-300'
                 }`}
               />
-              <span className="text-sm font-medium">{heartsCount}</span>
+              <span className="text-sm font-bold text-gray-600">{heartsCount}</span>
             </button>
           )}
         </div>

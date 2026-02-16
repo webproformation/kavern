@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Save, ArrowLeft, RefreshCw } from "lucide-react";
+import { Save, ArrowLeft, RefreshCw, Weight } from "lucide-react"; // 1. Ajout de Weight
 import Link from "next/link";
 import RichTextEditor from "@/components/RichTextEditor";
 import ColorSwatchSelector from "@/components/ColorSwatchSelector";
@@ -31,6 +31,7 @@ interface Product {
   regular_price: number;
   sale_price: number | null;
   stock_quantity: number;
+  virtual_weight?: number; // 2. Ajout du champ dans l'interface
   status: string;
   image_url: string | null;
   gallery_images?: string[] | any;
@@ -85,6 +86,7 @@ export default function ProductEditForm({
   const [regularPrice, setRegularPrice] = useState<number>(initialProduct.regular_price);
   const [salePrice, setSalePrice] = useState<number | null>(initialProduct.sale_price);
   const [stockQuantity, setStockQuantity] = useState<number>(initialProduct.stock_quantity);
+  const [virtualWeight, setVirtualWeight] = useState<number>(initialProduct.virtual_weight || 0); // 3. Nouvel état
   const [status, setStatus] = useState(initialProduct.status);
   const [isFeatured, setIsFeatured] = useState(initialProduct.is_featured || false);
   const [isDiamond, setIsDiamond] = useState(initialProduct.is_diamond || false);
@@ -124,12 +126,10 @@ export default function ProductEditForm({
   const [existingVariationsIds, setExistingVariationsIds] = useState<Record<string, string>>({});
 
   // --- INTÉGRATION AUTO-SAVE ---
-  
-  // 1. On regroupe tout l'état actuel dans un objet pour le Hook
   const currentFormData = {
     name, slug, sku, description,
-    regularPrice, salePrice, stockQuantity, status,
-    isFeatured, isDiamond,
+    regularPrice, salePrice, stockQuantity, virtualWeight, // 4. Ajout au flux de sauvegarde
+    status, isFeatured, isDiamond,
     mainImage, galleryImages,
     mainColor, mainColorId, selectedSecondaryColors, secondaryColorIds,
     sizeRangeStart, sizeRangeEnd,
@@ -137,12 +137,10 @@ export default function ProductEditForm({
     variations, existingVariationsIds
   };
 
-  // 2. On appelle le Hook
   const { clearSavedData } = useAutoSave(
-    `draft_product_${initialProduct.id}`, // Clé unique par produit
-    currentFormData, // Les données à sauver
-    (savedData: any) => { // La fonction de restauration
-        // On remet chaque valeur à sa place
+    `draft_product_${initialProduct.id}`,
+    currentFormData,
+    (savedData: any) => {
         if (savedData.name !== undefined) setName(savedData.name);
         if (savedData.slug !== undefined) setSlug(savedData.slug);
         if (savedData.sku !== undefined) setSku(savedData.sku);
@@ -150,51 +148,39 @@ export default function ProductEditForm({
         if (savedData.regularPrice !== undefined) setRegularPrice(savedData.regularPrice);
         if (savedData.salePrice !== undefined) setSalePrice(savedData.salePrice);
         if (savedData.stockQuantity !== undefined) setStockQuantity(savedData.stockQuantity);
+        if (savedData.virtualWeight !== undefined) setVirtualWeight(savedData.virtualWeight); // Restauration
         if (savedData.status !== undefined) setStatus(savedData.status);
         if (savedData.isFeatured !== undefined) setIsFeatured(savedData.isFeatured);
         if (savedData.isDiamond !== undefined) setIsDiamond(savedData.isDiamond);
-        
         if (savedData.mainImage !== undefined) setMainImage(savedData.mainImage);
         if (savedData.galleryImages !== undefined) setGalleryImages(savedData.galleryImages);
-        
         if (savedData.mainColor !== undefined) setMainColor(savedData.mainColor);
         if (savedData.mainColorId !== undefined) setMainColorId(savedData.mainColorId);
         if (savedData.selectedSecondaryColors !== undefined) setSelectedSecondaryColors(savedData.selectedSecondaryColors);
         if (savedData.secondaryColorIds !== undefined) setSecondaryColorIds(savedData.secondaryColorIds);
-        
         if (savedData.sizeRangeStart !== undefined) setSizeRangeStart(savedData.sizeRangeStart);
         if (savedData.sizeRangeEnd !== undefined) setSizeRangeEnd(savedData.sizeRangeEnd);
-        
         if (savedData.selectedCategories !== undefined) setSelectedCategories(savedData.selectedCategories);
         if (savedData.selectedAttributes !== undefined) setSelectedAttributes(savedData.selectedAttributes);
-        
         if (savedData.variations !== undefined) setVariations(savedData.variations);
         if (savedData.existingVariationsIds !== undefined) setExistingVariationsIds(savedData.existingVariationsIds);
     }
   );
 
-  // --- FIN INTÉGRATION AUTO-SAVE ---
-
-
   useEffect(() => {
-    // Note: Si une variation a été chargée par le AutoSave, on évite d'écraser avec le loadExistingVariations
-    // On ne charge depuis la DB que si variations est vide (chargement initial propre)
     if (variations.length === 0) {
         loadExistingVariations();
     }
   }, []);
 
-  // --- LOGIQUE AUTO-SÉLECTION DES TAILLES ---
   useEffect(() => {
     if (sizeRangeStart && sizeRangeEnd) {
       const start = Math.min(sizeRangeStart, sizeRangeEnd);
       const end = Math.max(sizeRangeStart, sizeRangeEnd);
-      
       const autoSizes: string[] = [];
       for (let s = start; s <= end; s += 2) {
         autoSizes.push(s.toString());
       }
-
       setSelectedAttributes(prev => ({
         ...prev,
         "Tailles": autoSizes
@@ -203,16 +189,9 @@ export default function ProductEditForm({
   }, [sizeRangeStart, sizeRangeEnd]);
 
   useEffect(() => {
-    // Si nous avons restauré des variations via AutoSave, on ne veut pas que cet effet les écrase 
-    // sauf si l'utilisateur change activement les couleurs secondaires.
-    // Cette logique reste inchangée mais attention aux conflits potentiels.
-    // Dans le doute, l'utilisateur verra ce qui est à l'écran.
-    
     if (selectedSecondaryColors.length > 0) {
-        // On vérifie si les variations actuelles correspondent déjà aux couleurs (cas d'une restauration)
         const currentColors = variations.map(v => v.colorName).sort().join(',');
         const newColors = [...selectedSecondaryColors].sort().join(',');
-        
         if (currentColors !== newColors) {
              const newVariations: Variation[] = selectedSecondaryColors.map(colorName => {
                 const existingVar = variations.find(v => v.colorName === colorName);
@@ -230,8 +209,6 @@ export default function ProductEditForm({
               setVariations(newVariations);
         }
     } else {
-      // Si on vide la sélection, on vide les variations (sauf si c'est un chargement initial ?)
-      // On garde la logique d'origine pour ne pas casser le comportement
       if (variations.length > 0 && selectedSecondaryColors.length === 0) {
           setVariations([]);
       }
@@ -247,12 +224,10 @@ export default function ProductEditForm({
         .eq("is_active", true);
 
       if (error) throw error;
-
       if (data && data.length > 0) {
         const colorNames: string[] = [];
         const varIds: Record<string, string> = {};
         const vars: Variation[] = [];
-
         for (const v of data) {
           const colorName = v.attributes?.Couleur || "";
           if (colorName) {
@@ -270,8 +245,6 @@ export default function ProductEditForm({
             });
           }
         }
-
-        // On ne met à jour que si l'état local est vide (pour éviter d'écraser le brouillon restauré)
         if (variations.length === 0) {
             setSelectedSecondaryColors(colorNames);
             setExistingVariationsIds(varIds);
@@ -305,7 +278,6 @@ export default function ProductEditForm({
   const handleVariationUpdate = (colorName: string, field: keyof Variation, value: any) => {
     setVariations(prev => {
       const existingIndex = prev.findIndex(v => v.colorName === colorName);
-
       if (existingIndex >= 0) {
         const newVars = [...prev];
         newVars[existingIndex] = { ...newVars[existingIndex], [field]: value };
@@ -331,7 +303,6 @@ export default function ProductEditForm({
       toast.error("Le nom et le slug sont requis");
       return;
     }
-
     if (!mainColor) {
       toast.error("Veuillez sélectionner une couleur principale");
       return;
@@ -353,6 +324,7 @@ export default function ProductEditForm({
         regular_price: parseFloat(String(regularPrice)) || 0,
         sale_price: salePrice ? parseFloat(String(salePrice)) : null,
         stock_quantity: parseInt(String(stockQuantity)) || 0,
+        virtual_weight: parseInt(String(virtualWeight)) || 0, // 5. Enregistrement en base
         status: status || "draft",
         image_url: mainImage || null,
         gallery_images: galleryImages.length > 0 ? galleryImages : null,
@@ -373,11 +345,7 @@ export default function ProductEditForm({
 
       if (productError) throw productError;
 
-      await supabase
-        .from("product_category_mapping")
-        .delete()
-        .eq("product_id", initialProduct.id);
-
+      await supabase.from("product_category_mapping").delete().eq("product_id", initialProduct.id);
       if (selectedCategories.length > 0) {
         const categoryMappings = selectedCategories.map((catId, index) => ({
           product_id: initialProduct.id,
@@ -385,19 +353,11 @@ export default function ProductEditForm({
           is_primary: index === 0,
           display_order: index,
         }));
-
-        const { error: catError } = await supabase
-          .from("product_category_mapping")
-          .insert(categoryMappings);
-
+        const { error: catError } = await supabase.from("product_category_mapping").insert(categoryMappings);
         if (catError) throw catError;
       }
 
-      await supabase
-        .from("product_variations")
-        .delete()
-        .eq("product_id", initialProduct.id);
-
+      await supabase.from("product_variations").delete().eq("product_id", initialProduct.id);
       if (variations.length > 0) {
         const variationsToInsert = variations.map(v => ({
           product_id: initialProduct.id,
@@ -410,18 +370,11 @@ export default function ProductEditForm({
           stock_status: (v.stock_quantity || 0) > 0 ? "instock" : "outofstock",
           is_active: true,
         }));
-
-        const { error: varError } = await supabase
-          .from("product_variations")
-          .insert(variationsToInsert);
-
+        const { error: varError } = await supabase.from("product_variations").insert(variationsToInsert);
         if (varError) throw varError;
       }
 
-      // --- SUCCÈS : NETTOYAGE DU BROUILLON ---
       clearSavedData();
-      // ---------------------------------------
-
       toast.success("Produit mis à jour avec succès!");
       router.push("/admin/products");
       router.refresh();
@@ -441,7 +394,6 @@ export default function ProductEditForm({
             <h1 className="text-3xl font-bold text-gray-900">Modifier le Produit</h1>
             <div className="flex items-center gap-2 text-gray-600 mt-1">
                 <span>{initialProduct.name}</span>
-                {/* Petit indicateur visuel de sécurité (optionnel) */}
                 <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
                     <RefreshCw className="w-3 h-3" /> Auto-save actif
                 </span>
@@ -464,50 +416,26 @@ export default function ProductEditForm({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="name">Nom du Produit *</Label>
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="bg-white"
-                  />
+                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
                 </div>
-
                 <div>
                   <Label htmlFor="slug">Slug (URL) *</Label>
-                  <Input
-                    id="slug"
-                    value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
-                    className="bg-white"
-                  />
+                  <Input id="slug" value={slug} onChange={(e) => setSlug(e.target.value)} />
                 </div>
               </div>
-
               <div>
                 <Label htmlFor="description">Description</Label>
-                <RichTextEditor
-                  value={description}
-                  onChange={setDescription}
-                />
+                <RichTextEditor value={description} onChange={setDescription} />
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="sku">SKU (Référence)</Label>
-                  <Input
-                    id="sku"
-                    value={sku}
-                    onChange={(e) => setSku(e.target.value)}
-                    className="bg-white"
-                  />
+                  <Input id="sku" value={sku} onChange={(e) => setSku(e.target.value)} />
                 </div>
-
                 <div>
                   <Label htmlFor="status">Statut</Label>
                   <Select value={status} onValueChange={setStatus}>
-                    <SelectTrigger className="bg-white">
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="draft">Brouillon</SelectItem>
                       <SelectItem value="publish">Publié</SelectItem>
@@ -515,22 +443,13 @@ export default function ProductEditForm({
                     </SelectContent>
                   </Select>
                 </div>
-
                 <div className="flex items-end gap-4">
                   <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="is_featured"
-                      checked={isFeatured}
-                      onCheckedChange={(checked) => setIsFeatured(!!checked)}
-                    />
+                    <Checkbox id="is_featured" checked={isFeatured} onCheckedChange={(checked) => setIsFeatured(!!checked)} />
                     <Label htmlFor="is_featured" className="cursor-pointer">Vedette</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="is_diamond"
-                      checked={isDiamond}
-                      onCheckedChange={(checked) => setIsDiamond(!!checked)}
-                    />
+                    <Checkbox id="is_diamond" checked={isDiamond} onCheckedChange={(checked) => setIsDiamond(!!checked)} />
                     <Label htmlFor="is_diamond" className="cursor-pointer">Diamant</Label>
                   </div>
                 </div>
@@ -548,47 +467,48 @@ export default function ProductEditForm({
           <Card className="bg-white">
             <CardHeader>
               <CardTitle className="text-[#d4af37]">Prix & Stock (Par défaut)</CardTitle>
-              <CardDescription>
-                Ces valeurs seront utilisées si aucune variation n'est définie
-              </CardDescription>
+              <CardDescription>Valeurs par défaut si aucune variation n&apos;est définie</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="regularPrice">Prix Régulier (€) *</Label>
-                  <Input
-                    id="regularPrice"
-                    type="number"
-                    step="0.01"
-                    value={regularPrice}
-                    onChange={(e) => setRegularPrice(parseFloat(e.target.value) || 0)}
-                    className="bg-white"
-                  />
+                  <Input id="regularPrice" type="number" step="0.01" value={regularPrice} onChange={(e) => setRegularPrice(parseFloat(e.target.value) || 0)} />
                 </div>
-
                 <div>
                   <Label htmlFor="salePrice">Prix Promo (€)</Label>
-                  <Input
-                    id="salePrice"
-                    type="number"
-                    step="0.01"
-                    value={salePrice || ""}
-                    onChange={(e) => setSalePrice(e.target.value ? parseFloat(e.target.value) : null)}
-                    className="bg-white"
-                  />
+                  <Input id="salePrice" type="number" step="0.01" value={salePrice || ""} onChange={(e) => setSalePrice(e.target.value ? parseFloat(e.target.value) : null)} />
                 </div>
-
                 <div>
                   <Label htmlFor="stockQuantity">Stock</Label>
-                  <Input
-                    id="stockQuantity"
-                    type="number"
-                    value={stockQuantity}
-                    onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)}
-                    className="bg-white"
-                  />
+                  <Input id="stockQuantity" type="number" value={stockQuantity} onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)} />
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* --- BLOC LOGISTIQUE AJOUTÉ --- */}
+          <Card className="bg-white border-2 border-[#D4AF37]/20">
+            <CardHeader className="bg-[#D4AF37]/5">
+              <div className="flex items-center gap-2">
+                <Weight className="h-5 w-5 text-[#D4AF37]" />
+                <CardTitle className="text-[#d4af37]">Logistique (Colis Ouvert)</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-2">
+              <Label htmlFor="virtualWeight">Poids Virtuel (en grammes) *</Label>
+              <div className="relative max-w-[200px]">
+                <Input
+                  id="virtualWeight"
+                  type="number"
+                  value={virtualWeight}
+                  onChange={(e) => setVirtualWeight(parseInt(e.target.value) || 0)}
+                  placeholder="Ex: 500"
+                  className="bg-white pr-10"
+                />
+                <div className="absolute inset-y-0 right-3 flex items-center text-gray-400 text-sm">g</div>
+              </div>
+              <p className="text-[10px] text-gray-500 italic">Permet d&apos;estimer le remplissage du carton (max 20kg).</p>
             </CardContent>
           </Card>
 
@@ -613,21 +533,13 @@ export default function ProductEditForm({
           <Card className="bg-white">
             <CardHeader>
               <CardTitle className="text-[#d4af37]">Filtres de Taille</CardTitle>
-              <CardDescription>
-                Définissez les tailles min/max pour le filtre "À ma taille"
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Taille Minimum</Label>
-                  <Select
-                    value={sizeRangeStart?.toString() || "none"}
-                    onValueChange={(value) => setSizeRangeStart(value === "none" ? null : parseInt(value))}
-                  >
-                    <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Choisir" />
-                    </SelectTrigger>
+                  <Select value={sizeRangeStart?.toString() || "none"} onValueChange={(value) => setSizeRangeStart(value === "none" ? null : parseInt(value))}>
+                    <SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Aucune</SelectItem>
                       {Array.from({ length: 11 }, (_, i) => 34 + (i * 2)).map(size => (
@@ -636,16 +548,10 @@ export default function ProductEditForm({
                     </SelectContent>
                   </Select>
                 </div>
-
                 <div>
                   <Label>Taille Maximum</Label>
-                  <Select
-                    value={sizeRangeEnd?.toString() || "none"}
-                    onValueChange={(value) => setSizeRangeEnd(value === "none" ? null : parseInt(value))}
-                  >
-                    <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Choisir" />
-                    </SelectTrigger>
+                  <Select value={sizeRangeEnd?.toString() || "none"} onValueChange={(value) => setSizeRangeEnd(value === "none" ? null : parseInt(value))}>
+                    <SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Aucune</SelectItem>
                       {Array.from({ length: 11 }, (_, i) => 34 + (i * 2)).map(size => (
@@ -658,29 +564,13 @@ export default function ProductEditForm({
             </CardContent>
           </Card>
 
-          <GeneralAttributesSelector
-            selectedAttributes={selectedAttributes}
-            onAttributesChange={setSelectedAttributes}
-          />
-
-          <HierarchicalCategorySelector
-            selectedCategories={selectedCategories}
-            onCategoriesChange={setSelectedCategories}
-          />
+          <GeneralAttributesSelector selectedAttributes={selectedAttributes} onAttributesChange={setSelectedAttributes} />
+          <HierarchicalCategorySelector selectedCategories={selectedCategories} onCategoriesChange={setSelectedCategories} />
 
           <div className="flex justify-end gap-4 pb-6">
-            <Link href="/admin/products">
-              <Button variant="outline">Annuler</Button>
-            </Link>
+            <Link href="/admin/products"><Button variant="outline">Annuler</Button></Link>
             <Button onClick={handleSave} disabled={saving} className="bg-[#d4af37] hover:bg-[#c19b2f]">
-              {saving ? (
-                <>Enregistrement...</>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Mettre à jour
-                </>
-              )}
+              {saving ? <>Enregistrement...</> : <><Save className="w-4 h-4 mr-2" /> Mettre à jour</>}
             </Button>
           </div>
         </div>

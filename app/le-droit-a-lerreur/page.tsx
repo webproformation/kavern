@@ -11,7 +11,7 @@ export default function LeDroitALErreurPage() {
           <PageHeader
             icon={RotateCcw}
             title="Le Droit à l'Erreur"
-            description="Pas satisfaite ? Ça arrive. Nous avons deux solutions simples pour que vous repartiez heureuse."
+            description="Pas satisfait(e) ? Ça arrive. Nous avons deux solutions simples pour que vous repartiez heureux(se)."
           />
 
           <div className="space-y-6">
@@ -115,7 +115,7 @@ export default function LeDroitALErreurPage() {
                       <h3 className="text-xl font-semibold mb-2">Expédiez à l'adresse exacte</h3>
                       <Card className="bg-gray-50 border-[#C6A15B] border-2 mt-3">
                         <CardContent className="p-4">
-                          <p className="font-semibold text-lg text-gray-900 mb-2">La Boutique de Morgane</p>
+                          <p className="font-semibold text-lg text-gray-900 mb-2">KAVERN</p>
                           <p className="text-gray-700">
                             1062, Rue d'Armentières<br/>
                             59850 Nieppe<br/>
@@ -175,7 +175,7 @@ export default function LeDroitALErreurPage() {
                 pour suivre votre colis.
               </p>
               <p className="text-gray-700">
-                <strong>Pour des raisons d'hygiène,</strong> les produits cosmétiques, sous-vêtements et boucles d'oreilles
+                <strong>Pour des raisons d'hygiène,</strong> les produits cosmétiques, les parfums d'ambiance, l'alimentaire, les bougies personnalisées, les sous-vêtements et les boucles d'oreilles
                 ne peuvent pas être repris.
               </p>
             </CardContent>

@@ -30,7 +30,7 @@ const reassuranceBlocks = [
   },
   {
     image: 'https://wp.laboutiquedemorgane.com/wp-content/uploads/2025/12/La-boutique-de-Morgane-Allo-Morgane.png',
-    href: '/allo-morgane',
+    href: '/allo-andre',
     title: 'Allô André ?',
     description: 'Plus qu\'un site, un accompagnement. André vous guide personnellement dans vos choix mode et beauté.'
   }
@@ -51,7 +51,7 @@ const informations = [
   { name: 'Le droit à l\'erreur', href: '/le-droit-a-lerreur' },
   { name: 'Vite chez vous', href: '/vite-chez-vous' },
   { name: 'Transactions protégées', href: '/transactions-protegees' },
-  { name: 'Allô André', href: '/allo-morgane' },
+  { name: 'Allô André', href: '/allo-andre' },
   { name: 'Actus', href: '/actualites' },
   { name: 'Le livre d\'or', href: '/livre-dor' },
   { name: 'Lives', href: '/live' },
@@ -139,6 +139,8 @@ export function SiteFooter() {
       <section className="bg-gray-900 text-gray-300 py-12">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 text-center md:text-left">
+            
+            {/* COLONNE 1 : CONTACT */}
             <div>
               <h3 className="text-white font-bold text-xl md:text-lg mb-4">Contact</h3>
               <div className="space-y-4">
@@ -146,7 +148,8 @@ export function SiteFooter() {
                   <MapPin className="h-5 w-5 flex-shrink-0 mt-0.5" />
                   <div className="text-base md:text-sm">
                     1062 rue d'Armentières<br />
-                    59850 Nieppe
+                    59850 Nieppe<br />
+                    France
                   </div>
                 </div>
 
@@ -174,6 +177,7 @@ export function SiteFooter() {
               </div>
             </div>
 
+            {/* COLONNE 2 : CATEGORIES */}
             <div>
               <h3 className="text-white font-bold text-xl md:text-lg mb-4">Catégories</h3>
               <ul className="space-y-2">
@@ -190,6 +194,7 @@ export function SiteFooter() {
               </ul>
             </div>
 
+            {/* COLONNE 3 : INFORMATIONS */}
             <div>
               <h3 className="text-white font-bold text-xl md:text-lg mb-4">Informations</h3>
               <ul className="space-y-2">
@@ -206,6 +211,7 @@ export function SiteFooter() {
               </ul>
             </div>
 
+            {/* COLONNE 4 : HORAIRES */}
             <div>
               <h3 className="text-white font-bold text-xl md:text-lg mb-4">Horaires</h3>
               <div className="space-y-4 text-base md:text-sm">
@@ -230,14 +236,14 @@ export function SiteFooter() {
                   <div>
                     <div className="font-semibold text-white">En dehors de ces horaires</div>
                     <div>
-                      Laissez-nous un SMS ou un e-mail,<br />
-                      réponse garantie le plus rapidement possible
+                      Laissez-nous un SMS ou un e-mail, nous vous répondrons rapidement.
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* COLONNE 5 : NEWSLETTER & SOCIAL */}
             <div>
               <h3 className="text-white font-bold text-xl md:text-lg mb-4">Newsletter</h3>
               <form onSubmit={handleNewsletterSubmit} className="space-y-4">

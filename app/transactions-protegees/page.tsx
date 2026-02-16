@@ -73,6 +73,7 @@ export default function TransactionsProtegeesPage() {
               <Card>
                 <CardHeader>
                   <div className="flex items-center gap-3">
+                    {/* Icône SVG simplifiée pour PayPal */}
                     <svg className="h-6 w-6" viewBox="0 0 24 24" fill="#003087">
                       <path d="M20.905 9.5c0-2.423-1.581-4.557-4.005-4.557-2.422 0-4.005 2.134-4.005 4.557 0 2.422 1.583 4.557 4.005 4.557 2.424 0 4.005-2.135 4.005-4.557zm-11.905 0c0-2.423-1.581-4.557-4.005-4.557C2.573 4.943 1 7.077 1 9.5c0 2.422 1.573 4.557 3.995 4.557 2.424 0 4.005-2.135 4.005-4.557z"/>
                     </svg>
@@ -129,11 +130,11 @@ export default function TransactionsProtegeesPage() {
 
           <Card>
             <CardContent className="p-6 text-center">
-              <p className="text-gray-700">
+              <p className="text-gray-700 mb-2">
                 Une question sur nos modes de paiement ?
               </p>
-              <a href="mailto:contact@laboutiquedemorgane.com" className="text-[#C6A15B] font-semibold hover:underline">
-                contact@laboutiquedemorgane.com
+              <a href="mailto:contact@kavern-france.fr" className="text-[#C6A15B] font-semibold hover:underline">
+                contact@kavern-france.fr
               </a>
             </CardContent>
           </Card>
