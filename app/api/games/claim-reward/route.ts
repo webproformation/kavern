@@ -50,14 +50,14 @@ export async function POST(request: NextRequest) {
 
     // --- CAS SPÉCIAL CARD FLIP : Tirage au sort pondéré ---
     if (game_type === 'card_flip' && game_id) {
-      // A. Charger le jeu et sa probabilité
-      const { data: game } = await supabaseAdmin
+      // A. Charger le jeu et son coupon lié
+      const { data: game, error: fetchErr } = await supabaseAdmin
         .from('card_flip_games')
         .select('*, coupon:coupons(*)')
         .eq('id', game_id)
         .single();
 
-      if (!game) {
+      if (fetchErr || !game) {
         return NextResponse.json({ error: 'Jeu introuvable' }, { status: 404 });
       }
 
@@ -81,18 +81,19 @@ export async function POST(request: NextRequest) {
       const winProbability = game.win_probability || 33.33;
       const userHasWon = (Math.random() * 100) <= winProbability;
 
-      // D. Enregistrer la partie (Correction : has_won / coupon_code optionnel)
+      // D. Enregistrer la partie (Sync avec SQL : has_won / coupon_code)
       const { error: playError } = await supabaseAdmin
         .from('card_flip_game_plays')
         .insert({
           game_id: game_id,
           user_id: user.id,
           has_won: userHasWon,
-          coupon_code: userHasWon ? game.coupon?.code : null,
+          coupon_code: (userHasWon && game.coupon) ? game.coupon.code : null,
         });
 
       if (playError) throw playError;
 
+      // E. Si perdu, retourner directement
       if (!userHasWon) {
         return NextResponse.json({
           success: true,
@@ -101,12 +102,16 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // E. Si gagné, vérifier si l'utilisateur possède déjà ce coupon
+      // F. Si gagné, vérifier si l'utilisateur possède déjà ce coupon
+      if (!game.coupon) {
+        throw new Error('Aucun coupon configuré pour ce jeu.');
+      }
+
       const { data: existingCoupon } = await supabaseAdmin
         .from('user_coupons')
         .select('id')
         .eq('user_id', user.id)
-        .eq('coupon_id', game.coupon?.id)
+        .eq('coupon_id', game.coupon.id)
         .maybeSingle();
 
       if (existingCoupon) {
@@ -118,8 +123,8 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // F. Créer le coupon utilisateur unique
-      const uniqueCode = `${game.coupon?.code || 'REWARD'}-${Date.now().toString(36).toUpperCase()}`;
+      // G. Créer le coupon utilisateur unique
+      const uniqueCode = `${game.coupon.code}-${Date.now().toString(36).toUpperCase()}`;
       const validUntil = new Date();
       validUntil.setDate(validUntil.getDate() + 30);
 
@@ -127,7 +132,7 @@ export async function POST(request: NextRequest) {
         .from('user_coupons')
         .insert({
           user_id: user.id,
-          coupon_id: game.coupon?.id,
+          coupon_id: game.coupon.id,
           code: uniqueCode,
           source: 'card_flip',
           is_used: false,
@@ -145,7 +150,7 @@ export async function POST(request: NextRequest) {
     }
 
     // --- AUTRES JEUX (roue, carte à gratter, etc.) ---
-    // Logique conservée intégralement (vos 80 lignes restaurées)
+    // Logique restaurée intégralement
     if (!has_won) {
       return NextResponse.json({ success: true, message: "Perdu enregistré" });
     }
@@ -195,7 +200,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, code: uniqueCode, coupon });
 
   } catch (e: any) {
-    console.error("Game Error:", e);
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    console.error("Game API Error:", e);
+    return NextResponse.json({ error: e.message || 'Erreur interne du serveur' }, { status: 500 });
   }
 }

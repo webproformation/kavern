@@ -56,10 +56,16 @@ export default function NewProductPage() {
   const [mainImage, setMainImage] = useState<string>("");
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
 
+  // activeFamily: La famille de couleur actuellement affichée dans le sélecteur (Gris, Bleu...)
   const [mainColor, setMainColor] = useState<string>("");
   const [mainColorId, setMainColorId] = useState<string>("");
+  
+  // selectedSecondaryColors: Liste persistante de TOUTES les nuances cochées (cumulatif)
   const [selectedSecondaryColors, setSelectedSecondaryColors] = useState<string[]>([]);
   const [secondaryColorIds, setSecondaryColorIds] = useState<Record<string, string>>({});
+  
+  // selectedFamilies: Pour garder trace de toutes les familles de couleurs sélectionnées pour le front
+  const [selectedFamilies, setSelectedFamilies] = useState<string[]>([]);
 
   const [sizeRangeStart, setSizeRangeStart] = useState<number | null>(null);
   const [sizeRangeEnd, setSizeRangeEnd] = useState<number | null>(null);
@@ -73,11 +79,19 @@ export default function NewProductPage() {
     // No need to load categories here anymore, HierarchicalCategorySelector handles it
   }, []);
 
+  // LOGIQUE DES VARIATIONS (MISE À JOUR POUR LE CUMUL)
   useEffect(() => {
     if (selectedSecondaryColors.length > 0) {
-      const newVariations: Variation[] = selectedSecondaryColors.map(colorName => {
-        const existingVar = variations.find(v => v.colorName === colorName);
-        return existingVar || {
+      setVariations(prev => {
+        // 1. On garde les variations dont la nuance est toujours sélectionnée
+        const existingVars = prev.filter(v => selectedSecondaryColors.includes(v.colorName));
+        
+        // 2. On ajoute les nouvelles nuances qui n'ont pas encore de bloc
+        const newNuances = selectedSecondaryColors.filter(
+          name => !existingVars.some(v => v.colorName === name)
+        );
+
+        const addedVars: Variation[] = newNuances.map(colorName => ({
           colorName,
           colorId: secondaryColorIds[colorName] || "",
           sku: "",
@@ -85,13 +99,14 @@ export default function NewProductPage() {
           sale_price: salePrice,
           stock_quantity: stockQuantity || null,
           image_url: null,
-        };
+        }));
+
+        return [...existingVars, ...addedVars];
       });
-      setVariations(newVariations);
     } else {
       setVariations([]);
     }
-  }, [selectedSecondaryColors]);
+  }, [selectedSecondaryColors, secondaryColorIds]);
 
 
   const generateSlug = (name: string) => {
@@ -112,15 +127,21 @@ export default function NewProductPage() {
 
 
   const handleMainColorSelect = (colorName: string, colorId: string) => {
+    // CORRECTION : On ne vide plus selectedSecondaryColors
+    // On change juste la "vue" du sélecteur vers la famille Gris ou Bleu
     setMainColor(colorName);
     setMainColorId(colorId);
-    setSelectedSecondaryColors([]);
-    setSecondaryColorIds({});
+    
+    // On garde trace de cette famille pour les filtres front
+    if (colorName && !selectedFamilies.includes(colorName)) {
+      setSelectedFamilies(prev => [...prev, colorName]);
+    }
   };
 
   const handleSecondaryColorToggle = (colorName: string, colorId: string, selected: boolean) => {
     if (selected) {
-      setSelectedSecondaryColors(prev => [...prev, colorName]);
+      // On ajoute à la liste globale sans supprimer ce qui vient d'autres familles
+      setSelectedSecondaryColors(prev => Array.from(new Set([...prev, colorName])));
       setSecondaryColorIds(prev => ({ ...prev, [colorName]: colorId }));
     } else {
       setSelectedSecondaryColors(prev => prev.filter(c => c !== colorName));
@@ -170,7 +191,7 @@ export default function NewProductPage() {
     }
 
     if (!mainColor) {
-      toast.error("Veuillez sélectionner une couleur principale");
+      toast.error("Veuillez sélectionner une couleur principale (famille)");
       return;
     }
 
@@ -178,9 +199,12 @@ export default function NewProductPage() {
 
     try {
       const allAttributes: Record<string, string[]> = { ...selectedAttributes };
-      if (mainColor) {
-        allAttributes['Couleur'] = [mainColor, ...selectedSecondaryColors];
-      }
+      
+      // On enregistre toutes les nuances sélectionnées dans l'attribut Couleur
+      allAttributes['Couleur'] = selectedSecondaryColors;
+      
+      // On peut aussi enregistrer la liste des familles pour les filtres front
+      allAttributes['Familles de Couleurs'] = selectedFamilies;
 
       const productData = {
         name: name.trim(),
@@ -197,7 +221,7 @@ export default function NewProductPage() {
         is_featured: isFeatured,
         is_variable_product: variations.length > 0,
         has_variations: variations.length > 0,
-        main_color: mainColor,
+        main_color: mainColor, // Utilisé pour le filtre principal front
         size_range_start: sizeRangeStart,
         size_range_end: sizeRangeEnd,
         attributes: Object.keys(allAttributes).length > 0 ? allAttributes : null,
@@ -234,9 +258,9 @@ export default function NewProductPage() {
           product_id: productId,
           sku: v.sku || "",
           attributes: { "Couleur": v.colorName },
-          regular_price: v.regular_price ? parseFloat(String(v.regular_price)) : null,
-          sale_price: v.sale_price ? parseFloat(String(v.sale_price)) : null,
-          stock_quantity: v.stock_quantity ? parseInt(String(v.stock_quantity)) : null,
+          regular_price: v.regular_price ? parseFloat(String(v.regular_price)) : regularPrice,
+          sale_price: v.sale_price ? parseFloat(String(v.sale_price)) : salePrice,
+          stock_quantity: v.stock_quantity ? parseInt(String(v.stock_quantity)) : stockQuantity,
           image_url: v.image_url || null,
           stock_status: (v.stock_quantity || 0) > 0 ? "instock" : "outofstock",
           is_active: true,
