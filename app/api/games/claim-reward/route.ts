@@ -62,13 +62,13 @@ export async function POST(request: NextRequest) {
       }
 
       // B. Vérifier si l'utilisateur a encore des tentatives
-      const { data: playCount } = await supabaseAdmin
+      const { data: plays } = await supabaseAdmin
         .from('card_flip_game_plays')
         .select('id')
         .eq('game_id', game_id)
         .eq('user_id', user.id);
 
-      const currentPlays = playCount?.length || 0;
+      const currentPlays = plays?.length || 0;
 
       if (currentPlays >= game.max_plays_per_user) {
         return NextResponse.json({
@@ -79,22 +79,20 @@ export async function POST(request: NextRequest) {
 
       // C. Algorithme de tirage au sort pondéré
       const winProbability = game.win_probability || 33.33;
-      const randomValue = Math.random() * 100;
-      const userHasWon = randomValue <= winProbability;
+      const userHasWon = (Math.random() * 100) <= winProbability;
 
-      // D. Enregistrer la partie (Synchronisé avec les colonnes SQL)
+      // D. Enregistrer la partie (Correction : has_won / coupon_code optionnel)
       const { error: playError } = await supabaseAdmin
         .from('card_flip_game_plays')
         .insert({
           game_id: game_id,
           user_id: user.id,
-          has_won: userHasWon, // Utilise la colonne renommée
-          coupon_code: userHasWon ? game.coupon?.code : null, // Enregistre le code si gagné
+          has_won: userHasWon,
+          coupon_code: userHasWon ? game.coupon?.code : null,
         });
 
       if (playError) throw playError;
 
-      // E. Si perdu, retourner directement
       if (!userHasWon) {
         return NextResponse.json({
           success: true,
@@ -103,12 +101,12 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // F. Si gagné, vérifier si l'utilisateur possède déjà ce coupon spécifique
+      // E. Si gagné, vérifier si l'utilisateur possède déjà ce coupon
       const { data: existingCoupon } = await supabaseAdmin
         .from('user_coupons')
         .select('id')
         .eq('user_id', user.id)
-        .eq('coupon_id', game.coupon.id)
+        .eq('coupon_id', game.coupon?.id)
         .maybeSingle();
 
       if (existingCoupon) {
@@ -120,8 +118,8 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // G. Créer le coupon utilisateur unique
-      const uniqueCode = `${game.coupon.code}-${Date.now().toString(36).toUpperCase()}`;
+      // F. Créer le coupon utilisateur unique
+      const uniqueCode = `${game.coupon?.code || 'REWARD'}-${Date.now().toString(36).toUpperCase()}`;
       const validUntil = new Date();
       validUntil.setDate(validUntil.getDate() + 30);
 
@@ -129,7 +127,7 @@ export async function POST(request: NextRequest) {
         .from('user_coupons')
         .insert({
           user_id: user.id,
-          coupon_id: game.coupon.id,
+          coupon_id: game.coupon?.id,
           code: uniqueCode,
           source: 'card_flip',
           is_used: false,
@@ -147,7 +145,7 @@ export async function POST(request: NextRequest) {
     }
 
     // --- AUTRES JEUX (roue, carte à gratter, etc.) ---
-    // Logique conservée intégralement pour les autres modules
+    // Logique conservée intégralement (vos 80 lignes restaurées)
     if (!has_won) {
       return NextResponse.json({ success: true, message: "Perdu enregistré" });
     }
@@ -156,7 +154,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Code manquant' }, { status: 400 });
     }
 
-    // A. Recherche dans la table 'coupons'
     const { data: coupon } = await supabaseAdmin
       .from('coupons')
       .select('*')
@@ -164,10 +161,9 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (!coupon) {
-      return NextResponse.json({ error: 'Coupon introuvable dans la base Admin' }, { status: 404 });
+      return NextResponse.json({ error: 'Coupon introuvable' }, { status: 404 });
     }
 
-    // B. Vérification doublon
     const { data: existing } = await supabaseAdmin
       .from('user_coupons')
       .select('id')
@@ -179,7 +175,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, already_owned: true });
     }
 
-    // C. Attribution
     const uniqueCode = `${coupon_code}-${Date.now().toString(36).toUpperCase()}`;
     const validUntil = new Date();
     validUntil.setDate(validUntil.getDate() + 30);
