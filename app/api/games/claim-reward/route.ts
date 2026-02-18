@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { game_type, game_id, coupon_code, has_won } = body;
 
-    // Cas spécial Card Flip : Tirage au sort pondéré
+    // --- CAS SPÉCIAL CARD FLIP : Tirage au sort pondéré ---
     if (game_type === 'card_flip' && game_id) {
       // A. Charger le jeu et sa probabilité
       const { data: game } = await supabaseAdmin
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       // B. Vérifier si l'utilisateur a encore des tentatives
       const { data: playCount } = await supabaseAdmin
         .from('card_flip_game_plays')
-        .select('id', { count: 'exact' })
+        .select('id')
         .eq('game_id', game_id)
         .eq('user_id', user.id);
 
@@ -82,14 +82,14 @@ export async function POST(request: NextRequest) {
       const randomValue = Math.random() * 100;
       const userHasWon = randomValue <= winProbability;
 
-      // D. Enregistrer la partie
+      // D. Enregistrer la partie (Synchronisé avec les colonnes SQL)
       const { error: playError } = await supabaseAdmin
         .from('card_flip_game_plays')
         .insert({
           game_id: game_id,
           user_id: user.id,
-          has_won: userHasWon,
-          coupon_code: userHasWon ? game.coupon.code : null,
+          has_won: userHasWon, // Utilise la colonne renommée
+          coupon_code: userHasWon ? game.coupon?.code : null, // Enregistre le code si gagné
         });
 
       if (playError) throw playError;
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // F. Si gagné, attribuer le coupon
+      // F. Si gagné, vérifier si l'utilisateur possède déjà ce coupon spécifique
       const { data: existingCoupon } = await supabaseAdmin
         .from('user_coupons')
         .select('id')
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // G. Créer le coupon utilisateur
+      // G. Créer le coupon utilisateur unique
       const uniqueCode = `${game.coupon.code}-${Date.now().toString(36).toUpperCase()}`;
       const validUntil = new Date();
       validUntil.setDate(validUntil.getDate() + 30);
@@ -146,7 +146,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Autres jeux (roue, carte à gratter, etc.) - Logique existante
+    // --- AUTRES JEUX (roue, carte à gratter, etc.) ---
+    // Logique conservée intégralement pour les autres modules
     if (!has_won) {
       return NextResponse.json({ success: true, message: "Perdu enregistré" });
     }
