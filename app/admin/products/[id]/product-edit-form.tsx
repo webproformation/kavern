@@ -137,16 +137,19 @@ export default function ProductCreateForm({
     }
   }, [sizeRangeStart, sizeRangeEnd]);
 
-  // --- LOGIQUE DES VARIATIONS (CORRIGÉE : INCLUT LA COULEUR PRINCIPALE) ---
+  // --- LOGIQUE DES VARIATIONS (CORRIGÉE) ---
   useEffect(() => {
-    // Si on a au moins une couleur (principale ou secondaire)
-    const allColors = mainColor ? [mainColor, ...selectedSecondaryColors] : selectedSecondaryColors;
+    // Fusion unique des couleurs sans doublons
+    const allColors = Array.from(new Set([
+      ...(mainColor ? [mainColor] : []),
+      ...selectedSecondaryColors
+    ]));
     
     if (allColors.length > 0) {
-        const currentColorsString = variations.map(v => v.colorName).sort().join(',');
-        const newColorsString = [...allColors].sort().join(',');
+        const currentNames = variations.map(v => v.colorName).sort().join(',');
+        const newNames = [...allColors].sort().join(',');
         
-        if (currentColorsString !== newColorsString) {
+        if (currentNames !== newNames) {
              const newVariations: Variation[] = allColors.map(colorName => {
                 const existingVar = variations.find(v => v.colorName === colorName);
                 return existingVar || {
@@ -166,13 +169,27 @@ export default function ProductCreateForm({
     }
   }, [mainColor, selectedSecondaryColors, mainColorId, secondaryColorIds, regularPrice, stockQuantity, salePrice, mainImage]);
 
+  // --- GESTION DU CHANGEMENT DE COULEUR PRINCIPALE (FIX MIGRATION) ---
   const handleMainColorSelect = (colorName: string, colorId: string) => {
+    // Si on change la couleur principale, l'ancienne bascule dans les secondaires
+    // pour ne pas perdre la variation associée.
+    if (mainColor && mainColor !== colorName) {
+      if (!selectedSecondaryColors.includes(mainColor)) {
+        setSelectedSecondaryColors(prev => [...prev, mainColor]);
+        setSecondaryColorIds(prev => ({ ...prev, [mainColor]: mainColorId }));
+      }
+    }
+
     setMainColor(colorName);
     setMainColorId(colorId);
+
+    // On retire la nouvelle principale de la liste secondaire pour éviter les doublons
+    setSelectedSecondaryColors(prev => prev.filter(c => c !== colorName));
   };
 
   const handleSecondaryColorToggle = (colorName: string, colorId: string, selected: boolean) => {
     if (selected) {
+      if (colorName === mainColor) return; // Déjà en principale
       setSelectedSecondaryColors(prev => [...prev, colorName]);
       setSecondaryColorIds(prev => ({ ...prev, [colorName]: colorId }));
     } else {
@@ -206,7 +223,8 @@ export default function ProductCreateForm({
 
     try {
       const allAttributes: Record<string, string[]> = { ...selectedAttributes };
-      allAttributes['Couleur'] = [mainColor, ...selectedSecondaryColors];
+      const uniqueColors = Array.from(new Set([mainColor, ...selectedSecondaryColors]));
+      allAttributes['Couleur'] = uniqueColors;
 
       // 1. INSERTION DU PRODUIT
       const { error: productError } = await supabase
@@ -256,7 +274,7 @@ export default function ProductCreateForm({
           regular_price: v.regular_price !== null ? parseFloat(String(v.regular_price)) : regularPrice,
           sale_price: v.sale_price !== null ? parseFloat(String(v.sale_price)) : salePrice,
           stock_quantity: v.stock_quantity !== null ? parseInt(String(v.stock_quantity)) : stockQuantity,
-          image_url: v.image_url || mainImage,
+          image_url: v.image_url || (v.colorName === mainColor ? mainImage : null),
           stock_status: (v.stock_quantity || stockQuantity || 0) > 0 ? "instock" : "outofstock",
           is_active: true,
         }));
@@ -288,35 +306,50 @@ export default function ProductCreateForm({
             </div>
           </div>
           <Link href="/admin/products">
-            <Button variant="outline"><ArrowLeft className="w-4 h-4 mr-2" /> Retour</Button>
+            <Button variant="outline">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Retour
+            </Button>
           </Link>
         </div>
 
         <div className="space-y-6">
-          {/* CARTE : INFORMATIONS GÉNÉRALES */}
+          {/* INFORMATIONS GÉNÉRALES */}
           <Card className="bg-white">
-            <CardHeader><CardTitle className="text-[#d4af37]">Informations Générales</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-[#d4af37]">Informations Générales</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="name">Nom du Produit *</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+                  <Input 
+                    id="name" 
+                    value={name} 
+                    onChange={(e) => setName(e.target.value)} 
+                    placeholder="Ex: Robe de soirée en soie"
+                  />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="slug">Slug (URL) *</Label>
-                  <Input id="slug" value={slug} onChange={(e) => setSlug(e.target.value)} />
+                  <Input 
+                    id="slug" 
+                    value={slug} 
+                    onChange={(e) => setSlug(e.target.value)} 
+                    placeholder="robe-de-soiree-soie"
+                  />
                 </div>
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
                 <RichTextEditor value={description} onChange={setDescription} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="sku">SKU (Référence)</Label>
                   <Input id="sku" value={sku} onChange={(e) => setSku(e.target.value)} />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="status">Statut</Label>
                   <Select value={status} onValueChange={setStatus}>
                     <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
@@ -326,21 +359,21 @@ export default function ProductCreateForm({
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex items-end gap-4">
+                <div className="flex items-end gap-4 pb-1">
                   <div className="flex items-center space-x-2">
-                    <Checkbox id="is_featured" checked={isFeatured} onCheckedChange={(c) => setIsFeatured(!!c)} />
-                    <Label htmlFor="is_featured">Vedette</Label>
+                    <Checkbox id="is_featured" checked={isFeatured} onCheckedChange={(checked) => setIsFeatured(!!checked)} />
+                    <Label htmlFor="is_featured" className="cursor-pointer">Vedette</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Checkbox id="is_diamond" checked={isDiamond} onCheckedChange={(c) => setIsDiamond(!!c)} />
-                    <Label htmlFor="is_diamond">Diamant</Label>
+                    <Checkbox id="is_diamond" checked={isDiamond} onCheckedChange={(checked) => setIsDiamond(!!checked)} />
+                    <Label htmlFor="is_diamond" className="cursor-pointer">Diamant</Label>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* COMPOSANT : MÉDIAS */}
+          {/* MÉDIAS */}
           <ProductMediaGalleryManager
             mainImage={mainImage}
             galleryImages={galleryImages}
@@ -348,30 +381,48 @@ export default function ProductCreateForm({
             onGalleryImagesChange={setGalleryImages}
           />
 
-          {/* CARTE : PRIX & STOCK */}
+          {/* PRIX ET STOCK */}
           <Card className="bg-white">
             <CardHeader>
               <CardTitle className="text-[#d4af37]">Prix & Stock (Par défaut)</CardTitle>
+              <CardDescription>Valeurs appliquées si aucune variation n&apos;est définie</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label>Prix Régulier (€) *</Label>
-                  <Input type="number" step="0.01" value={regularPrice} onChange={(e) => setRegularPrice(parseFloat(e.target.value) || 0)} />
+                <div className="space-y-2">
+                  <Label htmlFor="regularPrice">Prix Régulier (€) *</Label>
+                  <Input 
+                    id="regularPrice" 
+                    type="number" 
+                    step="0.01" 
+                    value={regularPrice} 
+                    onChange={(e) => setRegularPrice(parseFloat(e.target.value) || 0)} 
+                  />
                 </div>
-                <div>
-                  <Label>Prix Promo (€)</Label>
-                  <Input type="number" step="0.01" value={salePrice || ""} onChange={(e) => setSalePrice(e.target.value ? parseFloat(e.target.value) : null)} />
+                <div className="space-y-2">
+                  <Label htmlFor="salePrice">Prix Promo (€)</Label>
+                  <Input 
+                    id="salePrice" 
+                    type="number" 
+                    step="0.01" 
+                    value={salePrice || ""} 
+                    onChange={(e) => setSalePrice(e.target.value ? parseFloat(e.target.value) : null)} 
+                  />
                 </div>
-                <div>
-                  <Label>Stock</Label>
-                  <Input type="number" value={stockQuantity} onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)} />
+                <div className="space-y-2">
+                  <Label htmlFor="stockQuantity">Stock Initial</Label>
+                  <Input 
+                    id="stockQuantity" 
+                    type="number" 
+                    value={stockQuantity} 
+                    onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)} 
+                  />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* CARTE : LOGISTIQUE */}
+          {/* LOGISTIQUE */}
           <Card className="bg-white border-2 border-[#D4AF37]/20">
             <CardHeader className="bg-[#D4AF37]/5">
               <div className="flex items-center gap-2">
@@ -380,15 +431,23 @@ export default function ProductCreateForm({
               </div>
             </CardHeader>
             <CardContent className="pt-6 space-y-2">
-              <Label>Poids Virtuel (en grammes) *</Label>
+              <Label htmlFor="virtualWeight">Poids Virtuel (en grammes) *</Label>
               <div className="relative max-w-[200px]">
-                <Input type="number" value={virtualWeight} onChange={(e) => setVirtualWeight(parseInt(e.target.value) || 0)} className="pr-10" />
+                <Input
+                  id="virtualWeight"
+                  type="number"
+                  value={virtualWeight}
+                  onChange={(e) => setVirtualWeight(parseInt(e.target.value) || 0)}
+                  placeholder="Ex: 500"
+                  className="bg-white pr-10"
+                />
                 <div className="absolute inset-y-0 right-3 flex items-center text-gray-400 text-sm">g</div>
               </div>
+              <p className="text-[10px] text-gray-500 italic">Permet d&apos;estimer le remplissage du carton (max 20kg).</p>
             </CardContent>
           </Card>
 
-          {/* COMPOSANTS : COULEURS ET VARIATIONS */}
+          {/* SÉLECTEURS DE COULEURS */}
           <ColorSwatchSelector
             selectedMainColor={mainColor}
             selectedSecondaryColors={selectedSecondaryColors}
@@ -397,6 +456,7 @@ export default function ProductCreateForm({
             showSecondaryColors={true}
           />
 
+          {/* DÉTAILS DES VARIATIONS */}
           <VariationDetailsForm
             selectedSecondaryColors={selectedSecondaryColors}
             secondaryColorIds={secondaryColorIds}
@@ -405,16 +465,17 @@ export default function ProductCreateForm({
             defaultRegularPrice={regularPrice}
             defaultSalePrice={salePrice}
             defaultStock={stockQuantity}
-            // Note: Si ton VariationDetailsForm ne gère pas la mainColor, 
-            // il faudra peut-être le modifier légèrement pour l'afficher aussi.
           />
 
-          {/* CARTE : TAILLES */}
+          {/* FILTRES DE TAILLES */}
           <Card className="bg-white">
-            <CardHeader><CardTitle className="text-[#d4af37]">Filtres de Taille</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-[#d4af37]">Filtres de Taille</CardTitle>
+              <CardDescription>Génère automatiquement les attributs de taille</CardDescription>
+            </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+                <div className="space-y-2">
                   <Label>Taille Minimum</Label>
                   <Select value={sizeRangeStart?.toString() || "none"} onValueChange={(v) => setSizeRangeStart(v === "none" ? null : parseInt(v))}>
                     <SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger>
@@ -426,7 +487,7 @@ export default function ProductCreateForm({
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label>Taille Maximum</Label>
                   <Select value={sizeRangeEnd?.toString() || "none"} onValueChange={(v) => setSizeRangeEnd(v === "none" ? null : parseInt(v))}>
                     <SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger>
@@ -442,15 +503,33 @@ export default function ProductCreateForm({
             </CardContent>
           </Card>
 
-          {/* COMPOSANTS : ATTRIBUTS ET CATÉGORIES */}
-          <GeneralAttributesSelector selectedAttributes={selectedAttributes} onAttributesChange={setSelectedAttributes} />
+          {/* ATTRIBUTS GÉNÉRAUX */}
+          <GeneralAttributesSelector 
+            selectedAttributes={selectedAttributes} 
+            onAttributesChange={setSelectedAttributes} 
+          />
           
-          <HierarchicalCategorySelector selectedCategories={selectedCategories} onCategoriesChange={setSelectedCategories} />
+          {/* CATÉGORIES HIERARCHIQUES */}
+          <HierarchicalCategorySelector 
+            selectedCategories={selectedCategories} 
+            onCategoriesChange={setSelectedCategories} 
+          />
 
-          <div className="flex justify-end gap-4 pb-10">
-            <Link href="/admin/products"><Button variant="outline">Annuler</Button></Link>
-            <Button onClick={handleSave} disabled={saving} className="bg-[#d4af37] hover:bg-[#c19b2f] px-8">
-              {saving ? "Création..." : <><Save className="w-4 h-4 mr-2" /> Créer le produit et ses variations</>}
+          {/* BOUTONS D'ACTION */}
+          <div className="flex justify-end gap-4 pb-12">
+            <Link href="/admin/products">
+              <Button variant="outline" type="button">Annuler</Button>
+            </Link>
+            <Button 
+              onClick={handleSave} 
+              disabled={saving} 
+              className="bg-[#d4af37] hover:bg-[#c19b2f] px-10"
+            >
+              {saving ? (
+                <>Enregistrement...</>
+              ) : (
+                <><Save className="w-4 h-4 mr-2" /> Créer le produit et ses déclinaisons</>
+              )}
             </Button>
           </div>
         </div>
