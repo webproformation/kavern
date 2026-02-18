@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Save, ArrowLeft, RefreshCw, Weight } from "lucide-react"; // 1. Ajout de Weight
+import { Save, ArrowLeft, RefreshCw, Weight } from "lucide-react";
 import Link from "next/link";
 import RichTextEditor from "@/components/RichTextEditor";
 import ColorSwatchSelector from "@/components/ColorSwatchSelector";
@@ -21,29 +21,6 @@ import VariationDetailsForm from "@/components/VariationDetailsForm";
 
 // --- IMPORT DU HOOK DE SAUVEGARDE ---
 import { useAutoSave } from "@/hooks/useAutoSave"; 
-
-interface Product {
-  id: string;
-  name: string;
-  slug: string;
-  sku?: string | null;
-  description: string;
-  regular_price: number;
-  sale_price: number | null;
-  stock_quantity: number;
-  virtual_weight?: number; // 2. Ajout du champ dans l'interface
-  status: string;
-  image_url: string | null;
-  gallery_images?: string[] | any;
-  is_diamond?: boolean;
-  is_featured?: boolean;
-  is_variable_product?: boolean;
-  has_variations?: boolean;
-  main_color?: string | null;
-  size_range_start?: number | null;
-  size_range_end?: number | null;
-  attributes?: any;
-}
 
 interface Category {
   id: string;
@@ -64,81 +41,63 @@ interface Variation {
   image_url: string | null;
 }
 
-interface ProductEditFormProps {
-  product: Product;
-  selectedCategories: string[];
+interface ProductCreateFormProps {
   allCategories: Category[];
 }
 
-export default function ProductEditForm({
-  product: initialProduct,
-  selectedCategories: initialCategories,
+export default function ProductCreateForm({
   allCategories,
-}: ProductEditFormProps) {
+}: ProductCreateFormProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
 
-  // --- ÉTATS DU FORMULAIRE ---
-  const [name, setName] = useState(initialProduct.name);
-  const [slug, setSlug] = useState(initialProduct.slug);
-  const [sku, setSku] = useState(initialProduct.sku || "");
-  const [description, setDescription] = useState(initialProduct.description || "");
-  const [regularPrice, setRegularPrice] = useState<number>(initialProduct.regular_price);
-  const [salePrice, setSalePrice] = useState<number | null>(initialProduct.sale_price);
-  const [stockQuantity, setStockQuantity] = useState<number>(initialProduct.stock_quantity);
-  const [virtualWeight, setVirtualWeight] = useState<number>(initialProduct.virtual_weight || 0); // 3. Nouvel état
-  const [status, setStatus] = useState(initialProduct.status);
-  const [isFeatured, setIsFeatured] = useState(initialProduct.is_featured || false);
-  const [isDiamond, setIsDiamond] = useState(initialProduct.is_diamond || false);
+  // --- GÉNÉRATION DE L'ID ANTICIPÉ ---
+  // On génère l'ID ici pour pouvoir lier les variations immédiatement
+  const [newProductId] = useState(() => crypto.randomUUID());
 
-  const [mainImage, setMainImage] = useState<string>(initialProduct.image_url || "");
-  const [galleryImages, setGalleryImages] = useState<string[]>(
-    Array.isArray(initialProduct.gallery_images)
-      ? initialProduct.gallery_images
-      : []
-  );
+  // --- ÉTATS DU FORMULAIRE (Initialisés à vide pour la création) ---
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [sku, setSku] = useState("");
+  const [description, setDescription] = useState("");
+  const [regularPrice, setRegularPrice] = useState<number>(0);
+  const [salePrice, setSalePrice] = useState<number | null>(null);
+  const [stockQuantity, setStockQuantity] = useState<number>(0);
+  const [virtualWeight, setVirtualWeight] = useState<number>(0);
+  const [status, setStatus] = useState("draft");
+  const [isFeatured, setIsFeatured] = useState(false);
+  const [isDiamond, setIsDiamond] = useState(false);
 
-  const [mainColor, setMainColor] = useState<string>(initialProduct.main_color || "");
+  const [mainImage, setMainImage] = useState<string>("");
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
+
+  const [mainColor, setMainColor] = useState<string>("");
   const [mainColorId, setMainColorId] = useState<string>("");
   const [selectedSecondaryColors, setSelectedSecondaryColors] = useState<string[]>([]);
   const [secondaryColorIds, setSecondaryColorIds] = useState<Record<string, string>>({});
 
-  const [sizeRangeStart, setSizeRangeStart] = useState<number | null>(initialProduct.size_range_start || null);
-  const [sizeRangeEnd, setSizeRangeEnd] = useState<number | null>(initialProduct.size_range_end || null);
+  const [sizeRangeStart, setSizeRangeStart] = useState<number | null>(null);
+  const [sizeRangeEnd, setSizeRangeEnd] = useState<number | null>(null);
 
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(initialCategories);
-  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string[]>>(() => {
-    if (typeof initialProduct.attributes === 'object' && initialProduct.attributes !== null) {
-      const filtered = Object.entries(initialProduct.attributes)
-        .filter(([key]) => key !== 'Couleur')
-        .reduce((acc, [key, value]) => {
-          if (Array.isArray(value)) {
-            acc[key] = value as string[];
-          }
-          return acc;
-        }, {} as Record<string, string[]>);
-      return filtered;
-    }
-    return {};
-  });
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string[]>>({});
   
   const [variations, setVariations] = useState<Variation[]>([]);
-  const [existingVariationsIds, setExistingVariationsIds] = useState<Record<string, string>>({});
 
   // --- INTÉGRATION AUTO-SAVE ---
   const currentFormData = {
-    name, slug, sku, description,
-    regularPrice, salePrice, stockQuantity, virtualWeight, // 4. Ajout au flux de sauvegarde
+    newProductId, name, slug, sku, description,
+    regularPrice, salePrice, stockQuantity, virtualWeight,
     status, isFeatured, isDiamond,
     mainImage, galleryImages,
     mainColor, mainColorId, selectedSecondaryColors, secondaryColorIds,
     sizeRangeStart, sizeRangeEnd,
     selectedCategories, selectedAttributes,
-    variations, existingVariationsIds
+    variations
   };
 
   const { clearSavedData } = useAutoSave(
-    `draft_product_${initialProduct.id}`,
+    `new_product_creation`, // Clé unique pour la création
     currentFormData,
     (savedData: any) => {
         if (savedData.name !== undefined) setName(savedData.name);
@@ -148,7 +107,7 @@ export default function ProductEditForm({
         if (savedData.regularPrice !== undefined) setRegularPrice(savedData.regularPrice);
         if (savedData.salePrice !== undefined) setSalePrice(savedData.salePrice);
         if (savedData.stockQuantity !== undefined) setStockQuantity(savedData.stockQuantity);
-        if (savedData.virtualWeight !== undefined) setVirtualWeight(savedData.virtualWeight); // Restauration
+        if (savedData.virtualWeight !== undefined) setVirtualWeight(savedData.virtualWeight);
         if (savedData.status !== undefined) setStatus(savedData.status);
         if (savedData.isFeatured !== undefined) setIsFeatured(savedData.isFeatured);
         if (savedData.isDiamond !== undefined) setIsDiamond(savedData.isDiamond);
@@ -163,16 +122,10 @@ export default function ProductEditForm({
         if (savedData.selectedCategories !== undefined) setSelectedCategories(savedData.selectedCategories);
         if (savedData.selectedAttributes !== undefined) setSelectedAttributes(savedData.selectedAttributes);
         if (savedData.variations !== undefined) setVariations(savedData.variations);
-        if (savedData.existingVariationsIds !== undefined) setExistingVariationsIds(savedData.existingVariationsIds);
     }
   );
 
-  useEffect(() => {
-    if (variations.length === 0) {
-        loadExistingVariations();
-    }
-  }, []);
-
+  // --- LOGIQUE AUTO-SÉLECTION DES TAILLES ---
   useEffect(() => {
     if (sizeRangeStart && sizeRangeEnd) {
       const start = Math.min(sizeRangeStart, sizeRangeEnd);
@@ -181,22 +134,20 @@ export default function ProductEditForm({
       for (let s = start; s <= end; s += 2) {
         autoSizes.push(s.toString());
       }
-      setSelectedAttributes(prev => ({
-        ...prev,
-        "Tailles": autoSizes
-      }));
+      setSelectedAttributes(prev => ({ ...prev, "Tailles": autoSizes }));
     }
   }, [sizeRangeStart, sizeRangeEnd]);
 
+  // --- LOGIQUE DES VARIATIONS (Basée sur les couleurs secondaires) ---
   useEffect(() => {
     if (selectedSecondaryColors.length > 0) {
         const currentColors = variations.map(v => v.colorName).sort().join(',');
         const newColors = [...selectedSecondaryColors].sort().join(',');
+        
         if (currentColors !== newColors) {
              const newVariations: Variation[] = selectedSecondaryColors.map(colorName => {
                 const existingVar = variations.find(v => v.colorName === colorName);
                 return existingVar || {
-                  id: existingVariationsIds[colorName],
                   colorName,
                   colorId: secondaryColorIds[colorName] || "",
                   sku: "",
@@ -209,52 +160,9 @@ export default function ProductEditForm({
               setVariations(newVariations);
         }
     } else {
-      if (variations.length > 0 && selectedSecondaryColors.length === 0) {
-          setVariations([]);
-      }
+      if (variations.length > 0) setVariations([]);
     }
   }, [selectedSecondaryColors]);
-
-  const loadExistingVariations = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("product_variations")
-        .select("*")
-        .eq("product_id", initialProduct.id)
-        .eq("is_active", true);
-
-      if (error) throw error;
-      if (data && data.length > 0) {
-        const colorNames: string[] = [];
-        const varIds: Record<string, string> = {};
-        const vars: Variation[] = [];
-        for (const v of data) {
-          const colorName = v.attributes?.Couleur || "";
-          if (colorName) {
-            colorNames.push(colorName);
-            varIds[colorName] = v.id;
-            vars.push({
-              id: v.id,
-              colorName,
-              colorId: "",
-              sku: v.sku || "",
-              regular_price: v.regular_price,
-              sale_price: v.sale_price,
-              stock_quantity: v.stock_quantity,
-              image_url: v.image_url,
-            });
-          }
-        }
-        if (variations.length === 0) {
-            setSelectedSecondaryColors(colorNames);
-            setExistingVariationsIds(varIds);
-            setVariations(vars);
-        }
-      }
-    } catch (error) {
-      console.error("Error loading variations:", error);
-    }
-  };
 
   const handleMainColorSelect = (colorName: string, colorId: string) => {
     setMainColor(colorName);
@@ -267,34 +175,18 @@ export default function ProductEditForm({
       setSecondaryColorIds(prev => ({ ...prev, [colorName]: colorId }));
     } else {
       setSelectedSecondaryColors(prev => prev.filter(c => c !== colorName));
-      setSecondaryColorIds(prev => {
-        const newIds = { ...prev };
-        delete newIds[colorName];
-        return newIds;
-      });
     }
   };
 
   const handleVariationUpdate = (colorName: string, field: keyof Variation, value: any) => {
     setVariations(prev => {
-      const existingIndex = prev.findIndex(v => v.colorName === colorName);
-      if (existingIndex >= 0) {
+      const idx = prev.findIndex(v => v.colorName === colorName);
+      if (idx >= 0) {
         const newVars = [...prev];
-        newVars[existingIndex] = { ...newVars[existingIndex], [field]: value };
+        newVars[idx] = { ...newVars[idx], [field]: value };
         return newVars;
-      } else {
-        const newVar: Variation = {
-          id: existingVariationsIds[colorName],
-          colorName,
-          colorId: secondaryColorIds[colorName] || "",
-          sku: field === 'sku' ? value : "",
-          regular_price: field === 'regular_price' ? value : regularPrice || null,
-          sale_price: field === 'sale_price' ? value : salePrice,
-          stock_quantity: field === 'stock_quantity' ? value : stockQuantity || null,
-          image_url: field === 'image_url' ? value : null,
-        };
-        return [...prev, newVar];
       }
+      return prev;
     });
   };
 
@@ -312,74 +204,69 @@ export default function ProductEditForm({
 
     try {
       const allAttributes: Record<string, string[]> = { ...selectedAttributes };
-      if (mainColor) {
-        allAttributes['Couleur'] = [mainColor, ...selectedSecondaryColors];
-      }
+      allAttributes['Couleur'] = [mainColor, ...selectedSecondaryColors];
 
-      const productData = {
-        name: name.trim(),
-        slug: slug.trim(),
-        sku: sku.trim() || null,
-        description: description || "",
-        regular_price: parseFloat(String(regularPrice)) || 0,
-        sale_price: salePrice ? parseFloat(String(salePrice)) : null,
-        stock_quantity: parseInt(String(stockQuantity)) || 0,
-        virtual_weight: parseInt(String(virtualWeight)) || 0, // 5. Enregistrement en base
-        status: status || "draft",
-        image_url: mainImage || null,
-        gallery_images: galleryImages.length > 0 ? galleryImages : null,
-        is_diamond: isDiamond,
-        is_featured: isFeatured,
-        is_variable_product: variations.length > 0,
-        has_variations: variations.length > 0,
-        main_color: mainColor,
-        size_range_start: sizeRangeStart,
-        size_range_end: sizeRangeEnd,
-        attributes: Object.keys(allAttributes).length > 0 ? allAttributes : null,
-      };
-
+      // 1. INSERTION DU PRODUIT (avec l'ID anticipé)
       const { error: productError } = await supabase
         .from("products")
-        .update(productData)
-        .eq("id", initialProduct.id);
+        .insert({
+          id: newProductId,
+          name: name.trim(),
+          slug: slug.trim(),
+          sku: sku.trim() || null,
+          description,
+          regular_price: regularPrice,
+          sale_price: salePrice,
+          stock_quantity: stockQuantity,
+          virtual_weight: virtualWeight,
+          status,
+          image_url: mainImage || null,
+          gallery_images: galleryImages.length > 0 ? galleryImages : null,
+          is_diamond: isDiamond,
+          is_featured: isFeatured,
+          is_variable_product: variations.length > 0,
+          has_variations: variations.length > 0,
+          main_color: mainColor,
+          size_range_start: sizeRangeStart,
+          size_range_end: sizeRangeEnd,
+          attributes: allAttributes,
+        });
 
       if (productError) throw productError;
 
-      await supabase.from("product_category_mapping").delete().eq("product_id", initialProduct.id);
+      // 2. INSERTION CATÉGORIES
       if (selectedCategories.length > 0) {
-        const categoryMappings = selectedCategories.map((catId, index) => ({
-          product_id: initialProduct.id,
+        const mappings = selectedCategories.map((catId, index) => ({
+          product_id: newProductId,
           category_id: catId,
           is_primary: index === 0,
           display_order: index,
         }));
-        const { error: catError } = await supabase.from("product_category_mapping").insert(categoryMappings);
-        if (catError) throw catError;
+        await supabase.from("product_category_mapping").insert(mappings);
       }
 
-      await supabase.from("product_variations").delete().eq("product_id", initialProduct.id);
+      // 3. INSERTION VARIATIONS
       if (variations.length > 0) {
-        const variationsToInsert = variations.map(v => ({
-          product_id: initialProduct.id,
+        const varsToInsert = variations.map(v => ({
+          product_id: newProductId,
           sku: v.sku || "",
           attributes: { "Couleur": v.colorName },
-          regular_price: v.regular_price ? parseFloat(String(v.regular_price)) : null,
-          sale_price: v.sale_price ? parseFloat(String(v.sale_price)) : null,
-          stock_quantity: v.stock_quantity ? parseInt(String(v.stock_quantity)) : null,
-          image_url: v.image_url || null,
+          regular_price: v.regular_price,
+          sale_price: v.sale_price,
+          stock_quantity: v.stock_quantity,
+          image_url: v.image_url,
           stock_status: (v.stock_quantity || 0) > 0 ? "instock" : "outofstock",
           is_active: true,
         }));
-        const { error: varError } = await supabase.from("product_variations").insert(variationsToInsert);
-        if (varError) throw varError;
+        await supabase.from("product_variations").insert(varsToInsert);
       }
 
       clearSavedData();
-      toast.success("Produit mis à jour avec succès!");
+      toast.success("Produit créé avec succès !");
       router.push("/admin/products");
       router.refresh();
     } catch (error: any) {
-      console.error("Error updating product:", error);
+      console.error("Error creating product:", error);
       toast.error(`Erreur: ${error.message}`);
     } finally {
       setSaving(false);
@@ -391,27 +278,22 @@ export default function ProductEditForm({
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Modifier le Produit</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Nouveau Produit</h1>
             <div className="flex items-center gap-2 text-gray-600 mt-1">
-                <span>{initialProduct.name}</span>
                 <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
                     <RefreshCw className="w-3 h-3" /> Auto-save actif
                 </span>
             </div>
           </div>
           <Link href="/admin/products">
-            <Button variant="outline">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Retour
-            </Button>
+            <Button variant="outline"><ArrowLeft className="w-4 h-4 mr-2" /> Retour</Button>
           </Link>
         </div>
 
         <div className="space-y-6">
+          {/* CARTE : INFORMATIONS GÉNÉRALES */}
           <Card className="bg-white">
-            <CardHeader>
-              <CardTitle className="text-[#d4af37]">Informations Générales</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-[#d4af37]">Informations Générales</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -439,24 +321,24 @@ export default function ProductEditForm({
                     <SelectContent>
                       <SelectItem value="draft">Brouillon</SelectItem>
                       <SelectItem value="publish">Publié</SelectItem>
-                      <SelectItem value="private">Privé</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="flex items-end gap-4">
                   <div className="flex items-center space-x-2">
-                    <Checkbox id="is_featured" checked={isFeatured} onCheckedChange={(checked) => setIsFeatured(!!checked)} />
-                    <Label htmlFor="is_featured" className="cursor-pointer">Vedette</Label>
+                    <Checkbox id="is_featured" checked={isFeatured} onCheckedChange={(c) => setIsFeatured(!!c)} />
+                    <Label htmlFor="is_featured">Vedette</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Checkbox id="is_diamond" checked={isDiamond} onCheckedChange={(checked) => setIsDiamond(!!checked)} />
-                    <Label htmlFor="is_diamond" className="cursor-pointer">Diamant</Label>
+                    <Checkbox id="is_diamond" checked={isDiamond} onCheckedChange={(c) => setIsDiamond(!!c)} />
+                    <Label htmlFor="is_diamond">Diamant</Label>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
+          {/* COMPOSANT : MÉDIAS */}
           <ProductMediaGalleryManager
             mainImage={mainImage}
             galleryImages={galleryImages}
@@ -464,30 +346,30 @@ export default function ProductEditForm({
             onGalleryImagesChange={setGalleryImages}
           />
 
+          {/* CARTE : PRIX & STOCK */}
           <Card className="bg-white">
             <CardHeader>
               <CardTitle className="text-[#d4af37]">Prix & Stock (Par défaut)</CardTitle>
-              <CardDescription>Valeurs par défaut si aucune variation n&apos;est définie</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="regularPrice">Prix Régulier (€) *</Label>
-                  <Input id="regularPrice" type="number" step="0.01" value={regularPrice} onChange={(e) => setRegularPrice(parseFloat(e.target.value) || 0)} />
+                  <Label>Prix Régulier (€) *</Label>
+                  <Input type="number" step="0.01" value={regularPrice} onChange={(e) => setRegularPrice(parseFloat(e.target.value) || 0)} />
                 </div>
                 <div>
-                  <Label htmlFor="salePrice">Prix Promo (€)</Label>
-                  <Input id="salePrice" type="number" step="0.01" value={salePrice || ""} onChange={(e) => setSalePrice(e.target.value ? parseFloat(e.target.value) : null)} />
+                  <Label>Prix Promo (€)</Label>
+                  <Input type="number" step="0.01" value={salePrice || ""} onChange={(e) => setSalePrice(e.target.value ? parseFloat(e.target.value) : null)} />
                 </div>
                 <div>
-                  <Label htmlFor="stockQuantity">Stock</Label>
-                  <Input id="stockQuantity" type="number" value={stockQuantity} onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)} />
+                  <Label>Stock</Label>
+                  <Input type="number" value={stockQuantity} onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)} />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* --- BLOC LOGISTIQUE AJOUTÉ --- */}
+          {/* CARTE : LOGISTIQUE */}
           <Card className="bg-white border-2 border-[#D4AF37]/20">
             <CardHeader className="bg-[#D4AF37]/5">
               <div className="flex items-center gap-2">
@@ -496,22 +378,15 @@ export default function ProductEditForm({
               </div>
             </CardHeader>
             <CardContent className="pt-6 space-y-2">
-              <Label htmlFor="virtualWeight">Poids Virtuel (en grammes) *</Label>
+              <Label>Poids Virtuel (en grammes) *</Label>
               <div className="relative max-w-[200px]">
-                <Input
-                  id="virtualWeight"
-                  type="number"
-                  value={virtualWeight}
-                  onChange={(e) => setVirtualWeight(parseInt(e.target.value) || 0)}
-                  placeholder="Ex: 500"
-                  className="bg-white pr-10"
-                />
+                <Input type="number" value={virtualWeight} onChange={(e) => setVirtualWeight(parseInt(e.target.value) || 0)} className="pr-10" />
                 <div className="absolute inset-y-0 right-3 flex items-center text-gray-400 text-sm">g</div>
               </div>
-              <p className="text-[10px] text-gray-500 italic">Permet d&apos;estimer le remplissage du carton (max 20kg).</p>
             </CardContent>
           </Card>
 
+          {/* COMPOSANTS : COULEURS ET VARIATIONS */}
           <ColorSwatchSelector
             selectedMainColor={mainColor}
             selectedSecondaryColors={selectedSecondaryColors}
@@ -530,15 +405,14 @@ export default function ProductEditForm({
             defaultStock={stockQuantity}
           />
 
+          {/* CARTE : TAILLES */}
           <Card className="bg-white">
-            <CardHeader>
-              <CardTitle className="text-[#d4af37]">Filtres de Taille</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-[#d4af37]">Filtres de Taille</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Taille Minimum</Label>
-                  <Select value={sizeRangeStart?.toString() || "none"} onValueChange={(value) => setSizeRangeStart(value === "none" ? null : parseInt(value))}>
+                  <Select value={sizeRangeStart?.toString() || "none"} onValueChange={(v) => setSizeRangeStart(v === "none" ? null : parseInt(v))}>
                     <SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Aucune</SelectItem>
@@ -550,7 +424,7 @@ export default function ProductEditForm({
                 </div>
                 <div>
                   <Label>Taille Maximum</Label>
-                  <Select value={sizeRangeEnd?.toString() || "none"} onValueChange={(value) => setSizeRangeEnd(value === "none" ? null : parseInt(value))}>
+                  <Select value={sizeRangeEnd?.toString() || "none"} onValueChange={(v) => setSizeRangeEnd(v === "none" ? null : parseInt(v))}>
                     <SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Aucune</SelectItem>
@@ -564,13 +438,15 @@ export default function ProductEditForm({
             </CardContent>
           </Card>
 
+          {/* COMPOSANTS : ATTRIBUTS ET CATÉGORIES */}
           <GeneralAttributesSelector selectedAttributes={selectedAttributes} onAttributesChange={setSelectedAttributes} />
+          
           <HierarchicalCategorySelector selectedCategories={selectedCategories} onCategoriesChange={setSelectedCategories} />
 
-          <div className="flex justify-end gap-4 pb-6">
+          <div className="flex justify-end gap-4 pb-10">
             <Link href="/admin/products"><Button variant="outline">Annuler</Button></Link>
-            <Button onClick={handleSave} disabled={saving} className="bg-[#d4af37] hover:bg-[#c19b2f]">
-              {saving ? <>Enregistrement...</> : <><Save className="w-4 h-4 mr-2" /> Mettre à jour</>}
+            <Button onClick={handleSave} disabled={saving} className="bg-[#d4af37] hover:bg-[#c19b2f] px-8">
+              {saving ? "Création..." : <><Save className="w-4 h-4 mr-2" /> Créer le produit</>}
             </Button>
           </div>
         </div>
