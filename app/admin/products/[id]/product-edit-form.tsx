@@ -70,17 +70,14 @@ export default function ProductCreateForm({
   const [mainImage, setMainImage] = useState<string>("");
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
 
-  // ÉTATS DES COULEURS (LOGIQUE CUMULATIVE)
-  // activeFamily: La famille de couleur affichée dans le sélecteur (Gris, Bleu...)
-  const [activeFamily, setActiveFamily] = useState<string>("");
+  // --- GESTION DES COULEURS (LOGIQUE CUMULATIVE) ---
+  // activeFamilyView: La famille de couleur actuellement affichée (Gris, Bleu...)
+  const [activeFamilyView, setActiveFamilyView] = useState<string>("");
   const [activeFamilyId, setActiveFamilyId] = useState<string>("");
   
-  // productMainColor: La famille "officielle" pour les filtres front
-  const [productMainColor, setProductMainColor] = useState<string>("");
-
-  // selectedSecondaryColors: TOUTES les nuances cochées, peu importe la famille
-  const [selectedSecondaryColors, setSelectedSecondaryColors] = useState<string[]>([]);
-  const [secondaryColorIds, setSecondaryColorIds] = useState<Record<string, string>>({});
+  // selectedNuances: TOUTES les nuances cochées à travers toutes les familles
+  const [selectedNuances, setSelectedNuances] = useState<string[]>([]);
+  const [nuanceIds, setNuanceIds] = useState<Record<string, string>>({});
 
   const [sizeRangeStart, setSizeRangeStart] = useState<number | null>(null);
   const [sizeRangeEnd, setSizeRangeEnd] = useState<number | null>(null);
@@ -96,8 +93,8 @@ export default function ProductCreateForm({
     regularPrice, salePrice, stockQuantity, virtualWeight,
     status, isFeatured, isDiamond,
     mainImage, galleryImages,
-    activeFamily, activeFamilyId, productMainColor, 
-    selectedSecondaryColors, secondaryColorIds,
+    activeFamilyView, activeFamilyId, 
+    selectedNuances, nuanceIds,
     sizeRangeStart, sizeRangeEnd,
     selectedCategories, selectedAttributes,
     variations
@@ -120,11 +117,10 @@ export default function ProductCreateForm({
         if (savedData.isDiamond !== undefined) setIsDiamond(savedData.isDiamond);
         if (savedData.mainImage !== undefined) setMainImage(savedData.mainImage);
         if (savedData.galleryImages !== undefined) setGalleryImages(savedData.galleryImages);
-        if (savedData.activeFamily !== undefined) setActiveFamily(savedData.activeFamily);
+        if (savedData.activeFamilyView !== undefined) setActiveFamilyView(savedData.activeFamilyView);
         if (savedData.activeFamilyId !== undefined) setActiveFamilyId(savedData.activeFamilyId);
-        if (savedData.productMainColor !== undefined) setProductMainColor(savedData.productMainColor);
-        if (savedData.selectedSecondaryColors !== undefined) setSelectedSecondaryColors(savedData.selectedSecondaryColors);
-        if (savedData.secondaryColorIds !== undefined) setSecondaryColorIds(savedData.secondaryColorIds);
+        if (savedData.selectedNuances !== undefined) setSelectedNuances(savedData.selectedNuances);
+        if (savedData.nuanceIds !== undefined) setNuanceIds(savedData.nuanceIds);
         if (savedData.sizeRangeStart !== undefined) setSizeRangeStart(savedData.sizeRangeStart);
         if (savedData.sizeRangeEnd !== undefined) setSizeRangeEnd(savedData.sizeRangeEnd);
         if (savedData.selectedCategories !== undefined) setSelectedCategories(savedData.selectedCategories);
@@ -133,7 +129,7 @@ export default function ProductCreateForm({
     }
   );
 
-  // --- LOGIQUE AUTO-SÉLECTION DES TAILLES ---
+  // --- LOGIQUE AUTO-TAILLES ---
   useEffect(() => {
     if (sizeRangeStart && sizeRangeEnd) {
       const start = Math.min(sizeRangeStart, sizeRangeEnd);
@@ -144,48 +140,45 @@ export default function ProductCreateForm({
     }
   }, [sizeRangeStart, sizeRangeEnd]);
 
-  // --- LOGIQUE DES VARIATIONS (CORRIGÉE : ADDITIVE ET PERSISTANTE) ---
+  // --- LOGIQUE DES VARIATIONS (SANS ÉCRASEMENT) ---
   useEffect(() => {
     setVariations(prevVariations => {
-      // 1. Garder les variations dont la nuance est toujours cochée
-      const existingVars = prevVariations.filter(v => selectedSecondaryColors.includes(v.colorName));
+      // 1. On garde les variations dont la nuance est toujours présente dans la liste globale
+      const existingVars = prevVariations.filter(v => selectedNuances.includes(v.colorName));
       
-      // 2. Créer les nouveaux blocs pour les nuances fraîchement cochées
-      const addedVars = selectedSecondaryColors
-        .filter(name => !existingVars.some(v => v.colorName === name))
-        .map(colorName => ({
-          colorName,
-          colorId: secondaryColorIds[colorName] || "",
-          sku: "",
-          regular_price: regularPrice || null,
-          sale_price: salePrice,
-          stock_quantity: stockQuantity || null,
-          image_url: null,
-        }));
+      // 2. On identifie les nouvelles nuances qui n'ont pas encore de bloc
+      const newNuances = selectedNuances.filter(name => !existingVars.some(v => v.colorName === name));
+      
+      // 3. On crée les nouveaux blocs pour ces nouvelles nuances
+      const addedVars = newNuances.map(colorName => ({
+        colorName,
+        colorId: nuanceIds[colorName] || "",
+        sku: "",
+        regular_price: regularPrice || null,
+        sale_price: salePrice,
+        stock_quantity: stockQuantity || null,
+        image_url: null,
+      }));
 
+      // On fusionne sans perdre les données saisies dans existingVars
       return [...existingVars, ...addedVars];
     });
-  }, [selectedSecondaryColors, secondaryColorIds]);
+  }, [selectedNuances, nuanceIds]);
 
-  // --- GESTION DES COULEURS ---
-  const handleMainColorSelect = (colorName: string, colorId: string) => {
-    // Cette fonction ne sert qu'à changer l'affichage des nuances (le dossier Gris, Bleu...)
-    setActiveFamily(colorName);
-    setActiveFamilyId(colorId);
-
-    // Si aucune couleur principale de filtre n'est définie, on prend la première cliquée
-    if (!productMainColor) {
-      setProductMainColor(colorName);
-    }
+  // --- HANDLERS COULEURS ---
+  const handleFamilySelect = (familyName: string, familyId: string) => {
+    // Cette fonction ne sert qu'à changer la vue du sélecteur (le dossier Gris, Bleu...)
+    setActiveFamilyView(familyName);
+    setActiveFamilyId(familyId);
   };
 
-  const handleSecondaryColorToggle = (colorName: string, colorId: string, selected: boolean) => {
+  const handleNuanceToggle = (nuanceName: string, nuanceId: string, selected: boolean) => {
     if (selected) {
       // On ajoute à la liste globale sans supprimer les autres familles
-      setSelectedSecondaryColors(prev => Array.from(new Set([...prev, colorName])));
-      setSecondaryColorIds(prev => ({ ...prev, [colorName]: colorId }));
+      setSelectedNuances(prev => Array.from(new Set([...prev, nuanceName])));
+      setNuanceIds(prev => ({ ...prev, [nuanceName]: nuanceId }));
     } else {
-      setSelectedSecondaryColors(prev => prev.filter(c => c !== colorName));
+      setSelectedNuances(prev => prev.filter(n => n !== nuanceName));
     }
   };
 
@@ -202,50 +195,57 @@ export default function ProductCreateForm({
   };
 
   const handleSave = async () => {
-    if (!name || !slug) {
-      toast.error("Le nom et le slug sont requis");
-      return;
-    }
-    if (selectedSecondaryColors.length === 0) {
-      toast.error("Veuillez sélectionner au moins une nuance de couleur");
-      return;
-    }
+    if (!name || !slug) { toast.error("Le nom et le slug sont requis"); return; }
+    if (selectedNuances.length === 0) { toast.error("Veuillez sélectionner au moins une nuance"); return; }
 
     setSaving(true);
-
     try {
-      const allAttributes: Record<string, string[]> = { ...selectedAttributes };
-      allAttributes['Couleur'] = selectedSecondaryColors;
+      const attributes: Record<string, string[]> = { ...selectedAttributes };
+      attributes['Couleur'] = selectedNuances;
 
-      // 1. INSERTION DU PRODUIT
-      const { error: productError } = await supabase
-        .from("products")
-        .insert({
-          id: newProductId,
-          name: name.trim(),
-          slug: slug.trim(),
-          sku: sku.trim() || null,
-          description,
-          regular_price: regularPrice,
-          sale_price: salePrice,
-          stock_quantity: stockQuantity,
-          virtual_weight: virtualWeight,
-          status,
-          image_url: mainImage || null,
-          gallery_images: galleryImages.length > 0 ? galleryImages : null,
-          is_diamond: isDiamond,
-          is_featured: isFeatured,
-          is_variable_product: variations.length > 0,
-          has_variations: variations.length > 0,
-          main_color: productMainColor, // Utilisé pour les filtres en front
-          size_range_start: sizeRangeStart,
-          size_range_end: sizeRangeEnd,
-          attributes: allAttributes,
-        });
+      // 1. PRODUIT (On utilise activeFamilyView pour la couleur de filtre front principale)
+      const { error: pErr } = await supabase.from("products").insert({
+        id: newProductId,
+        name: name.trim(),
+        slug: slug.trim(),
+        sku: sku.trim() || null,
+        description,
+        regular_price: regularPrice,
+        sale_price: salePrice,
+        stock_quantity: stockQuantity,
+        virtual_weight: virtualWeight,
+        status,
+        image_url: mainImage || null,
+        gallery_images: galleryImages.length > 0 ? galleryImages : null,
+        is_diamond: isDiamond,
+        is_featured: isFeatured,
+        is_variable_product: variations.length > 0,
+        has_variations: variations.length > 0,
+        main_color: activeFamilyView, 
+        size_range_start: sizeRangeStart,
+        size_range_end: sizeRangeEnd,
+        attributes,
+      });
 
-      if (productError) throw productError;
+      if (pErr) throw pErr;
 
-      // 2. INSERTION CATÉGORIES
+      // 2. VARIATIONS
+      if (variations.length > 0) {
+        const toInsert = variations.map(v => ({
+          product_id: newProductId,
+          sku: v.sku || "",
+          attributes: { "Couleur": v.colorName },
+          regular_price: v.regular_price || regularPrice,
+          sale_price: v.sale_price || salePrice,
+          stock_quantity: v.stock_quantity || stockQuantity,
+          image_url: v.image_url || mainImage,
+          stock_status: (v.stock_quantity || stockQuantity) > 0 ? "instock" : "outofstock",
+          is_active: true,
+        }));
+        await supabase.from("product_variations").insert(toInsert);
+      }
+
+      // 3. CATÉGORIES
       if (selectedCategories.length > 0) {
         const mappings = selectedCategories.map((catId, index) => ({
           product_id: newProductId,
@@ -256,28 +256,11 @@ export default function ProductCreateForm({
         await supabase.from("product_category_mapping").insert(mappings);
       }
 
-      // 3. INSERTION VARIATIONS
-      if (variations.length > 0) {
-        const varsToInsert = variations.map(v => ({
-          product_id: newProductId,
-          sku: v.sku || "",
-          attributes: { "Couleur": v.colorName },
-          regular_price: v.regular_price !== null ? parseFloat(String(v.regular_price)) : regularPrice,
-          sale_price: v.sale_price !== null ? parseFloat(String(v.sale_price)) : salePrice,
-          stock_quantity: v.stock_quantity !== null ? parseInt(String(v.stock_quantity)) : stockQuantity,
-          image_url: v.image_url || mainImage,
-          stock_status: (v.stock_quantity || stockQuantity || 0) > 0 ? "instock" : "outofstock",
-          is_active: true,
-        }));
-        await supabase.from("product_variations").insert(varsToInsert);
-      }
-
       clearSavedData();
       toast.success("Produit et variations créés avec succès !");
       router.push("/admin/products");
       router.refresh();
     } catch (error: any) {
-      console.error("Error creating product:", error);
       toast.error(`Erreur: ${error.message}`);
     } finally {
       setSaving(false);
@@ -297,28 +280,23 @@ export default function ProductCreateForm({
             </div>
           </div>
           <Link href="/admin/products">
-            <Button variant="outline">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Retour
-            </Button>
+            <Button variant="outline"><ArrowLeft className="w-4 h-4 mr-2" /> Retour</Button>
           </Link>
         </div>
 
         <div className="space-y-6">
-          {/* INFORMATIONS GÉNÉRALES */}
+          {/* CARTE : INFORMATIONS GÉNÉRALES */}
           <Card className="bg-white">
-            <CardHeader>
-              <CardTitle className="text-[#d4af37]">Informations Générales</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-[#d4af37]">Informations Générales</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Nom du Produit *</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nom du produit..." />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="slug">Slug (URL) *</Label>
-                  <Input id="slug" value={slug} onChange={(e) => setSlug(e.target.value)} />
+                  <Input id="slug" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="url-du-produit" />
                 </div>
               </div>
               <div className="space-y-2">
@@ -362,42 +340,25 @@ export default function ProductCreateForm({
             onGalleryImagesChange={setGalleryImages}
           />
 
-          {/* PRIX & STOCK PAR DÉFAUT */}
+          {/* PRIX ET STOCK */}
           <Card className="bg-white">
             <CardHeader>
               <CardTitle className="text-[#d4af37]">Prix & Stock (Par défaut)</CardTitle>
-              <CardDescription>Valeurs appliquées automatiquement aux nouvelles variations</CardDescription>
+              <CardDescription>Sert de base automatique pour chaque nouvelle variation</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="regularPrice">Prix Régulier (€) *</Label>
-                  <Input 
-                    id="regularPrice" 
-                    type="number" 
-                    step="0.01" 
-                    value={regularPrice} 
-                    onChange={(e) => setRegularPrice(parseFloat(e.target.value) || 0)} 
-                  />
+                  <Label>Prix Régulier (€) *</Label>
+                  <Input type="number" step="0.01" value={regularPrice} onChange={(e) => setRegularPrice(parseFloat(e.target.value) || 0)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="salePrice">Prix Promo (€)</Label>
-                  <Input 
-                    id="salePrice" 
-                    type="number" 
-                    step="0.01" 
-                    value={salePrice || ""} 
-                    onChange={(e) => setSalePrice(e.target.value ? parseFloat(e.target.value) : null)} 
-                  />
+                  <Label>Prix Promo (€)</Label>
+                  <Input type="number" step="0.01" value={salePrice || ""} onChange={(e) => setSalePrice(e.target.value ? parseFloat(e.target.value) : null)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="stockQuantity">Stock Initial</Label>
-                  <Input 
-                    id="stockQuantity" 
-                    type="number" 
-                    value={stockQuantity} 
-                    onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)} 
-                  />
+                  <Label>Stock Initial</Label>
+                  <Input type="number" value={stockQuantity} onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)} />
                 </div>
               </div>
             </CardContent>
@@ -412,34 +373,28 @@ export default function ProductCreateForm({
               </div>
             </CardHeader>
             <CardContent className="pt-6 space-y-2">
-              <Label htmlFor="virtualWeight">Poids Virtuel (en grammes) *</Label>
+              <Label>Poids Virtuel (en grammes) *</Label>
               <div className="relative max-w-[200px]">
-                <Input
-                  id="virtualWeight"
-                  type="number"
-                  value={virtualWeight}
-                  onChange={(e) => setVirtualWeight(parseInt(e.target.value) || 0)}
-                  className="bg-white pr-10"
-                />
+                <Input type="number" value={virtualWeight} onChange={(e) => setVirtualWeight(parseInt(e.target.value) || 0)} className="pr-10" />
                 <div className="absolute inset-y-0 right-3 flex items-center text-gray-400 text-sm">g</div>
               </div>
-              <p className="text-[10px] text-gray-500 italic">Pour l'estimation du remplissage carton.</p>
+              <p className="text-[10px] text-gray-500 italic">Estime le remplissage du carton (max 20kg).</p>
             </CardContent>
           </Card>
 
-          {/* SÉLECTEUR DE COULEURS ET NUANCES */}
+          {/* COULEURS CUMULATIVES */}
           <ColorSwatchSelector
-            selectedMainColor={activeFamily} // On passe la famille active pour la vue
-            selectedSecondaryColors={selectedSecondaryColors} // Toutes les nuances cochées
-            onMainColorSelect={handleMainColorSelect} // Change de famille sans effacer
-            onSecondaryColorToggle={handleSecondaryColorToggle} // Ajoute/Retire des nuances
+            selectedMainColor={activeFamilyView} // Gère l'onglet de vue (Gris, Bleu...)
+            selectedSecondaryColors={selectedNuances} // Liste globale persistante
+            onMainColorSelect={handleFamilySelect} // Change de vue sans effacer
+            onSecondaryColorToggle={handleNuanceToggle} // Ajoute ou retire de la liste globale
             showSecondaryColors={true}
           />
 
-          {/* FORMULAIRE DE DÉTAILS DES VARIATIONS (Affiche toutes les nuances cochées) */}
+          {/* VARIATIONS DÉTAILLÉES */}
           <VariationDetailsForm
-            selectedSecondaryColors={selectedSecondaryColors}
-            secondaryColorIds={secondaryColorIds}
+            selectedSecondaryColors={selectedNuances}
+            secondaryColorIds={nuanceIds}
             variations={variations}
             onVariationUpdate={handleVariationUpdate}
             defaultRegularPrice={regularPrice}
@@ -447,7 +402,7 @@ export default function ProductCreateForm({
             defaultStock={stockQuantity}
           />
 
-          {/* FILTRES DE TAILLE */}
+          {/* TAILLES AUTO */}
           <Card className="bg-white">
             <CardHeader><CardTitle className="text-[#d4af37]">Filtres de Taille</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -480,17 +435,15 @@ export default function ProductCreateForm({
             </CardContent>
           </Card>
 
-          {/* ATTRIBUTS GÉNÉRAUX */}
+          {/* ATTRIBUTS ET CATÉGORIES */}
           <GeneralAttributesSelector selectedAttributes={selectedAttributes} onAttributesChange={setSelectedAttributes} />
           
-          {/* CATÉGORIES */}
           <HierarchicalCategorySelector selectedCategories={selectedCategories} onCategoriesChange={setSelectedCategories} />
 
-          {/* ACTIONS FINALES */}
           <div className="flex justify-end gap-4 pb-12">
             <Link href="/admin/products"><Button variant="outline">Annuler</Button></Link>
             <Button onClick={handleSave} disabled={saving} className="bg-[#d4af37] hover:bg-[#c19b2f] px-10">
-              {saving ? "Création..." : <><Save className="w-4 h-4 mr-2" /> Créer le produit et ses variations</>}
+              {saving ? "Création..." : <><Save className="w-4 h-4 mr-2" /> Créer le produit et les variations</>}
             </Button>
           </div>
         </div>
