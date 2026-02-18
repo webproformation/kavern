@@ -98,11 +98,19 @@ export default function CardFlipAdminPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // --- FIX ERREUR 22007 (Syntaxe Date) ---
+    // On transforme les chaînes vides "" en null pour que PostgreSQL accepte l'enregistrement
+    const submissionData = {
+      ...formData,
+      start_date: formData.start_date || null,
+      end_date: formData.end_date.trim() === '' ? null : formData.end_date,
+    };
+
     try {
       if (editingGame) {
         const { error } = await supabase
           .from('card_flip_games')
-          .update(formData)
+          .update(submissionData)
           .eq('id', editingGame.id);
 
         if (error) throw error;
@@ -110,7 +118,7 @@ export default function CardFlipAdminPage() {
       } else {
         const { error } = await supabase
           .from('card_flip_games')
-          .insert([formData]);
+          .insert([submissionData]);
 
         if (error) throw error;
         toast.success('Jeu créé avec succès');
@@ -120,7 +128,7 @@ export default function CardFlipAdminPage() {
       resetForm();
       loadGames();
     } catch (error: any) {
-      toast.error('Erreur lors de la sauvegarde');
+      toast.error(`Erreur: ${error.message || 'Sauvegarde échouée'}`);
       console.error(error);
     }
   };
@@ -132,7 +140,7 @@ export default function CardFlipAdminPage() {
       description: game.description || '',
       coupon_id: game.coupon_id,
       is_active: game.is_active,
-      start_date: game.start_date.split('T')[0],
+      start_date: game.start_date ? game.start_date.split('T')[0] : '',
       end_date: game.end_date ? game.end_date.split('T')[0] : '',
       max_plays_per_user: game.max_plays_per_user,
       win_probability: game.win_probability || 33.33,
