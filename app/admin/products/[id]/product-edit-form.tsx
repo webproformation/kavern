@@ -52,10 +52,9 @@ export default function ProductCreateForm({
   const [saving, setSaving] = useState(false);
 
   // --- GÉNÉRATION DE L'ID ANTICIPÉ ---
-  // On génère l'ID ici pour pouvoir lier les variations immédiatement
   const [newProductId] = useState(() => crypto.randomUUID());
 
-  // --- ÉTATS DU FORMULAIRE (Initialisés à vide pour la création) ---
+  // --- ÉTATS DU FORMULAIRE ---
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [sku, setSku] = useState("");
@@ -97,7 +96,7 @@ export default function ProductCreateForm({
   };
 
   const { clearSavedData } = useAutoSave(
-    `new_product_creation`, // Clé unique pour la création
+    `new_product_creation`,
     currentFormData,
     (savedData: any) => {
         if (savedData.name !== undefined) setName(savedData.name);
@@ -138,23 +137,26 @@ export default function ProductCreateForm({
     }
   }, [sizeRangeStart, sizeRangeEnd]);
 
-  // --- LOGIQUE DES VARIATIONS (Basée sur les couleurs secondaires) ---
+  // --- LOGIQUE DES VARIATIONS (CORRIGÉE : INCLUT LA COULEUR PRINCIPALE) ---
   useEffect(() => {
-    if (selectedSecondaryColors.length > 0) {
-        const currentColors = variations.map(v => v.colorName).sort().join(',');
-        const newColors = [...selectedSecondaryColors].sort().join(',');
+    // Si on a au moins une couleur (principale ou secondaire)
+    const allColors = mainColor ? [mainColor, ...selectedSecondaryColors] : selectedSecondaryColors;
+    
+    if (allColors.length > 0) {
+        const currentColorsString = variations.map(v => v.colorName).sort().join(',');
+        const newColorsString = [...allColors].sort().join(',');
         
-        if (currentColors !== newColors) {
-             const newVariations: Variation[] = selectedSecondaryColors.map(colorName => {
+        if (currentColorsString !== newColorsString) {
+             const newVariations: Variation[] = allColors.map(colorName => {
                 const existingVar = variations.find(v => v.colorName === colorName);
                 return existingVar || {
                   colorName,
-                  colorId: secondaryColorIds[colorName] || "",
+                  colorId: colorName === mainColor ? mainColorId : (secondaryColorIds[colorName] || ""),
                   sku: "",
                   regular_price: regularPrice || null,
                   sale_price: salePrice,
                   stock_quantity: stockQuantity || null,
-                  image_url: null,
+                  image_url: colorName === mainColor ? mainImage : null,
                 };
               });
               setVariations(newVariations);
@@ -162,7 +164,7 @@ export default function ProductCreateForm({
     } else {
       if (variations.length > 0) setVariations([]);
     }
-  }, [selectedSecondaryColors]);
+  }, [mainColor, selectedSecondaryColors, mainColorId, secondaryColorIds, regularPrice, stockQuantity, salePrice, mainImage]);
 
   const handleMainColorSelect = (colorName: string, colorId: string) => {
     setMainColor(colorName);
@@ -206,7 +208,7 @@ export default function ProductCreateForm({
       const allAttributes: Record<string, string[]> = { ...selectedAttributes };
       allAttributes['Couleur'] = [mainColor, ...selectedSecondaryColors];
 
-      // 1. INSERTION DU PRODUIT (avec l'ID anticipé)
+      // 1. INSERTION DU PRODUIT
       const { error: productError } = await supabase
         .from("products")
         .insert({
@@ -251,11 +253,11 @@ export default function ProductCreateForm({
           product_id: newProductId,
           sku: v.sku || "",
           attributes: { "Couleur": v.colorName },
-          regular_price: v.regular_price,
-          sale_price: v.sale_price,
-          stock_quantity: v.stock_quantity,
-          image_url: v.image_url,
-          stock_status: (v.stock_quantity || 0) > 0 ? "instock" : "outofstock",
+          regular_price: v.regular_price !== null ? parseFloat(String(v.regular_price)) : regularPrice,
+          sale_price: v.sale_price !== null ? parseFloat(String(v.sale_price)) : salePrice,
+          stock_quantity: v.stock_quantity !== null ? parseInt(String(v.stock_quantity)) : stockQuantity,
+          image_url: v.image_url || mainImage,
+          stock_status: (v.stock_quantity || stockQuantity || 0) > 0 ? "instock" : "outofstock",
           is_active: true,
         }));
         await supabase.from("product_variations").insert(varsToInsert);
@@ -403,6 +405,8 @@ export default function ProductCreateForm({
             defaultRegularPrice={regularPrice}
             defaultSalePrice={salePrice}
             defaultStock={stockQuantity}
+            // Note: Si ton VariationDetailsForm ne gère pas la mainColor, 
+            // il faudra peut-être le modifier légèrement pour l'afficher aussi.
           />
 
           {/* CARTE : TAILLES */}
@@ -446,7 +450,7 @@ export default function ProductCreateForm({
           <div className="flex justify-end gap-4 pb-10">
             <Link href="/admin/products"><Button variant="outline">Annuler</Button></Link>
             <Button onClick={handleSave} disabled={saving} className="bg-[#d4af37] hover:bg-[#c19b2f] px-8">
-              {saving ? "Création..." : <><Save className="w-4 h-4 mr-2" /> Créer le produit</>}
+              {saving ? "Création..." : <><Save className="w-4 h-4 mr-2" /> Créer le produit et ses variations</>}
             </Button>
           </div>
         </div>
