@@ -29,6 +29,7 @@ import { ProductVariationSelector } from "@/components/ProductVariationSelector"
 import { HiddenDiamond } from "@/components/HiddenDiamond";
 import { ShareButtons } from "@/components/ShareButtons";
 import { WishlistButton } from "@/components/wishlist-button";
+import { LoyaltyEuroBar } from "@/components/LoyaltyEuroBar"; // RESTAURÉ : Essentiel pour le lien avec le Diamant
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -80,7 +81,7 @@ export default function ProductPage() {
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  // --- ÉTATS AVIS (Liés au Livre d'Or) ---
+  // --- ÉTATS AVIS (Liés au Livre d'Or / Guestbook) ---
   const [reviews, setReviews] = useState<any[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
 
@@ -123,7 +124,6 @@ export default function ProductPage() {
     }
 
     // 2. Avis clients (Utilisation de la table GUESTBOOK existante)
-    // On cherche les entrées du livre d'or liées à ce produit spécifique
     try {
         const { data: revs } = await supabase
           .from("guestbook") 
@@ -134,7 +134,7 @@ export default function ProductPage() {
         
         setReviews(revs || []);
     } catch (err) {
-        console.error("Erreur lors de la récupération des avis (guestbook):", err);
+        console.error("Erreur avis:", err);
         setReviews([]);
     } finally {
         setLoadingReviews(false);
@@ -199,7 +199,7 @@ export default function ProductPage() {
 
   return (
     <div className="min-h-screen bg-[#FDFCFB]">
-      {/* 🛠️ BARRE D'OUTILS ADMIN (Restaurée intacte) */}
+      {/* 🛠️ BARRE ADMIN (Intacte) */}
       {profile?.is_admin && (
         <div className="bg-red-50 border-b border-red-100 py-3 sticky top-0 z-40">
           <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
@@ -232,7 +232,7 @@ export default function ProductPage() {
       <main className="max-w-7xl mx-auto px-4 py-8 lg:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
           
-          {/* ZONE MÉDIA (Vidéo prioritiaire ou Galerie) */}
+          {/* ZONE MÉDIA (Vidéo ou Galerie) */}
           <div className="space-y-6 sticky top-24">
             {product.video_url ? (
               <div className="aspect-[4/5] rounded-3xl overflow-hidden bg-black shadow-2xl border-4 border-[#d4af37]/20 relative group">
@@ -276,9 +276,7 @@ export default function ProductPage() {
                     </p>
                   )}
                 </div>
-                <div className="flex flex-col gap-2">
-                  <WishlistButton productId={product.id} className="h-12 w-12 bg-white shadow-md border-none rounded-2xl hover:scale-110 transition-transform" />
-                </div>
+                <WishlistButton productId={product.id} className="h-12 w-12 bg-white shadow-md border-none rounded-2xl hover:scale-110 transition-transform" />
               </div>
 
               <div className="flex items-center gap-6 py-2">
@@ -294,6 +292,11 @@ export default function ProductPage() {
                   </Badge>
                 )}
               </div>
+            </div>
+
+            {/* 💎 BARRE DE FIDÉLITÉ CONNECTÉE (Positionnée pour visibilité immédiate avec le diamant) */}
+            <div className="animate-in fade-in slide-in-from-top-2 duration-700">
+              <LoyaltyEuroBar />
             </div>
 
             {/* L'AVIS D'ANDRÉ */}
@@ -322,14 +325,6 @@ export default function ProductPage() {
                   <Plus className="h-4 w-4 text-[#b8933d]" /> Personnalisez votre pépite
                 </Label>
                 <ProductVariationSelector productId={product.id} onVariationSelect={setSelectedVariation} />
-              </div>
-            )}
-
-            {/* LOGIQUE MORPHOLOGIE */}
-            {ENABLE_MORPHOLOGY_LOGIC && profile?.user_size && (
-              <div className="flex items-center gap-3 p-4 bg-green-50 rounded-2xl border border-green-100">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                <p className="text-sm font-bold text-green-700 italic">Cette pépite correspond à votre taille ({profile.user_size})</p>
               </div>
             )}
 
@@ -399,26 +394,6 @@ export default function ProductPage() {
                   <div dangerouslySetInnerHTML={{ __html: product.description }} className="prose prose-amber prose-sm max-w-none text-gray-600 leading-relaxed font-medium" />
                 </AccordionContent>
               </AccordionItem>
-
-              <AccordionItem value="delivery" className="border-none bg-white rounded-2xl px-6">
-                <AccordionTrigger className="font-black text-gray-900 uppercase text-[10px] tracking-[0.2em] hover:no-underline py-5">Vite chez vous : Livraison & Retours</AccordionTrigger>
-                <AccordionContent className="pb-8 space-y-6">
-                  <div className="flex items-start gap-4">
-                    <div className="bg-green-100 p-2 rounded-xl"><Shield className="h-5 w-5 text-green-600" /></div>
-                    <div className="space-y-1">
-                      <p className="font-bold text-gray-900">Expédition rapide KAVERN</p>
-                      <p className="text-xs text-gray-500 leading-relaxed">André emballe chaque pépite avec amour à Nieppe. Expédition en 24h/48h avec suivi complet.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-4">
-                    <div className="bg-blue-100 p-2 rounded-xl"><CheckCircle2 className="h-5 w-5 text-blue-600" /></div>
-                    <div className="space-y-1">
-                      <p className="font-bold text-gray-900">Le Droit à l&apos;Erreur (14 jours)</p>
-                      <p className="text-xs text-gray-500 leading-relaxed">Changement d&apos;avis ? Aucun problème ! Retournez votre colis sous 14 jours pour un crédit boutique immédiat.</p>
-                    </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
             </Accordion>
 
             {/* SECTION AVIS CLIENTS (Reliée au GUESTBOOK) */}
@@ -448,12 +423,6 @@ export default function ProductPage() {
                           </div>
                         </div>
                         <p className="text-xs text-gray-600 italic leading-relaxed">&quot;{rev.message || rev.comment}&quot;</p>
-                        {rev.admin_response && (
-                           <div className="mt-2 pl-3 border-l-2 border-amber-100">
-                             <p className="text-[10px] font-bold text-[#b8933d] uppercase">Réponse d&apos;André</p>
-                             <p className="text-[10px] text-gray-500 italic">{rev.admin_response}</p>
-                           </div>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -462,7 +431,7 @@ export default function ProductPage() {
                 )}
             </div>
 
-            {/* DIAMANT CACHÉ */}
+            {/* 💎 DIAMANT CACHÉ (Relié visuellement à la LoyaltyEuroBar au-dessus) */}
             <HiddenDiamond product={product} />
           </div>
         </div>
@@ -475,7 +444,6 @@ export default function ProductPage() {
             <DialogTitle className="text-3xl font-black text-gray-900 flex items-center gap-3">
               <Bell className="h-8 w-8 text-[#b8933d] animate-bounce" /> {CUSTOM_TEXTS.buttons.alertStock}
             </DialogTitle>
-            <DialogDescription className="text-gray-500 font-medium pt-2">André surveille l&apos;atelier ! Laissez votre email pour être alerté(e) du prochain arrivage.</DialogDescription>
           </DialogHeader>
           <div className="py-6 space-y-4">
             <div className="space-y-2"><Label htmlFor="email" className="font-bold text-gray-700">Votre adresse email</Label><Input id="email" type="email" placeholder="votre@email.com" value={notifyEmail} onChange={(e) => setNotifyEmail(e.target.value)} className="rounded-2xl h-14 border-gray-100 shadow-inner" /></div>
