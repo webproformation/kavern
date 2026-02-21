@@ -93,13 +93,15 @@ export default function ProductPage() {
 
   async function loadProduct() {
     try {
+      // Correction PGRST116 : On utilise maybeSingle au cas où le slug est erroné
       const { data, error } = await supabase
         .from("products")
         .select("*")
         .eq("slug", slug)
-        .maybeSingle(); // CORRECTION : Evite le crash si le produit n'est pas trouvé (406)
+        .maybeSingle();
 
       if (error) throw error;
+      
       if (data) {
         setProduct(data);
         loadRelatedAndReviews(data);
@@ -114,7 +116,7 @@ export default function ProductPage() {
   }
 
   async function loadRelatedAndReviews(prod: any) {
-    // 1. Cross-selling (Protection contre undefined)
+    // 1. Cross-selling
     try {
         if (prod.related_product_ids && prod.related_product_ids.length > 0) {
           const { data: related } = await supabase
@@ -125,10 +127,10 @@ export default function ProductPage() {
         }
     } catch (e) { setRelatedProducts([]); }
 
-    // 2. Avis clients (Livre d'Or - Protection contre le crash de rendu et le 404)
+    // 2. Avis clients (UTILISATION DE VOTRE TABLE livre-dor)
     try {
         const { data: revs } = await supabase
-          .from("guestbook") 
+          .from("livre-dor") 
           .select("*")
           .eq("product_id", prod.id)
           .eq("status", "approved")
@@ -136,7 +138,7 @@ export default function ProductPage() {
         
         setReviews(revs || []);
     } catch (err) {
-        console.error("Erreur avis:", err);
+        console.error("Erreur lors de la récupération des avis (livre-dor):", err);
         setReviews([]);
     } finally {
         setLoadingReviews(false);
@@ -197,7 +199,7 @@ export default function ProductPage() {
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#b8933d]"></div></div>;
-  if (!product) return <div className="min-h-screen flex items-center justify-center font-bold">Cette pépite n&apos;est plus disponible...</div>;
+  if (!product) return <div className="min-h-screen flex items-center justify-center font-bold text-gray-500 italic">Cette pépite n&apos;est plus disponible...</div>;
 
   return (
     <div className="min-h-screen bg-[#FDFCFB]">
@@ -205,14 +207,14 @@ export default function ProductPage() {
       {profile?.is_admin && (
         <div className="bg-red-50 border-b border-red-100 py-3 sticky top-0 z-40">
           <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-red-700 font-bold text-xs uppercase tracking-widest">
+            <div className="flex items-center gap-2 text-red-700 font-bold text-xs uppercase tracking-widest text-[10px]">
               <AlertTriangle className="h-4 w-4" /> Mode Administrateur
             </div>
             <div className="flex gap-2">
-              <Button asChild variant="outline" size="sm" className="bg-white hover:bg-red-100 border-red-200 text-red-700 h-8">
+              <Button asChild variant="outline" size="sm" className="bg-white hover:bg-red-100 border-red-200 text-red-700 h-8 font-bold">
                 <Link href={`/admin/products/${product.id}`}><Edit className="h-3.5 w-3.5 mr-2" /> Modifier la fiche</Link>
               </Button>
-              <Button variant="destructive" size="sm" onClick={() => setShowDeleteDialog(true)} className="h-8">
+              <Button variant="destructive" size="sm" onClick={() => setShowDeleteDialog(true)} className="h-8 font-bold">
                 <Trash2 className="h-3.5 w-3.5 mr-2" /> Supprimer
               </Button>
             </div>
@@ -257,7 +259,7 @@ export default function ProductPage() {
             )}
             
             <div className="flex flex-col items-center gap-4 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 text-[10px]">
                  <Share2 className="h-3 w-3" /> Partagez votre coup de cœur
                </p>
                <ShareButtons url={typeof window !== 'undefined' ? window.location.href : ''} title={product.name} />
@@ -320,7 +322,7 @@ export default function ProductPage() {
             {/* SÉLECTEUR DE VARIANTES */}
             {product.has_variations && (
               <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-100/50 space-y-6">
-                <Label className="text-sm font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                <Label className="text-sm font-black uppercase tracking-widest text-gray-400 flex items-center gap-2 text-[10px]">
                   <Plus className="h-4 w-4 text-[#b8933d]" /> Personnalisez votre pépite
                 </Label>
                 <ProductVariationSelector productId={product.id} onVariationSelect={setSelectedVariation} />
@@ -346,26 +348,26 @@ export default function ProductPage() {
                   className="flex-1 h-16 rounded-2xl bg-[#b8933d] hover:bg-[#D4AF37] text-white text-lg font-black shadow-2xl shadow-amber-200 transition-all hover:scale-[1.02] active:scale-95"
                 >
                   {isOutOfStock ? (
-                    <span className="flex items-center gap-2"><Bell className="h-6 w-6" /> M&apos;alerter du retour</span>
+                    <span className="flex items-center gap-2 uppercase tracking-widest text-[11px]"><Bell className="h-6 w-6" /> M&apos;alerter du retour</span>
                   ) : (
-                    <span className="flex items-center gap-2 uppercase tracking-widest"><ShoppingCart className="h-6 w-6" /> Craquer maintenant</span>
+                    <span className="flex items-center gap-2 uppercase tracking-widest text-[11px]"><ShoppingCart className="h-6 w-6" /> Craquer maintenant</span>
                   )}
                 </Button>
               </div>
 
               {isOutOfStock && (
                 <div className="flex justify-center">
-                  <button onClick={() => setShowNotifyDialog(true)} className="text-xs text-[#b8933d] font-black uppercase tracking-widest hover:underline flex items-center gap-2">
+                  <button onClick={() => setShowNotifyDialog(true)} className="text-xs text-[#b8933d] font-black uppercase tracking-widest hover:underline flex items-center gap-2 text-[10px]">
                     <Info className="h-4 w-4" /> Victime de son succès ? Soyez prévenu(e)
                   </button>
                 </div>
               )}
             </div>
 
-            {/* CROSS-SELLING */}
+            {/* CROSS-SELLING (Sécurisé contre undefined) */}
             {(relatedProducts || []).length > 0 && (
               <div className="pt-10 border-t-2 border-gray-50 space-y-8">
-                <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-3">
+                <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-3 text-[10px]">
                   <Heart className="h-4 w-4 text-pink-500 fill-pink-500" />
                   André vous suggère aussi
                 </h3>
@@ -387,14 +389,14 @@ export default function ProductPage() {
 
             {/* ACCORDÉONS DÉTAILLÉS */}
             <Accordion type="single" collapsible className="w-full space-y-2">
-              <AccordionItem value="description" className="border-none bg-white rounded-2xl px-6">
+              <AccordionItem value="description" className="border-none bg-white rounded-2xl px-6 shadow-sm">
                 <AccordionTrigger className="font-black text-gray-900 uppercase text-[10px] tracking-[0.2em] hover:no-underline py-5">L&apos;histoire & Secrets de fabrication</AccordionTrigger>
                 <AccordionContent className="pb-8">
                   <div dangerouslySetInnerHTML={{ __html: product.description }} className="prose prose-amber prose-sm max-w-none text-gray-600 leading-relaxed font-medium" />
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="delivery" className="border-none bg-white rounded-2xl px-6">
+              <AccordionItem value="delivery" className="border-none bg-white rounded-2xl px-6 shadow-sm">
                 <AccordionTrigger className="font-black text-gray-900 uppercase text-[10px] tracking-[0.2em] hover:no-underline py-5">Vite chez vous : Livraison & Retours</AccordionTrigger>
                 <AccordionContent className="pb-8 space-y-6">
                   <div className="flex items-start gap-4">
@@ -408,9 +410,9 @@ export default function ProductPage() {
               </AccordionItem>
             </Accordion>
 
-            {/* SECTION AVIS CLIENTS (Reliée au GUESTBOOK) */}
+            {/* SECTION AVIS CLIENTS (Reliée au LIVRE-DOR) */}
             <div className="pt-10 border-t-2 border-gray-50 space-y-8" id="avis">
-                <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] flex items-center justify-between">
+                <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] flex items-center justify-between text-[10px]">
                   <span>Avis des collectionneurs ({(reviews || []).length})</span>
                   {(reviews || []).length > 0 && (
                     <div className="flex items-center gap-1 text-[#D4AF37]">
@@ -435,25 +437,35 @@ export default function ProductPage() {
                           </div>
                         </div>
                         <p className="text-xs text-gray-600 italic leading-relaxed">&quot;{rev.message || rev.comment}&quot;</p>
+                        {rev.admin_response && (
+                           <div className="mt-2 pl-3 border-l-2 border-amber-100">
+                             <p className="text-[10px] font-bold text-[#b8933d] uppercase">Réponse d&apos;André</p>
+                             <p className="text-[10px] text-gray-500 italic">{rev.admin_response}</p>
+                           </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-400 italic text-center py-6 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-100">Soyez la première personne à partager votre expérience sur cette pépite !</p>
+                  <p className="text-xs text-gray-400 italic text-center py-6 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-100 text-[10px]">Soyez la première personne à partager votre expérience sur cette pépite !</p>
                 )}
             </div>
 
             {/* DIAMANT CACHÉ */}
-            <HiddenDiamond product={product} />
+            <HiddenDiamond 
+              productId={product.id} 
+              position="description" 
+              selectedPosition="description" 
+            />
           </div>
         </div>
       </main>
 
-      {/* DIALOGUES & MODALES (Intacts) */}
+      {/* DIALOGUES & MODALES */}
       <Dialog open={showNotifyDialog} onOpenChange={setShowNotifyDialog}>
         <DialogContent className="sm:max-w-md rounded-[2.5rem] border-none shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-3xl font-black text-gray-900 flex items-center gap-3">
+            <DialogTitle className="text-3xl font-black text-gray-900 flex items-center gap-3 text-[10px] uppercase tracking-widest leading-loose">
               <Bell className="h-8 w-8 text-[#b8933d] animate-bounce" /> {CUSTOM_TEXTS.buttons.alertStock}
             </DialogTitle>
           </DialogHeader>

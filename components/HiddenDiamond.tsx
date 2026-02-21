@@ -28,42 +28,29 @@ export function HiddenDiamond({ productId, position, selectedPosition }: HiddenD
   const checkIfAlreadyFound = async () => {
     if (!user || !profile) return;
 
-    const today = new Date().toISOString().split("T")[0];
-
     const { data, error } = await supabase
       .from("loyalty_euro_transactions")
       .select("id")
       .eq("user_id", profile.id)
       .eq("type", "diamond_found")
-      .eq("reference_id", productId)
-      .gte("created_at", today)
+      .eq("description", `Diamant trouvé sur le produit ${productId}`)
       .maybeSingle();
 
-    if (!error && data) {
+    if (data) {
       setHasFoundDiamond(true);
       setIsVisible(false);
     }
   };
 
   const handleDiamondClick = async () => {
-    if (!user || !profile) {
-      toast.error("Connectez-vous pour collecter les diamants !");
-      return;
-    }
-
-    if (hasFoundDiamond) {
-      toast.info("Vous avez déjà trouvé ce diamant aujourd'hui !");
-      return;
-    }
+    if (!user || !profile || hasFoundDiamond || isAnimating) return;
 
     setIsAnimating(true);
 
     try {
-      const { data, error } = await supabase.rpc('add_loyalty_gain', {
-        p_user_id: profile.id,
-        p_type: 'diamond_found',
-        p_base_amount: 0.10,
-        p_description: 'Diamant trouvé sur le produit'
+      const { data, error } = await supabase.rpc('collect_hidden_diamond', {
+        p_product_id: productId,
+        p_description: `Diamant trouvé sur le produit ${productId}`
       });
 
       if (error) {
@@ -75,7 +62,10 @@ export function HiddenDiamond({ productId, position, selectedPosition }: HiddenD
         const finalAmount = (0.10 * result.multiplier).toFixed(2);
         const multiplierText = result.multiplier > 1 ? ` (x${result.multiplier})` : '';
 
+        // --- CORRECTION : MISE À JOUR DU HEADER EN TEMPS RÉEL ---
         await refreshProfile();
+        window.dispatchEvent(new Event('loyaltyUpdated'));
+        // -------------------------------------------------------
 
         toast.success(`Félicitations ! Vous avez gagné ${finalAmount} € !${multiplierText}`, {
           icon: <Gem className="h-4 w-4 fill-amber-500 text-amber-500" />,
@@ -105,13 +95,13 @@ export function HiddenDiamond({ productId, position, selectedPosition }: HiddenD
       disabled={isAnimating}
       variant="ghost"
       size="sm"
-      className={`relative inline-flex items-center gap-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 transition-all ${
-        isAnimating ? "animate-ping" : "animate-pulse"
+      className={`relative inline-flex items-center gap-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-200 border bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg transition-all duration-500 group ${
+        isAnimating ? 'scale-150 opacity-0' : 'animate-bounce'
       }`}
     >
-      <Gem className="h-5 w-5 fill-amber-500" />
-      <Sparkles className="h-4 w-4" />
-      <span className="text-xs font-semibold">+0,10 €</span>
+      <Gem className={`h-4 w-4 fill-current ${isAnimating ? 'animate-ping' : ''}`} />
+      <span className="font-bold text-xs uppercase tracking-widest">Pépite découverte !</span>
+      <Sparkles className="h-3 w-3 absolute -top-1 -right-1 text-amber-400 animate-pulse" />
     </Button>
   );
 }
