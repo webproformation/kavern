@@ -85,17 +85,14 @@ export function SiteHeader() {
               .eq('parent_id', cat.id)
               .eq('is_visible', true);
 
-            const hasSubCategories = (count || 0) > 0;
-
             return {
               name: decodeHtmlEntities(cat.name),
               href: `/category/${cat.slug}`,
               slug: cat.slug,
-              hasMegaMenu: hasSubCategories,
+              hasMegaMenu: (count || 0) > 0,
             };
           })
         );
-
         setNavigation([...dynamicNav, ...STATIC_LINKS]);
       }
     } catch (error) {
@@ -126,184 +123,179 @@ export function SiteHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-[100] bg-gradient-to-b from-white to-gray-50 shadow-md border-b border-gray-100">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-20">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden text-gray-900 hover:text-[#D4AF37] hover:bg-transparent"
-              onClick={() => setMobileMenuOpen(true)}
-            >
-              <Menu className="h-6 w-6" />
-            </Button>
-
-            {/* LOGO KAVERN TEXTE COMME DEMANDÉ */}
-            <Link href="/" className="flex items-center gap-2 group">
-              <span className="text-2xl md:text-3xl font-black tracking-[0.2em] text-gray-900 group-hover:text-[#D4AF37] transition-colors uppercase">
-                KAVERN
-              </span>
-            </Link>
-          </div>
-
-          <nav className="hidden md:flex items-center gap-3 lg:gap-4 flex-1 justify-center">
-            {loading ? (
-              <div className="text-gray-400 text-xs italic">Chargement des rayons...</div>
-            ) : (
-              navigation.map((item) => (
-                <div
-                  key={item.slug}
-                  className="relative"
-                  onMouseEnter={() => item.hasMegaMenu && handleMouseEnter(item.slug)}
-                  onMouseLeave={handleMouseLeave}
-                >
-                  <Link
-                    href={item.href}
-                    className={`flex items-center gap-1.5 text-center text-xs lg:text-sm font-bold uppercase tracking-widest leading-tight transition-colors ${
-                      item.slug === 'live'
-                        ? 'text-[#D4AF37] hover:text-[#C5A028] animate-pulse'
-                        : pathname === item.href || pathname.startsWith(item.href + '/')
-                        ? 'text-[#D4AF37]'
-                        : 'text-gray-900 hover:text-[#D4AF37]'
-                    }`}
-                  >
-                    {item.slug === 'live' && <Play className="h-3.5 w-3.5 lg:h-4 lg:w-4 fill-current" />}
-                    {item.name}
-                  </Link>
-                </div>
-              ))
-            )}
-          </nav>
-
-          <div className="flex items-center gap-2 md:gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSearchModalOpen(true)}
-              className="text-gray-900 hover:text-[#D4AF37] hover:bg-transparent"
-            >
-              <Search className="h-5 w-5" />
-            </Button>
-
-            <Link href="/wishlist">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative text-gray-900 hover:text-[#D4AF37] hover:bg-transparent"
-              >
-                <Heart className="h-5 w-5" />
-                {wishlistCount > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-[#D4AF37] text-black text-xs font-black">
-                    {wishlistCount}
-                  </Badge>
-                )}
-              </Button>
-            </Link>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-gray-900 hover:text-[#D4AF37] hover:bg-transparent"
-                >
-                  <User className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64 rounded-2xl p-2 shadow-2xl">
-                {user ? (
-                  <>
-                    <DropdownMenuLabel className="pb-3">
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-black uppercase text-[#D4AF37]">
-                          {profile?.first_name || 'Mon Compte'}
-                        </p>
-                        <p className="text-xs text-gray-400 font-medium truncate">{user.email}</p>
-                      </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {profile?.is_admin && (
-                      <DropdownMenuItem asChild>
-                        <Link href="/admin" className="flex items-center w-full cursor-pointer bg-red-50 text-red-600 font-bold rounded-lg mb-1">
-                          <Shield className="mr-2 h-4 w-4" /> Administration
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem asChild>
-                      <Link href="/account" className="flex items-center w-full cursor-pointer font-semibold">
-                        <User className="mr-2 h-4 w-4" /> Mon profil & Fidélité
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/account/orders" className="flex items-center w-full cursor-pointer font-semibold">
-                        <Package className="mr-2 h-4 w-4" /> Mes commandes
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/account/addresses" className="flex items-center w-full cursor-pointer font-semibold">
-                        <MapPin className="mr-2 h-4 w-4" /> Mes adresses
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={handleSignOut}
-                      className="text-red-500 font-bold cursor-pointer"
-                    >
-                      <LogOut className="mr-2 h-4 w-4" /> Déconnexion
-                    </DropdownMenuItem>
-                  </>
-                ) : (
-                  <>
-                    <DropdownMenuItem asChild>
-                      <Link href="/auth/login" className="flex items-center w-full cursor-pointer font-bold uppercase text-xs tracking-widest">Se connecter</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/auth/register" className="flex items-center w-full cursor-pointer font-bold uppercase text-xs tracking-widest text-[#D4AF37]">Créer un compte</Link>
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <Link href="/cart">
-              <Button
-                variant="ghost"
-                className="relative text-gray-900 hover:text-[#D4AF37] hover:bg-transparent gap-2 px-4"
-              >
-                <ShoppingCart className="h-5 w-5" />
-                <span className="hidden md:inline text-xs font-black uppercase tracking-widest">{CUSTOM_TEXTS.buttons.cart}</span>
-                {cartItemCount > 0 && (
-                  <Badge className="absolute -top-2 -right-2 md:relative md:top-0 md:right-0 h-5 w-5 flex items-center justify-center p-0 bg-[#D4AF37] text-black text-xs font-black">
-                    {cartItemCount}
-                  </Badge>
-                )}
-              </Button>
-            </Link>
-          </div>
+    <>
+      {/* BANNIÈRE DÉFILANTE PREMIUM */}
+      <div className="bg-[#D4AF37] text-black py-1.5 overflow-hidden border-b border-black/5">
+        <div className="animate-marquee whitespace-nowrap flex gap-12 font-bold text-[10px] uppercase tracking-widest">
+          <span>✨ Bienvenue dans la KAVERN - L'artisanat et l'inattendu ✨</span>
+          <span>🚚 Livraison offerte dès 80€ d'achats</span>
+          <span>🎁 Une surprise dans chaque colis</span>
+          <span>🎥 Rejoignez-nous pour le prochain Live Shopping</span>
+          <span>✨ Bienvenue dans la KAVERN - L'artisanat et l'inattendu ✨</span>
+          <span>🚚 Livraison offerte dès 80€ d'achats</span>
         </div>
       </div>
 
-      {openMegaMenu && (
-        <div
-          onMouseEnter={() => {
-            if (closeTimerRef.current) {
-              clearTimeout(closeTimerRef.current);
-              closeTimerRef.current = null;
-            }
-          }}
-          onMouseLeave={handleMouseLeave}
-        >
-          <MegaMenu
-            isOpen={true}
-            categorySlug={openMegaMenu}
-            onClose={() => setOpenMegaMenu(null)}
-          />
+      <header className="sticky top-0 z-[100] bg-gradient-to-b from-white to-gray-50 shadow-md border-b border-gray-100">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-20">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden text-gray-900 hover:text-[#D4AF37] hover:bg-transparent"
+                onClick={() => setMobileMenuOpen(true)}
+              >
+                <Menu className="h-6 w-6" />
+              </Button>
+
+              <Link href="/" className="flex-shrink-0">
+                <img
+                  src="/kavern-logo.png"
+                  alt="Kavern"
+                  className="h-12 md:h-16 w-auto transition-transform hover:scale-105"
+                />
+              </Link>
+            </div>
+
+            <nav className="hidden md:flex items-center gap-3 lg:gap-4 flex-1 justify-center">
+              {loading ? (
+                <div className="text-gray-400 text-xs italic">Chargement...</div>
+              ) : (
+                navigation.map((item) => (
+                  <div
+                    key={item.slug}
+                    className="relative"
+                    onMouseEnter={() => item.hasMegaMenu && handleMouseEnter(item.slug)}
+                    onMouseLeave={handleMouseLeave}
+                  >
+                    <Link
+                      href={item.href}
+                      className={`flex items-center gap-1.5 text-center text-xs lg:text-sm font-bold uppercase tracking-widest leading-tight transition-colors ${
+                        item.slug === 'live'
+                          ? 'text-[#D4AF37] hover:text-[#C5A028] animate-pulse'
+                          : pathname === item.href || pathname.startsWith(item.href + '/')
+                          ? 'text-[#D4AF37]'
+                          : 'text-gray-900 hover:text-[#D4AF37]'
+                      }`}
+                    >
+                      {item.slug === 'live' && <Play className="h-3.5 w-3.5 lg:h-4 lg:w-4 fill-current" />}
+                      {item.name}
+                    </Link>
+                  </div>
+                ))
+              )}
+            </nav>
+
+            <div className="flex items-center gap-2 md:gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSearchModalOpen(true)}
+                className="hidden md:flex text-gray-900 hover:text-[#D4AF37] hover:bg-transparent"
+              >
+                <Search className="h-5 w-5" />
+              </Button>
+
+              <Link href="/wishlist">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative text-gray-900 hover:text-[#D4AF37] hover:bg-transparent"
+                >
+                  <Heart className="h-5 w-5" />
+                  {wishlistCount > 0 && (
+                    <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-[#D4AF37] text-black text-[10px] font-black">
+                      {wishlistCount}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-gray-900 hover:text-[#D4AF37] hover:bg-transparent"
+                  >
+                    <User className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64 rounded-2xl p-2 shadow-2xl border-none">
+                  {user ? (
+                    <>
+                      <DropdownMenuLabel className="pb-3">
+                        <div className="flex flex-col space-y-1">
+                          <p className="text-sm font-black uppercase text-[#D4AF37]">
+                            {profile?.first_name || 'Mon Compte'}
+                          </p>
+                          <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                        </div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {profile?.is_admin && (
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin" className="flex items-center w-full cursor-pointer bg-red-50 text-red-600 font-bold rounded-lg mb-1">
+                            <Shield className="mr-2 h-4 w-4" /> Administration
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem asChild>
+                        <Link href="/account" className="flex items-center w-full cursor-pointer font-semibold">
+                          <User className="mr-2 h-4 w-4" /> Profil & Fidélité
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/account/orders" className="flex items-center w-full cursor-pointer font-semibold">
+                          <Package className="mr-2 h-4 w-4" /> Mes commandes
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleSignOut} className="text-red-500 font-bold cursor-pointer">
+                        <LogOut className="mr-2 h-4 w-4" /> Déconnexion
+                      </DropdownMenuItem>
+                    </>
+                  ) : (
+                    <div className="p-2 space-y-1">
+                      <DropdownMenuItem asChild>
+                        <Link href="/auth/login" className="font-bold uppercase text-xs tracking-widest cursor-pointer">Se connecter</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/auth/register" className="font-bold uppercase text-xs tracking-widest text-[#D4AF37] cursor-pointer">Créer un compte</Link>
+                      </DropdownMenuItem>
+                    </div>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <Link href="/cart">
+                <Button
+                  variant="ghost"
+                  className="relative text-gray-900 hover:text-[#D4AF37] hover:bg-transparent gap-2 px-4"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  <span className="hidden md:inline text-xs font-black uppercase tracking-widest">{CUSTOM_TEXTS.buttons.cart}</span>
+                  {cartItemCount > 0 && (
+                    <Badge className="absolute -top-2 -right-2 md:relative md:top-0 md:right-0 h-5 w-5 flex items-center justify-center p-0 bg-[#D4AF37] text-black text-[10px] font-black">
+                      {cartItemCount}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
-      )}
+
+        {openMegaMenu && (
+          <div onMouseEnter={() => { if (closeTimerRef.current) clearTimeout(closeTimerRef.current); }} onMouseLeave={handleMouseLeave}>
+            <MegaMenu isOpen={true} categorySlug={openMegaMenu} onClose={() => setOpenMegaMenu(null)} />
+          </div>
+        )}
+      </header>
 
       <MobileMenu isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
       <SearchModal isOpen={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
-    </header>
+    </>
   );
 }
