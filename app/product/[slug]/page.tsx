@@ -1,347 +1,307 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { 
-  Save, 
-  ArrowLeft, 
-  Image as ImageIcon, 
-  Plus, 
-  Trash2, 
-  Loader2, 
-  ExternalLink,
+import {
+  ChevronRight,
+  Home,
+  ShoppingCart,
+  Bell,
+  Plus,
+  Minus,
+  Shield,
+  Video,
+  Sparkles,
+  MessageCircle,
+  Heart,
+  Share2,
+  Edit,
+  Trash2,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  Star,
+  Info
 } from "lucide-react";
+import { ProductGallery } from "@/components/ProductGallery";
+import { ProductVariationSelector } from "@/components/ProductVariationSelector";
+import { HiddenDiamond } from "@/components/HiddenDiamond";
+import { ShareButtons } from "@/components/ShareButtons";
+import { WishlistButton } from "@/components/wishlist-button";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import Link from "next/link";
+import { decodeHtmlEntities } from "@/lib/utils";
+import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
+import { CUSTOM_TEXTS } from "@/lib/texts";
 
-export default function AdminProductEditPage() {
-  const { id } = useParams();
+export default function ProductPage() {
+  const { slug } = useParams();
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  
-  // --- ÉTAT DU PRODUIT ---
-  const [product, setProduct] = useState<any>({
-    name: "",
-    slug: "",
-    regular_price: 0,
-    sale_price: null,
-    stock_quantity: 0,
-    short_description: "",
-    description: "",
-    andre_review: "",
-    video_url: "",
-    image_url: "",
-    gallery_images: [],
-    status: "publish",
-    is_featured: false,
-    related_product_ids: []
-  });
+  const { addToCart } = useCart();
+  const { profile } = useAuth();
 
-  // --- ÉTATS AUXILIAIRES ---
-  const [categories, setCategories] = useState<any[]>([]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [quantity, setQuantity] = useState(1);
+  const [selectedVariation, setSelectedVariation] = useState<any>(null);
+  const [showNotifyDialog, setShowNotifyDialog] = useState(false);
+  const [notifyEmail, setNotifyEmail] = useState("");
+  const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(true);
 
   useEffect(() => {
-    if (id) loadInitialData();
-  }, [id]);
+    if (slug) loadProduct();
+  }, [slug]);
 
-  async function loadInitialData() {
-    setLoading(true);
+  async function loadProduct() {
     try {
-      // 1. Charger le produit
-      const { data: prodData, error: prodError } = await supabase
+      const { data, error } = await supabase
         .from("products")
         .select("*")
-        .eq("id", id)
-        .single();
+        .eq("slug", slug)
+        .maybeSingle();
 
-      if (prodError) throw prodError;
-      setProduct(prodData);
-
-      // 2. Charger les catégories du produit
-      const { data: mappingData } = await supabase
-        .from("product_category_mapping")
-        .select("category_id")
-        .eq("product_id", id);
-      setSelectedCategories(mappingData?.map(m => m.category_id) || []);
-
-      // 3. Charger toutes les catégories disponibles
-      const { data: cats } = await supabase.from("categories").select("*").order("name");
-      setCategories(cats || []);
-
-      // 4. Charger les autres produits pour le Cross-selling
-      const { data: prods } = await supabase.from("products").select("id, name").neq("id", id);
-      setAllProducts(prods || []);
-
-    } catch (error: any) {
-      console.error("Erreur chargement admin:", error);
-      toast.error("Impossible de charger la pépite");
+      if (error) throw error;
+      if (data) {
+        setProduct(data);
+        loadRelatedAndReviews(data);
+      }
+    } catch (error) {
+      console.error("Error loading product:", error);
     } finally {
       setLoading(false);
     }
   }
 
-  const handleSave = async () => {
-    setSaving(true);
+  async function loadRelatedAndReviews(prod: any) {
     try {
-      // 1. Mise à jour de la table products
-      const { error: updateError } = await supabase
-        .from("products")
-        .update({
-          ...product,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", id);
+        if (prod.related_product_ids?.length > 0) {
+          const { data: related } = await supabase
+            .from("products")
+            .select("id, name, slug, image_url, regular_price")
+            .in("id", prod.related_product_ids);
+          setRelatedProducts(related || []);
+        }
 
-      if (updateError) throw updateError;
-
-      // 2. Mise à jour des catégories (Mapping)
-      // On supprime l'ancien mapping
-      await supabase.from("product_category_mapping").delete().eq("product_id", id);
-      
-      // On insère le nouveau
-      if (selectedCategories.length > 0) {
-        const newMappings = selectedCategories.map(catId => ({
-          product_id: id,
-          category_id: catId
-        }));
-        await supabase.from("product_category_mapping").insert(newMappings);
-      }
-
-      toast.success("Modifications enregistrées !");
-    } catch (error: any) {
-      console.error("Erreur sauvegarde:", error);
-      toast.error("Erreur lors de l'enregistrement");
+        const { data: revs } = await supabase
+          .from("livre-dor") 
+          .select("*")
+          .eq("product_id", prod.id)
+          .eq("status", "approved")
+          .order("created_at", { ascending: false });
+        setReviews(revs || []);
+    } catch (err) {
+        console.error("Error loading reviews:", err);
     } finally {
-      setSaving(false);
+        setLoadingReviews(false);
     }
+  }
+
+  const currentPrice = useMemo(() => {
+    if (selectedVariation) return selectedVariation.sale_price || selectedVariation.regular_price;
+    return product?.sale_price || product?.regular_price || 0;
+  }, [product, selectedVariation]);
+
+  const oldPrice = useMemo(() => {
+    if (selectedVariation) return selectedVariation.sale_price ? selectedVariation.regular_price : null;
+    return product?.sale_price ? product?.regular_price : null;
+  }, [product, selectedVariation]);
+
+  const isOutOfStock = useMemo(() => {
+    if (product?.has_variations) return selectedVariation ? selectedVariation.stock_quantity <= 0 : false;
+    return product?.stock_quantity <= 0;
+  }, [product, selectedVariation]);
+
+  const handleAddToCart = () => {
+    if (!product) return;
+    if (product.has_variations && !selectedVariation) {
+      toast.error("Veuillez sélectionner une option");
+      return;
+    }
+    addToCart({
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      price: currentPrice.toString(),
+      image: { sourceUrl: selectedVariation?.image_url || product.image_url || "" },
+      variationId: selectedVariation?.id,
+      variationData: selectedVariation?.attributes
+    }, quantity);
+    toast.success(`${product.name} ajouté au panier`);
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-      <Loader2 className="h-10 w-10 animate-spin text-[#b8933d]" />
-      <p className="text-gray-500 font-medium">Chargement de la fiche...</p>
-    </div>
-  );
+  const handleDeleteProduct = async () => {
+    try {
+      await supabase.from("products").delete().eq("id", product.id);
+      toast.success("Produit supprimé");
+      router.push("/shop");
+    } catch (e: any) { toast.error(e.message); }
+  };
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#b8933d]"></div></div>;
+  if (!product) return <div className="min-h-screen flex items-center justify-center font-bold">Pépite introuvable...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50/50 pb-20">
-      {/* HEADER FIXE */}
-      <div className="bg-white border-b sticky top-0 z-50 px-6 py-4 shadow-sm">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/admin/products"><ArrowLeft className="h-5 w-5" /></Link>
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">Modifier : {product.name}</h1>
-              <p className="text-xs text-gray-400 font-mono">ID: {id}</p>
+    <div className="min-h-screen bg-[#FDFCFB]">
+      {profile?.is_admin && (
+        <div className="bg-red-50 border-b border-red-100 py-3 sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-red-700 font-bold text-xs uppercase tracking-widest"><AlertTriangle className="h-4 w-4" /> Mode Administrateur</div>
+            <div className="flex gap-2">
+              <Button asChild variant="outline" size="sm" className="bg-white hover:bg-red-100 h-8 text-[10px] font-bold"><Link href={`/admin/products/${product.id}`}><Edit className="h-3.5 w-3.5 mr-2" /> Modifier</Link></Button>
+              <Button variant="destructive" size="sm" onClick={() => setShowDeleteDialog(true)} className="h-8 text-[10px] font-bold"><Trash2 className="h-3.5 w-3.5 mr-2" /> Supprimer</Button>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-             <Button variant="outline" asChild className="hidden sm:flex">
-               <Link href={`/product/${product.slug}`} target="_blank"><ExternalLink className="h-4 w-4 mr-2" /> Voir sur le site</Link>
-             </Button>
-             <Button 
-               onClick={handleSave} 
-               disabled={saving}
-               className="bg-[#b8933d] hover:bg-[#D4AF37] text-white px-8 font-bold"
-             >
-               {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-               ENREGISTRER
-             </Button>
           </div>
         </div>
-      </div>
+      )}
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="bg-white border p-1 rounded-xl shadow-sm">
-            <TabsTrigger value="general" className="rounded-lg font-bold px-6">Informations</TabsTrigger>
-            <TabsTrigger value="media" className="rounded-lg font-bold px-6">Médias</TabsTrigger>
-            <TabsTrigger value="logic" className="rounded-lg font-bold px-6">Catégories & Suggestions</TabsTrigger>
-          </TabsList>
+      <nav className="bg-white border-b overflow-x-auto whitespace-nowrap">
+        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-2 text-sm text-gray-500">
+          <Link href="/" className="hover:text-[#b8933d] flex items-center gap-1"><Home className="h-4 w-4" /> Accueil</Link>
+          <ChevronRight className="h-4 w-4" />
+          <Link href="/shop" className="hover:text-[#b8933d]">Boutique</Link>
+          <ChevronRight className="h-4 w-4" />
+          <span className="text-gray-900 font-medium truncate">{decodeHtmlEntities(product.name)}</span>
+        </div>
+      </nav>
 
-          {/* ONGLET GÉNÉRAL */}
-          <TabsContent value="general" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-6">
-                <Card className="rounded-2xl border-none shadow-sm overflow-hidden">
-                  <CardHeader className="bg-white border-b py-4"><CardTitle className="text-sm uppercase tracking-widest font-black text-gray-400">Détails Principaux</CardTitle></CardHeader>
-                  <CardContent className="p-6 space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Nom de la pépite</Label>
-                      <Input id="name" value={product.name} onChange={(e) => setProduct({...product, name: e.target.value})} className="h-12 text-lg font-semibold" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="slug">Slug (URL unique)</Label>
-                      <Input id="slug" value={product.slug} onChange={(e) => setProduct({...product, slug: e.target.value})} className="font-mono text-xs bg-gray-50" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="short">Accroche (Description courte)</Label>
-                      <Input id="short" value={product.short_description || ""} onChange={(e) => setProduct({...product, short_description: e.target.value})} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="desc">Description complète (HTML)</Label>
-                      <Textarea id="desc" value={product.description || ""} onChange={(e) => setProduct({...product, description: e.target.value})} className="min-h-[200px]" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="rounded-2xl border-none shadow-sm overflow-hidden border-l-4 border-[#b8933d]">
-                  <CardHeader className="py-4"><CardTitle className="text-sm font-black flex items-center gap-2 text-[#b8933d]"><Sparkles className="h-4 w-4" /> L'AVIS D'ANDRÉ</CardTitle></CardHeader>
-                  <CardContent className="p-6">
-                    <Textarea value={product.andre_review || ""} onChange={(e) => setProduct({...product, andre_review: e.target.value})} placeholder="Qu'est-ce qui rend cette pièce unique ?" className="italic text-gray-700 min-h-[100px]" />
-                  </CardContent>
-                </Card>
+      <main className="max-w-7xl mx-auto px-4 py-8 lg:py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          <div className="space-y-6 sticky top-24">
+            {product.video_url ? (
+              <div className="aspect-[4/5] rounded-3xl overflow-hidden bg-black shadow-2xl border-4 border-[#d4af37]/20 relative group">
+                <iframe src={product.video_url.replace("watch?v=", "embed/").replace("reel/", "embed/")} className="w-full h-full" allowFullScreen />
+                <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase shadow-lg flex items-center gap-1.5 animate-pulse"><Video className="h-3 w-3" /> Vu en Live</div>
               </div>
+            ) : (
+              <ProductGallery images={[{ id: 'main', src: product.image_url || '', alt: product.name }, ...(product.gallery_images?.map((img: string, i: number) => ({ id: `gal-${i}`, src: img, alt: `${product.name} ${i + 1}` })) || [])]} productName={product.name} selectedImageUrl={selectedVariation?.image_url} />
+            )}
+            <div className="flex flex-col items-center gap-4 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+               <ShareButtons url={typeof window !== 'undefined' ? window.location.href : ''} title={product.name} />
+            </div>
+          </div>
 
-              <div className="space-y-6">
-                <Card className="rounded-2xl border-none shadow-sm overflow-hidden">
-                  <CardHeader className="bg-white border-b py-4"><CardTitle className="text-sm font-black text-gray-400 uppercase tracking-widest">Prix & Stock</CardTitle></CardHeader>
-                  <CardContent className="p-6 space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="price">Prix régulier (€)</Label>
-                      <Input id="price" type="number" step="0.01" value={product.regular_price} onChange={(e) => setProduct({...product, regular_price: parseFloat(e.target.value)})} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="sale">Prix Promo (€)</Label>
-                      <Input id="sale" type="number" step="0.01" value={product.sale_price || ""} onChange={(e) => setProduct({...product, sale_price: e.target.value ? parseFloat(e.target.value) : null})} className="text-red-600 font-bold" />
-                    </div>
-                    <div className="space-y-2 pt-2">
-                      <Label htmlFor="stock">Quantité en stock</Label>
-                      <Input id="stock" type="number" value={product.stock_quantity} onChange={(e) => setProduct({...product, stock_quantity: parseInt(e.target.value)})} />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="rounded-2xl border-none shadow-sm overflow-hidden">
-                  <CardHeader className="bg-white border-b py-4"><CardTitle className="text-sm font-black text-gray-400 uppercase tracking-widest">Options</CardTitle></CardHeader>
-                  <CardContent className="p-6 space-y-6">
-                    <div className="flex items-center justify-between">
-                      <Label className="cursor-pointer" htmlFor="featured">Mise en vedette ⭐</Label>
-                      <Switch id="featured" checked={product.is_featured} onCheckedChange={(c) => setProduct({...product, is_featured: c})} />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Label className="cursor-pointer" htmlFor="status">Produit publié ✅</Label>
-                      <Switch id="status" checked={product.status === "publish"} onCheckedChange={(c) => setProduct({...product, status: c ? "publish" : "draft"})} />
-                    </div>
-                  </CardContent>
-                </Card>
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <div className="flex justify-between items-start gap-4">
+                <div className="space-y-2">
+                  <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-[1.1] uppercase">{decodeHtmlEntities(product.name)}</h1>
+                  {product.short_description && <p className="text-xl text-[#C6A15B] italic font-semibold leading-relaxed">&quot;{product.short_description}&quot;</p>}
+                </div>
+                <WishlistButton productId={product.id} className="h-12 w-12 bg-white shadow-md border-none rounded-2xl hover:scale-110" />
+              </div>
+              <div className="flex items-center gap-6 py-2">
+                <div className="flex items-baseline gap-3">
+                  <span className="text-5xl font-black text-gray-900 tracking-tighter">{currentPrice.toFixed(2)} €</span>
+                  {oldPrice && <span className="text-2xl text-gray-300 line-through font-light italic">{oldPrice.toFixed(2)} €</span>}
+                </div>
+                {product.is_featured && <Badge className="bg-[#D4AF37] text-white px-4 py-1.5 rounded-full font-black text-[10px] uppercase shadow-md animate-bounce">⭐ La Vedette d&apos;André</Badge>}
               </div>
             </div>
-          </TabsContent>
 
-          {/* ONGLET MÉDIAS */}
-          <TabsContent value="media" className="space-y-6">
-             <Card className="rounded-2xl border-none shadow-sm">
-                <CardContent className="p-8 space-y-8">
-                  <div className="space-y-4">
-                    <Label className="font-bold flex items-center gap-2"><ImageIcon className="h-4 w-4" /> Image Principale (URL)</Label>
-                    <div className="flex gap-4">
-                      <Input value={product.image_url} onChange={(e) => setProduct({...product, image_url: e.target.value})} className="flex-1" placeholder="https://..." />
-                      {product.image_url && <div className="h-12 w-12 rounded-lg border overflow-hidden"><img src={product.image_url} className="h-full w-full object-cover" /></div>}
-                    </div>
-                  </div>
+            {product.andre_review && (
+              <Card className="bg-gradient-to-br from-amber-50 to-white border-2 border-amber-100/30 shadow-xl rounded-[2.5rem] overflow-hidden">
+                <CardContent className="p-10 space-y-5 relative">
+                  <MessageCircle className="absolute right-8 top-8 w-16 h-16 text-[#d4af37]/5" />
+                  <h3 className="text-xs font-black flex items-center gap-2 text-[#b8933d] uppercase tracking-[0.3em]"><Sparkles className="w-4 h-4 fill-[#b8933d]"/> L&apos;avis d&apos;André</h3>
+                  <p className="text-gray-800 leading-[1.8] italic text-xl font-medium">&quot;{product.andre_review}&quot;</p>
+                </CardContent>
+              </Card>
+            )}
 
-                  <div className="space-y-4">
-                    <Label className="font-bold flex items-center gap-2"><Plus className="h-4 w-4" /> Galerie d'images</Label>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {product.gallery_images?.map((url: string, index: number) => (
-                        <div key={index} className="relative group aspect-square rounded-xl border overflow-hidden">
-                           <img src={url} className="h-full w-full object-cover" />
-                           <button 
-                             onClick={() => setProduct({...product, gallery_images: product.gallery_images.filter((_:any, i:any) => i !== index)})}
-                             className="absolute top-2 right-2 bg-red-600 text-white p-1.5 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                           >
-                             <Trash2 className="h-3 w-3" />
-                           </button>
+            {product.has_variations && (
+              <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl space-y-6">
+                <Label className="text-sm font-black uppercase tracking-widest text-gray-400 text-[10px]">Personnalisez votre pépite</Label>
+                <ProductVariationSelector productId={product.id} onVariationSelect={setSelectedVariation} />
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex items-center border-2 border-gray-100 rounded-2xl bg-white h-16 px-3 shadow-inner">
+                  <Button variant="ghost" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="text-[#b8933d]"><Minus className="h-5 w-5" /></Button>
+                  <Input type="number" value={quantity} onChange={(e) => setQuantity(parseInt(e.target.value) || 1)} className="w-16 border-none text-center font-black text-xl" />
+                  <Button variant="ghost" size="icon" onClick={() => setQuantity(quantity + 1)} className="text-[#b8933d]"><Plus className="h-5 w-5" /></Button>
+                </div>
+                <Button onClick={handleAddToCart} disabled={isOutOfStock} className="flex-1 h-16 rounded-2xl bg-[#b8933d] hover:bg-[#D4AF37] text-white text-lg font-black shadow-2xl transition-all uppercase tracking-widest">
+                  {isOutOfStock ? "M&apos;alerter" : "Craquer maintenant"}
+                </Button>
+              </div>
+            </div>
+
+            <Accordion type="single" collapsible className="w-full space-y-2">
+              <AccordionItem value="description" className="border-none bg-white rounded-2xl px-6 shadow-sm">
+                <AccordionTrigger className="font-black text-gray-900 uppercase text-[10px] tracking-[0.2em] py-5">L&apos;histoire & Secrets</AccordionTrigger>
+                <AccordionContent className="pb-8 font-medium leading-relaxed text-gray-600">
+                  <div dangerouslySetInnerHTML={{ __html: product.description }} className="prose prose-amber prose-sm" />
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+
+            <div className="pt-10 border-t-2 border-gray-50 space-y-8" id="avis">
+                <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] flex items-center justify-between text-[10px]">
+                  <span>Avis des collectionneurs ({(reviews || []).length})</span>
+                </h3>
+                {reviews.length > 0 ? (
+                  <div className="space-y-6">
+                    {reviews.map((rev, i) => (
+                      <div key={i} className="bg-white p-6 rounded-3xl border border-gray-50 shadow-sm space-y-2">
+                        <div className="flex justify-between items-center">
+                          <p className="font-bold text-sm text-gray-900">{rev.customer_name || 'Un collectionneur'}</p>
+                          <div className="flex gap-0.5"><Star className="h-3 w-3 text-[#D4AF37] fill-current" /></div>
                         </div>
-                      ))}
-                      <button 
-                        onClick={() => {
-                          const url = prompt("URL de l'image :");
-                          if (url) setProduct({...product, gallery_images: [...(product.gallery_images || []), url]});
-                        }}
-                        className="aspect-square rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 hover:border-[#b8933d] hover:text-[#b8933d] transition-all"
-                      >
-                        <Plus className="h-6 w-6" />
-                        <span className="text-[10px] font-bold">Ajouter</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 pt-4 border-t">
-                    <Label className="font-bold flex items-center gap-2">URL Vidéo (Youtube/Reels)</Label>
-                    <Input value={product.video_url || ""} onChange={(e) => setProduct({...product, video_url: e.target.value})} placeholder="https://..." />
-                  </div>
-                </CardContent>
-             </Card>
-          </TabsContent>
-
-          {/* ONGLET LOGIQUE */}
-          <TabsContent value="logic" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="rounded-2xl border-none shadow-sm">
-                <CardHeader className="border-b py-4"><CardTitle className="text-sm font-black text-gray-400 uppercase tracking-widest">Catégories</CardTitle></CardHeader>
-                <CardContent className="p-6">
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-                    {categories.map(cat => (
-                      <div key={cat.id} className="flex items-center space-x-2 py-2 border-b border-gray-50 last:border-0">
-                        <Switch 
-                          checked={selectedCategories.includes(cat.id)} 
-                          onCheckedChange={(checked) => {
-                            if (checked) setSelectedCategories([...selectedCategories, cat.id]);
-                            else setSelectedCategories(selectedCategories.filter(cid => cid !== cat.id));
-                          }}
-                        />
-                        <span className="text-sm font-medium">{cat.name}</span>
+                        <p className="text-xs text-gray-600 italic leading-relaxed">&quot;{rev.message || rev.comment}&quot;</p>
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card className="rounded-2xl border-none shadow-sm">
-                <CardHeader className="border-b py-4"><CardTitle className="text-sm font-black text-gray-400 uppercase tracking-widest">Suggestions André (Cross-Selling)</CardTitle></CardHeader>
-                <CardContent className="p-6">
-                   <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-                    {allProducts.map(p => (
-                      <div key={p.id} className="flex items-center space-x-2 py-2 border-b border-gray-50 last:border-0">
-                        <Switch 
-                          checked={product.related_product_ids?.includes(p.id)} 
-                          onCheckedChange={(checked) => {
-                            const ids = [...(product.related_product_ids || [])];
-                            if (checked) ids.push(p.id);
-                            else {
-                               const idx = ids.indexOf(p.id);
-                               if (idx > -1) ids.splice(idx, 1);
-                            }
-                            setProduct({...product, related_product_ids: ids});
-                          }}
-                        />
-                        <span className="text-sm font-medium">{p.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                ) : (
+                  <p className="text-xs text-gray-400 italic text-center py-6 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-100 text-[10px]">Soyez la première personne à partager votre expérience !</p>
+                )}
             </div>
-          </TabsContent>
-        </Tabs>
+
+            <HiddenDiamond productId={product.id} position="description" selectedPosition="description" />
+          </div>
+        </div>
       </main>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="rounded-[2.5rem]">
+          <AlertDialogHeader><AlertDialogTitle className="text-2xl font-black text-red-600 uppercase italic">⚠️ Action Irréversible</AlertDialogTitle><AlertDialogDescription>Supprimer définitivement &quot;{product.name}&quot; ?</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel className="rounded-2xl">Annuler</AlertDialogCancel><AlertDialogAction onClick={handleDeleteProduct} className="bg-red-600 hover:bg-red-700 rounded-2xl font-black">OUI, SUPPRIMER</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
