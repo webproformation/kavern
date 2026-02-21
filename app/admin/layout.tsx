@@ -110,6 +110,7 @@ const navSections: NavSection[] = [
       { href: "/admin/clients", label: "Clients" },
       { href: "/admin/guestbook", label: "Livre d'Or" },
       { href: "/admin/ambassador", label: "Ambassadrice" },
+
       { href: "/admin/media", label: "Médiathèque" },
       { href: "/admin/sauvegarde", label: "Sauvegardes" },
     ],
@@ -146,7 +147,7 @@ export default function AdminLayout({
     <div className="min-h-screen bg-gray-50">
       {/* Mobile header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-blue-900 text-white flex items-center justify-between px-3 z-50 shadow-lg">
-        <h1 className="text-base font-bold truncate flex-1">Admin - KAVERN</h1>
+        <h1 className="text-base font-bold truncate flex-1">Admin - LBDM</h1>
         <Button
           variant="ghost"
           size="icon"
@@ -175,7 +176,7 @@ export default function AdminLayout({
               <span className="text-sm">Accueil du site</span>
             </Link>
           </div>
-          <h1 className="text-xl font-bold">KAVERN</h1>
+          <h1 className="text-xl font-bold">La Boutique de Morgane</h1>
           <p className="text-sm text-blue-200 mt-1">Administration</p>
         </div>
 
