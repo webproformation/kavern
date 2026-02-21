@@ -80,7 +80,7 @@ export default function ProductPage() {
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  // --- ÉTATS AVIS (Liés au Livre d'Or / Guestbook) ---
+  // --- ÉTATS AVIS (Livre d'Or) ---
   const [reviews, setReviews] = useState<any[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
 
@@ -97,32 +97,35 @@ export default function ProductPage() {
         .from("products")
         .select("*")
         .eq("slug", slug)
-        .single();
+        .maybeSingle(); // CORRECTION : Evite le crash si le produit n'est pas trouvé (406)
 
       if (error) throw error;
       if (data) {
         setProduct(data);
         loadRelatedAndReviews(data);
+      } else {
+        setProduct(null);
       }
     } catch (error) {
       console.error("Error loading product:", error);
-      toast.error("Pépite introuvable...");
     } finally {
       setLoading(false);
     }
   }
 
   async function loadRelatedAndReviews(prod: any) {
-    // 1. Cross-selling
-    if (prod.related_product_ids && prod.related_product_ids.length > 0) {
-      const { data: related } = await supabase
-        .from("products")
-        .select("id, name, slug, image_url, regular_price")
-        .in("id", prod.related_product_ids);
-      setRelatedProducts(related || []);
-    }
+    // 1. Cross-selling (Protection contre undefined)
+    try {
+        if (prod.related_product_ids && prod.related_product_ids.length > 0) {
+          const { data: related } = await supabase
+            .from("products")
+            .select("id, name, slug, image_url, regular_price")
+            .in("id", prod.related_product_ids);
+          setRelatedProducts(related || []);
+        }
+    } catch (e) { setRelatedProducts([]); }
 
-    // 2. Avis clients (Utilisation de la table GUESTBOOK existante)
+    // 2. Avis clients (Livre d'Or - Protection contre le crash de rendu et le 404)
     try {
         const { data: revs } = await supabase
           .from("guestbook") 
@@ -133,7 +136,7 @@ export default function ProductPage() {
         
         setReviews(revs || []);
     } catch (err) {
-        console.error("Erreur lors de la récupération des avis (guestbook):", err);
+        console.error("Erreur avis:", err);
         setReviews([]);
     } finally {
         setLoadingReviews(false);
@@ -231,7 +234,7 @@ export default function ProductPage() {
       <main className="max-w-7xl mx-auto px-4 py-8 lg:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
           
-          {/* ZONE MÉDIA (Vidéo prioritiaire ou Galerie) */}
+          {/* ZONE MÉDIA */}
           <div className="space-y-6 sticky top-24">
             {product.video_url ? (
               <div className="aspect-[4/5] rounded-3xl overflow-hidden bg-black shadow-2xl border-4 border-[#d4af37]/20 relative group">
@@ -401,13 +404,6 @@ export default function ProductPage() {
                       <p className="text-xs text-gray-500 leading-relaxed">André emballe chaque pépite avec amour à Nieppe. Expédition en 24h/48h avec suivi complet.</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-4">
-                    <div className="bg-blue-100 p-2 rounded-xl"><CheckCircle2 className="h-5 w-5 text-blue-600" /></div>
-                    <div className="space-y-1">
-                      <p className="font-bold text-gray-900">Le Droit à l&apos;Erreur (14 jours)</p>
-                      <p className="text-xs text-gray-500 leading-relaxed">Changement d&apos;avis ? Aucun problème ! Retournez votre colis sous 14 jours pour un crédit boutique immédiat.</p>
-                    </div>
-                  </div>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -419,7 +415,7 @@ export default function ProductPage() {
                   {(reviews || []).length > 0 && (
                     <div className="flex items-center gap-1 text-[#D4AF37]">
                       <Star className="h-4 w-4 fill-current" />
-                      <span className="text-xs font-black">{( (reviews || []).reduce((acc: any, curr: any) => acc + curr.rating, 0) / (reviews || []).length ).toFixed(1)}/5</span>
+                      <span className="text-xs font-black">{( (reviews || []).reduce((acc: any, curr: any) => acc + (curr.rating || 5), 0) / (reviews || []).length ).toFixed(1)}/5</span>
                     </div>
                   )}
                 </h3>
@@ -434,7 +430,7 @@ export default function ProductPage() {
                           <p className="font-bold text-sm text-gray-900">{rev.customer_name || 'Un collectionneur'}</p>
                           <div className="flex gap-0.5">
                             {[1, 2, 3, 4, 5].map((star) => (
-                                <Star key={star} className={`h-3 w-3 ${star <= rev.rating ? 'text-[#D4AF37] fill-current' : 'text-gray-200'}`} />
+                                <Star key={star} className={`h-3 w-3 ${star <= (rev.rating || 5) ? 'text-[#D4AF37] fill-current' : 'text-gray-200'}`} />
                             ))}
                           </div>
                         </div>
@@ -447,7 +443,7 @@ export default function ProductPage() {
                 )}
             </div>
 
-            {/* DIAMANT CACHÉ (Indispensable) */}
+            {/* DIAMANT CACHÉ */}
             <HiddenDiamond product={product} />
           </div>
         </div>
@@ -460,7 +456,6 @@ export default function ProductPage() {
             <DialogTitle className="text-3xl font-black text-gray-900 flex items-center gap-3">
               <Bell className="h-8 w-8 text-[#b8933d] animate-bounce" /> {CUSTOM_TEXTS.buttons.alertStock}
             </DialogTitle>
-            <DialogDescription className="text-gray-500 font-medium pt-2">André surveille l&apos;atelier ! Laissez votre email pour être alerté(e) du prochain arrivage.</DialogDescription>
           </DialogHeader>
           <div className="py-6 space-y-4">
             <div className="space-y-2"><Label htmlFor="email" className="font-bold text-gray-700">Votre adresse email</Label><Input id="email" type="email" placeholder="votre@email.com" value={notifyEmail} onChange={(e) => setNotifyEmail(e.target.value)} className="rounded-2xl h-14 border-gray-100 shadow-inner" /></div>
