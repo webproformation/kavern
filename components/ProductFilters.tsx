@@ -40,7 +40,8 @@ const FALLBACK_COLORS: Record<string, string> = {
   'orange': '#FFA500', 'rouge': '#FF0000', 'rose': '#FFC0CB', 'violet': '#800080'
 };
 
-export default function ProductFilters({ 
+// CORRECTION : Changement de "export default function" en "export function" pour corriger l'erreur #130
+export function ProductFilters({ 
   categorySlug, 
   activeFilters, 
   availableTerms,

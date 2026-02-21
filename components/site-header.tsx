@@ -85,14 +85,17 @@ export function SiteHeader() {
               .eq('parent_id', cat.id)
               .eq('is_visible', true);
 
+            const hasSubCategories = (count || 0) > 0;
+
             return {
               name: decodeHtmlEntities(cat.name),
               href: `/category/${cat.slug}`,
               slug: cat.slug,
-              hasMegaMenu: (count || 0) > 0,
+              hasMegaMenu: hasSubCategories,
             };
           })
         );
+
         setNavigation([...dynamicNav, ...STATIC_LINKS]);
       }
     } catch (error) {
@@ -124,15 +127,13 @@ export function SiteHeader() {
 
   return (
     <>
-      {/* BANNIÈRE DÉFILANTE PREMIUM */}
       <div className="bg-[#D4AF37] text-black py-1.5 overflow-hidden border-b border-black/5">
         <div className="animate-marquee whitespace-nowrap flex gap-12 font-bold text-[10px] uppercase tracking-widest">
-          <span>✨ Bienvenue dans la KAVERN - L'artisanat et l'inattendu ✨</span>
-          <span>🚚 Livraison offerte dès 80€ d'achats</span>
-          <span>🎁 Une surprise dans chaque colis</span>
+          <span>✨ Bienvenue dans la KAVERN ✨</span>
+          <span>🚚 Livraison offerte dès 80€ d&apos;achats</span>
           <span>🎥 Rejoignez-nous pour le prochain Live Shopping</span>
-          <span>✨ Bienvenue dans la KAVERN - L'artisanat et l'inattendu ✨</span>
-          <span>🚚 Livraison offerte dès 80€ d'achats</span>
+          <span>✨ Bienvenue dans la KAVERN ✨</span>
+          <span>🚚 Livraison offerte dès 80€ d&apos;achats</span>
         </div>
       </div>
 
@@ -153,14 +154,14 @@ export function SiteHeader() {
                 <img
                   src="/kavern-logo.png"
                   alt="Kavern"
-                  className="h-12 md:h-16 w-auto transition-transform hover:scale-105"
+                  className="h-12 md:h-16 w-auto"
                 />
               </Link>
             </div>
 
             <nav className="hidden md:flex items-center gap-3 lg:gap-4 flex-1 justify-center">
               {loading ? (
-                <div className="text-gray-400 text-xs italic">Chargement...</div>
+                <div className="text-gray-400 text-xs">Chargement...</div>
               ) : (
                 navigation.map((item) => (
                   <div
@@ -171,9 +172,9 @@ export function SiteHeader() {
                   >
                     <Link
                       href={item.href}
-                      className={`flex items-center gap-1.5 text-center text-xs lg:text-sm font-bold uppercase tracking-widest leading-tight transition-colors ${
+                      className={`flex items-center gap-1.5 text-center text-xs lg:text-sm font-medium leading-tight transition-colors ${
                         item.slug === 'live'
-                          ? 'text-[#D4AF37] hover:text-[#C5A028] animate-pulse'
+                          ? 'text-[#D4AF37] hover:text-[#C5A028] font-bold'
                           : pathname === item.href || pathname.startsWith(item.href + '/')
                           ? 'text-[#D4AF37]'
                           : 'text-gray-900 hover:text-[#D4AF37]'
@@ -205,7 +206,7 @@ export function SiteHeader() {
                 >
                   <Heart className="h-5 w-5" />
                   {wishlistCount > 0 && (
-                    <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-[#D4AF37] text-black text-[10px] font-black">
+                    <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-[#D4AF37] text-black text-xs font-black">
                       {wishlistCount}
                     </Badge>
                   )}
@@ -243,7 +244,7 @@ export function SiteHeader() {
                       )}
                       <DropdownMenuItem asChild>
                         <Link href="/account" className="flex items-center w-full cursor-pointer font-semibold">
-                          <User className="mr-2 h-4 w-4" /> Profil & Fidélité
+                          <User className="mr-2 h-4 w-4" /> Mon profil & Fidélité
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
@@ -252,19 +253,22 @@ export function SiteHeader() {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleSignOut} className="text-red-500 font-bold cursor-pointer">
+                      <DropdownMenuItem
+                        onClick={handleSignOut}
+                        className="text-red-500 font-bold cursor-pointer"
+                      >
                         <LogOut className="mr-2 h-4 w-4" /> Déconnexion
                       </DropdownMenuItem>
                     </>
                   ) : (
-                    <div className="p-2 space-y-1">
+                    <>
                       <DropdownMenuItem asChild>
-                        <Link href="/auth/login" className="font-bold uppercase text-xs tracking-widest cursor-pointer">Se connecter</Link>
+                        <Link href="/auth/login" className="flex items-center w-full cursor-pointer font-bold uppercase text-xs tracking-widest">Se connecter</Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link href="/auth/register" className="font-bold uppercase text-xs tracking-widest text-[#D4AF37] cursor-pointer">Créer un compte</Link>
+                        <Link href="/auth/register" className="flex items-center w-full cursor-pointer font-bold uppercase text-xs tracking-widest text-[#D4AF37]">Créer un compte</Link>
                       </DropdownMenuItem>
-                    </div>
+                    </>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -277,7 +281,7 @@ export function SiteHeader() {
                   <ShoppingCart className="h-5 w-5" />
                   <span className="hidden md:inline text-xs font-black uppercase tracking-widest">{CUSTOM_TEXTS.buttons.cart}</span>
                   {cartItemCount > 0 && (
-                    <Badge className="absolute -top-2 -right-2 md:relative md:top-0 md:right-0 h-5 w-5 flex items-center justify-center p-0 bg-[#D4AF37] text-black text-[10px] font-black">
+                    <Badge className="absolute -top-2 -right-2 md:relative md:top-0 md:right-0 h-5 w-5 flex items-center justify-center p-0 bg-[#D4AF37] text-black text-xs font-black">
                       {cartItemCount}
                     </Badge>
                   )}
@@ -288,8 +292,20 @@ export function SiteHeader() {
         </div>
 
         {openMegaMenu && (
-          <div onMouseEnter={() => { if (closeTimerRef.current) clearTimeout(closeTimerRef.current); }} onMouseLeave={handleMouseLeave}>
-            <MegaMenu isOpen={true} categorySlug={openMegaMenu} onClose={() => setOpenMegaMenu(null)} />
+          <div
+            onMouseEnter={() => {
+              if (closeTimerRef.current) {
+                clearTimeout(closeTimerRef.current);
+                closeTimerRef.current = null;
+              }
+            }}
+            onMouseLeave={handleMouseLeave}
+          >
+            <MegaMenu
+              isOpen={true}
+              categorySlug={openMegaMenu}
+              onClose={() => setOpenMegaMenu(null)}
+            />
           </div>
         )}
       </header>
