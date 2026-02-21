@@ -80,7 +80,7 @@ export default function ProductPage() {
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  // --- ÉTATS AVIS ---
+  // --- ÉTATS AVIS (Liés au Livre d'Or) ---
   const [reviews, setReviews] = useState<any[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
 
@@ -113,7 +113,7 @@ export default function ProductPage() {
   }
 
   async function loadRelatedAndReviews(prod: any) {
-    // 1. Cross-selling (Nouveauté Concept Store)
+    // 1. Cross-selling
     if (prod.related_product_ids && prod.related_product_ids.length > 0) {
       const { data: related } = await supabase
         .from("products")
@@ -122,15 +122,23 @@ export default function ProductPage() {
       setRelatedProducts(related || []);
     }
 
-    // 2. Avis clients (Restauré)
-    const { data: revs } = await supabase
-      .from("product_reviews")
-      .select("*")
-      .eq("product_id", prod.id)
-      .eq("status", "approved")
-      .order("created_at", { ascending: false });
-    setReviews(revs || []);
-    setLoadingReviews(false);
+    // 2. Avis clients (Utilisation de la table GUESTBOOK existante)
+    // On cherche les entrées du livre d'or liées à ce produit spécifique
+    try {
+        const { data: revs } = await supabase
+          .from("guestbook") 
+          .select("*")
+          .eq("product_id", prod.id)
+          .eq("status", "approved")
+          .order("created_at", { ascending: false });
+        
+        setReviews(revs || []);
+    } catch (err) {
+        console.error("Erreur lors de la récupération des avis (guestbook):", err);
+        setReviews([]);
+    } finally {
+        setLoadingReviews(false);
+    }
   }
 
   const currentPrice = useMemo(() => {
@@ -191,7 +199,7 @@ export default function ProductPage() {
 
   return (
     <div className="min-h-screen bg-[#FDFCFB]">
-      {/* 🛠️ BARRE D'OUTILS ADMIN (Restaurée et intacte) */}
+      {/* 🛠️ BARRE D'OUTILS ADMIN (Restaurée intacte) */}
       {profile?.is_admin && (
         <div className="bg-red-50 border-b border-red-100 py-3 sticky top-0 z-40">
           <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
@@ -224,7 +232,7 @@ export default function ProductPage() {
       <main className="max-w-7xl mx-auto px-4 py-8 lg:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
           
-          {/* ZONE MÉDIA (Vidéo prioritiaire OU Galerie restaurée) */}
+          {/* ZONE MÉDIA (Vidéo prioritiaire ou Galerie) */}
           <div className="space-y-6 sticky top-24">
             {product.video_url ? (
               <div className="aspect-[4/5] rounded-3xl overflow-hidden bg-black shadow-2xl border-4 border-[#d4af37]/20 relative group">
@@ -262,7 +270,6 @@ export default function ProductPage() {
                   <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-[1.1]">
                     {decodeHtmlEntities(product.name)}
                   </h1>
-                  {/* Phrase d'accroche (Nouveauté Concept Store) */}
                   {product.short_description && (
                     <p className="text-xl text-[#C6A15B] italic font-semibold leading-relaxed">
                       &quot;{product.short_description}&quot;
@@ -289,7 +296,7 @@ export default function ProductPage() {
               </div>
             </div>
 
-            {/* L'AVIS D'ANDRÉ (Nouveauté Concept Store) */}
+            {/* L'AVIS D'ANDRÉ */}
             {product.andre_review && (
               <Card className="bg-gradient-to-br from-amber-50 to-white border-2 border-amber-100/30 shadow-xl shadow-amber-50/50 rounded-[2.5rem] overflow-hidden">
                 <CardContent className="p-10 space-y-5 relative">
@@ -308,7 +315,7 @@ export default function ProductPage() {
               </Card>
             )}
 
-            {/* SÉLECTEUR DE VARIANTES (Intact) */}
+            {/* SÉLECTEUR DE VARIANTES */}
             {product.has_variations && (
               <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-100/50 space-y-6">
                 <Label className="text-sm font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
@@ -318,7 +325,7 @@ export default function ProductPage() {
               </div>
             )}
 
-            {/* LOGIQUE MORPHOLOGIE (Masquée mais restaurée) */}
+            {/* LOGIQUE MORPHOLOGIE */}
             {ENABLE_MORPHOLOGY_LOGIC && profile?.user_size && (
               <div className="flex items-center gap-3 p-4 bg-green-50 rounded-2xl border border-green-100">
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -326,7 +333,7 @@ export default function ProductPage() {
               </div>
             )}
 
-            {/* ACHAT & QUANTITÉ (Intact) */}
+            {/* ACHAT & QUANTITÉ */}
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex items-center border-2 border-gray-100 rounded-2xl bg-white h-16 px-3 shadow-inner">
@@ -361,15 +368,15 @@ export default function ProductPage() {
               )}
             </div>
 
-            {/* CROSS-SELLING (L'Appât - Nouveauté Concept Store) */}
-            {relatedProducts.length > 0 && (
+            {/* CROSS-SELLING */}
+            {(relatedProducts || []).length > 0 && (
               <div className="pt-10 border-t-2 border-gray-50 space-y-8">
                 <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-3">
                   <Heart className="h-4 w-4 text-pink-500 fill-pink-500" />
                   André vous suggère aussi
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                  {relatedProducts.map(p => (
+                  {(relatedProducts || []).map(p => (
                     <Link key={p.id} href={`/product/${p.slug}`} className="group block space-y-3">
                       <div className="aspect-square rounded-[1.5rem] overflow-hidden bg-gray-50 border-2 border-transparent transition-all group-hover:shadow-2xl group-hover:border-[#d4af37]/30 group-hover:-translate-y-1">
                         <img src={p.image_url} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" alt={p.name} />
@@ -384,7 +391,7 @@ export default function ProductPage() {
               </div>
             )}
 
-            {/* ACCORDÉONS DÉTAILLÉS (Intact) */}
+            {/* ACCORDÉONS DÉTAILLÉS */}
             <Accordion type="single" collapsible className="w-full space-y-2">
               <AccordionItem value="description" className="border-none bg-white rounded-2xl px-6">
                 <AccordionTrigger className="font-black text-gray-900 uppercase text-[10px] tracking-[0.2em] hover:no-underline py-5">L&apos;histoire & Secrets de fabrication</AccordionTrigger>
@@ -414,29 +421,39 @@ export default function ProductPage() {
               </AccordionItem>
             </Accordion>
 
-            {/* SECTION AVIS CLIENTS (Restaurée et intacte) */}
+            {/* SECTION AVIS CLIENTS (Reliée au GUESTBOOK) */}
             <div className="pt-10 border-t-2 border-gray-50 space-y-8" id="avis">
                 <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] flex items-center justify-between">
-                  <span>Avis des collectionneurs ({reviews.length})</span>
-                  {reviews.length > 0 && (
+                  <span>Avis des collectionneurs ({(reviews || []).length})</span>
+                  {(reviews || []).length > 0 && (
                     <div className="flex items-center gap-1 text-[#D4AF37]">
                       <Star className="h-4 w-4 fill-current" />
-                      <span className="text-xs font-black">4.9/5</span>
+                      <span className="text-xs font-black">{( (reviews || []).reduce((acc: any, curr: any) => acc + curr.rating, 0) / (reviews || []).length ).toFixed(1)}/5</span>
                     </div>
                   )}
                 </h3>
                 
                 {loadingReviews ? (
                   <div className="animate-pulse h-20 bg-gray-50 rounded-2xl" />
-                ) : reviews.length > 0 ? (
+                ) : (reviews || []).length > 0 ? (
                   <div className="space-y-6">
-                    {reviews.map((rev, i) => (
+                    {(reviews || []).map((rev, i) => (
                       <div key={i} className="bg-white p-6 rounded-3xl border border-gray-50 shadow-sm space-y-2">
                         <div className="flex justify-between items-center">
-                          <p className="font-bold text-sm text-gray-900">{rev.customer_name}</p>
-                          <div className="flex gap-0.5"><Star className="h-3 w-3 text-[#D4AF37] fill-current" /><Star className="h-3 w-3 text-[#D4AF37] fill-current" /><Star className="h-3 w-3 text-[#D4AF37] fill-current" /><Star className="h-3 w-3 text-[#D4AF37] fill-current" /><Star className="h-3 w-3 text-[#D4AF37] fill-current" /></div>
+                          <p className="font-bold text-sm text-gray-900">{rev.customer_name || 'Un collectionneur'}</p>
+                          <div className="flex gap-0.5">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <Star key={star} className={`h-3 w-3 ${star <= rev.rating ? 'text-[#D4AF37] fill-current' : 'text-gray-200'}`} />
+                            ))}
+                          </div>
                         </div>
-                        <p className="text-xs text-gray-600 italic leading-relaxed">&quot;{rev.comment}&quot;</p>
+                        <p className="text-xs text-gray-600 italic leading-relaxed">&quot;{rev.message || rev.comment}&quot;</p>
+                        {rev.admin_response && (
+                           <div className="mt-2 pl-3 border-l-2 border-amber-100">
+                             <p className="text-[10px] font-bold text-[#b8933d] uppercase">Réponse d&apos;André</p>
+                             <p className="text-[10px] text-gray-500 italic">{rev.admin_response}</p>
+                           </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -445,7 +462,7 @@ export default function ProductPage() {
                 )}
             </div>
 
-            {/* DIAMANT CACHÉ (Intact) */}
+            {/* DIAMANT CACHÉ */}
             <HiddenDiamond product={product} />
           </div>
         </div>
