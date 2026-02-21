@@ -41,14 +41,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -62,7 +54,6 @@ import { toast } from "sonner";
 import { decodeHtmlEntities } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
-import { CUSTOM_TEXTS } from "@/lib/texts";
 
 export default function ProductPage() {
   const { slug } = useParams();
@@ -74,8 +65,6 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedVariation, setSelectedVariation] = useState<any>(null);
-  const [showNotifyDialog, setShowNotifyDialog] = useState(false);
-  const [notifyEmail, setNotifyEmail] = useState("");
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [reviews, setReviews] = useState<any[]>([]);
@@ -123,7 +112,7 @@ export default function ProductPage() {
           .order("created_at", { ascending: false });
         setReviews(revs || []);
     } catch (err) {
-        console.error("Error loading reviews:", err);
+        console.error("Error loading extra data:", err);
     } finally {
         setLoadingReviews(false);
     }
@@ -177,11 +166,11 @@ export default function ProductPage() {
     <div className="min-h-screen bg-[#FDFCFB]">
       {profile?.is_admin && (
         <div className="bg-red-50 border-b border-red-100 py-3 sticky top-0 z-40">
-          <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-red-700 font-bold text-xs uppercase tracking-widest"><AlertTriangle className="h-4 w-4" /> Mode Administrateur</div>
+          <div className="max-w-7xl mx-auto px-4 flex items-center justify-between text-[10px]">
+            <div className="flex items-center gap-2 text-red-700 font-bold uppercase tracking-widest"><AlertTriangle className="h-4 w-4" /> Mode Administrateur</div>
             <div className="flex gap-2">
-              <Button asChild variant="outline" size="sm" className="bg-white hover:bg-red-100 h-8 text-[10px] font-bold"><Link href={`/admin/products/${product.id}`}><Edit className="h-3.5 w-3.5 mr-2" /> Modifier</Link></Button>
-              <Button variant="destructive" size="sm" onClick={() => setShowDeleteDialog(true)} className="h-8 text-[10px] font-bold"><Trash2 className="h-3.5 w-3.5 mr-2" /> Supprimer</Button>
+              <Button asChild variant="outline" size="sm" className="bg-white hover:bg-red-100 h-8 font-bold"><Link href={`/admin/products/${product.id}`}><Edit className="h-3.5 w-3.5 mr-2" /> Modifier</Link></Button>
+              <Button variant="destructive" size="sm" onClick={() => setShowDeleteDialog(true)} className="h-8 font-bold"><Trash2 className="h-3.5 w-3.5 mr-2" /> Supprimer</Button>
             </div>
           </div>
         </div>
@@ -252,7 +241,7 @@ export default function ProductPage() {
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex items-center border-2 border-gray-100 rounded-2xl bg-white h-16 px-3 shadow-inner">
                   <Button variant="ghost" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="text-[#b8933d]"><Minus className="h-5 w-5" /></Button>
-                  <Input type="number" value={quantity} onChange={(e) => setQuantity(parseInt(e.target.value) || 1)} className="w-16 border-none text-center font-black text-xl" />
+                  <Input type="number" value={quantity} onChange={(e) => setQuantity(parseInt(e.target.value) || 1)} className="w-16 border-none text-center font-black text-xl focus-visible:ring-0" />
                   <Button variant="ghost" size="icon" onClick={() => setQuantity(quantity + 1)} className="text-[#b8933d]"><Plus className="h-5 w-5" /></Button>
                 </div>
                 <Button onClick={handleAddToCart} disabled={isOutOfStock} className="flex-1 h-16 rounded-2xl bg-[#b8933d] hover:bg-[#D4AF37] text-white text-lg font-black shadow-2xl transition-all uppercase tracking-widest">
@@ -291,7 +280,11 @@ export default function ProductPage() {
                 )}
             </div>
 
-            <HiddenDiamond productId={product.id} position="description" selectedPosition="description" />
+            <HiddenDiamond 
+              productId={product.id} 
+              position="description" 
+              selectedPosition="description" 
+            />
           </div>
         </div>
       </main>
