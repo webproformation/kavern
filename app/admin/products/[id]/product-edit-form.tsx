@@ -1,16 +1,33 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Save, ArrowLeft, RefreshCw, Weight } from "lucide-react";
+import { 
+  Save, 
+  ArrowLeft, 
+  RefreshCw, 
+  Weight, 
+  Calculator, 
+  Globe, 
+  Video, 
+  Heart, 
+  Package, 
+  Sparkles,
+  Plus,
+  Trash2,
+  AlertCircle
+} from "lucide-react";
 import Link from "next/link";
 import RichTextEditor from "@/components/RichTextEditor";
 import ColorSwatchSelector from "@/components/ColorSwatchSelector";
@@ -19,434 +36,348 @@ import HierarchicalCategorySelector from "@/components/HierarchicalCategorySelec
 import GeneralAttributesSelector from "@/components/GeneralAttributesSelector";
 import VariationDetailsForm from "@/components/VariationDetailsForm";
 
-// --- IMPORT DU HOOK DE SAUVEGARDE ---
 import { useAutoSave } from "@/hooks/useAutoSave"; 
 
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  parent_id: string | null;
-  display_order: number | null;
-}
+interface Category { id: string; name: string; slug: string; parent_id: string | null; }
+interface Variation { id?: string; colorName: string; colorId: string; sku: string; regular_price: number | null; sale_price: number | null; stock_quantity: number | null; image_url: string | null; }
 
-interface Variation {
-  id?: string;
-  colorName: string;
-  colorId: string;
-  sku: string;
-  regular_price: number | null;
-  sale_price: number | null;
-  stock_quantity: number | null;
-  image_url: string | null;
-}
-
-interface ProductCreateFormProps {
+interface ProductEditFormProps {
+  productId: string;
   allCategories: Category[];
 }
 
-export default function ProductCreateForm({
-  allCategories,
-}: ProductCreateFormProps) {
+export default function ProductEditForm({ productId, allCategories }: ProductEditFormProps) {
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // --- GÉNÉRATION DE L'ID ANTICIPÉ ---
-  const [newProductId] = useState(() => crypto.randomUUID());
-
-  // --- ÉTATS DU FORMULAIRE ---
+  // --- ÉTATS PRODUIT (Informations & Editorial) ---
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [sku, setSku] = useState("");
+  const [shortDescription, setShortDescription] = useState(""); // Phrase d'accroche
   const [description, setDescription] = useState("");
+  const [andreReview, setAndreReview] = useState(""); // L'avis d'André
+  const [videoUrl, setVideoUrl] = useState(""); // Vidéo
+
+  // --- ÉTATS FINANCES & LOGISTIQUE ---
+  const [purchasePrice, setPurchasePrice] = useState<number>(0);
   const [regularPrice, setRegularPrice] = useState<number>(0);
   const [salePrice, setSalePrice] = useState<number | null>(null);
   const [stockQuantity, setStockQuantity] = useState<number>(0);
   const [virtualWeight, setVirtualWeight] = useState<number>(0);
+
+  // --- ÉTATS SEO ---
+  const [seoTitle, setSeoTitle] = useState("");
+  const [seoDescription, setSeoDescription] = useState("");
+
+  // --- ÉTATS CONFIGURATION ---
   const [status, setStatus] = useState("draft");
   const [isFeatured, setIsFeatured] = useState(false);
   const [isDiamond, setIsDiamond] = useState(false);
-
   const [mainImage, setMainImage] = useState<string>("");
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
-
-  // --- GESTION DES COULEURS (LOGIQUE CUMULATIVE) ---
-  // activeFamilyView: La famille de couleur actuellement affichée (Gris, Bleu...)
-  const [activeFamilyView, setActiveFamilyView] = useState<string>("");
-  const [activeFamilyId, setActiveFamilyId] = useState<string>("");
   
-  // selectedNuances: TOUTES les nuances cochées à travers toutes les familles
+  // NOUVEAU : Switch pour activer/désactiver les modules complexes
+  const [hasVariations, setHasVariations] = useState(false); 
+  const [showSizes, setShowSizes] = useState(false);
+
+  const [activeFamilyView, setActiveFamilyView] = useState<string>("");
   const [selectedNuances, setSelectedNuances] = useState<string[]>([]);
   const [nuanceIds, setNuanceIds] = useState<Record<string, string>>({});
-
   const [sizeRangeStart, setSizeRangeStart] = useState<number | null>(null);
   const [sizeRangeEnd, setSizeRangeEnd] = useState<number | null>(null);
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string[]>>({});
-  
   const [variations, setVariations] = useState<Variation[]>([]);
+  
+  // Cross-selling
+  const [relatedProductIds, setRelatedProductIds] = useState<string[]>([]);
+  const [allProducts, setAllProducts] = useState<{id: string, name: string}[]>([]);
 
-  // --- INTÉGRATION AUTO-SAVE ---
-  const currentFormData = {
-    newProductId, name, slug, sku, description,
-    regularPrice, salePrice, stockQuantity, virtualWeight,
-    status, isFeatured, isDiamond,
-    mainImage, galleryImages,
-    activeFamilyView, activeFamilyId, 
-    selectedNuances, nuanceIds,
-    sizeRangeStart, sizeRangeEnd,
-    selectedCategories, selectedAttributes,
-    variations
-  };
-
-  const { clearSavedData } = useAutoSave(
-    `new_product_creation`,
-    currentFormData,
-    (savedData: any) => {
-        if (savedData.name !== undefined) setName(savedData.name);
-        if (savedData.slug !== undefined) setSlug(savedData.slug);
-        if (savedData.sku !== undefined) setSku(savedData.sku);
-        if (savedData.description !== undefined) setDescription(savedData.description);
-        if (savedData.regularPrice !== undefined) setRegularPrice(savedData.regularPrice);
-        if (savedData.salePrice !== undefined) setSalePrice(savedData.salePrice);
-        if (savedData.stockQuantity !== undefined) setStockQuantity(savedData.stockQuantity);
-        if (savedData.virtualWeight !== undefined) setVirtualWeight(savedData.virtualWeight);
-        if (savedData.status !== undefined) setStatus(savedData.status);
-        if (savedData.isFeatured !== undefined) setIsFeatured(savedData.isFeatured);
-        if (savedData.isDiamond !== undefined) setIsDiamond(savedData.isDiamond);
-        if (savedData.mainImage !== undefined) setMainImage(savedData.mainImage);
-        if (savedData.galleryImages !== undefined) setGalleryImages(savedData.galleryImages);
-        if (savedData.activeFamilyView !== undefined) setActiveFamilyView(savedData.activeFamilyView);
-        if (savedData.activeFamilyId !== undefined) setActiveFamilyId(savedData.activeFamilyId);
-        if (savedData.selectedNuances !== undefined) setSelectedNuances(savedData.selectedNuances);
-        if (savedData.nuanceIds !== undefined) setNuanceIds(savedData.nuanceIds);
-        if (savedData.sizeRangeStart !== undefined) setSizeRangeStart(savedData.sizeRangeStart);
-        if (savedData.sizeRangeEnd !== undefined) setSizeRangeEnd(savedData.sizeRangeEnd);
-        if (savedData.selectedCategories !== undefined) setSelectedCategories(savedData.selectedCategories);
-        if (savedData.selectedAttributes !== undefined) setSelectedAttributes(savedData.selectedAttributes);
-        if (savedData.variations !== undefined) setVariations(savedData.variations);
-    }
-  );
-
-  // --- LOGIQUE AUTO-TAILLES ---
+  // --- CHARGEMENT DES DONNÉES ---
   useEffect(() => {
-    if (sizeRangeStart && sizeRangeEnd) {
-      const start = Math.min(sizeRangeStart, sizeRangeEnd);
-      const end = Math.max(sizeRangeStart, sizeRangeEnd);
-      const autoSizes: string[] = [];
-      for (let s = start; s <= end; s += 2) { autoSizes.push(s.toString()); }
-      setSelectedAttributes(prev => ({ ...prev, "Tailles": autoSizes }));
-    }
-  }, [sizeRangeStart, sizeRangeEnd]);
+    if (productId) loadProductData();
+    fetchOtherProducts();
+  }, [productId]);
 
-  // --- LOGIQUE DES VARIATIONS (SANS ÉCRASEMENT) ---
-  useEffect(() => {
-    setVariations(prevVariations => {
-      // 1. On garde les variations dont la nuance est toujours présente dans la liste globale
-      const existingVars = prevVariations.filter(v => selectedNuances.includes(v.colorName));
+  async function loadProductData() {
+    try {
+      const { data, error } = await supabase.from("products").select("*").eq("id", productId).single();
+      if (error) throw error;
+
+      // Editorial & Base
+      setName(data.name || "");
+      setSlug(data.slug || "");
+      setSku(data.sku || "");
+      setShortDescription(data.short_description || "");
+      setDescription(data.description || "");
+      setAndreReview(data.andre_review || "");
+      setVideoUrl(data.video_url || "");
       
-      // 2. On identifie les nouvelles nuances qui n'ont pas encore de bloc
-      const newNuances = selectedNuances.filter(name => !existingVars.some(v => v.colorName === name));
+      // Finances
+      setPurchasePrice(data.purchase_price || 0);
+      setRegularPrice(data.regular_price || 0);
+      setSalePrice(data.sale_price);
+      setStockQuantity(data.stock_quantity || 0);
+      setVirtualWeight(data.virtual_weight || 0);
+
+      // SEO
+      setSeoTitle(data.seo_title || "");
+      setSeoDescription(data.seo_description || "");
+
+      // Config
+      setStatus(data.status || "draft");
+      setIsFeatured(data.is_featured || false);
+      setIsDiamond(data.is_diamond || false);
+      setMainImage(data.image_url || "");
+      setGalleryImages(data.gallery_images || []);
+      setHasVariations(data.has_variations || false);
+      setShowSizes(!!data.size_range_start);
+      setSizeRangeStart(data.size_range_start);
+      setSizeRangeEnd(data.size_range_end);
       
-      // 3. On crée les nouveaux blocs pour ces nouvelles nuances
-      const addedVars = newNuances.map(colorName => ({
-        colorName,
-        colorId: nuanceIds[colorName] || "",
-        sku: "",
-        regular_price: regularPrice || null,
-        sale_price: salePrice,
-        stock_quantity: stockQuantity || null,
-        image_url: null,
-      }));
+      setSelectedAttributes(data.attributes || {});
+      setRelatedProductIds(data.related_product_ids || []);
 
-      // On fusionne sans perdre les données saisies dans existingVars
-      return [...existingVars, ...addedVars];
-    });
-  }, [selectedNuances, nuanceIds]);
+      // Catégories
+      const { data: catData } = await supabase.from("product_category_mapping").select("category_id").eq("product_id", productId);
+      setSelectedCategories(catData?.map(c => c.category_id) || []);
 
-  // --- HANDLERS COULEURS ---
-  const handleFamilySelect = (familyName: string, familyId: string) => {
-    // Cette fonction ne sert qu'à changer la vue du sélecteur (le dossier Gris, Bleu...)
-    setActiveFamilyView(familyName);
-    setActiveFamilyId(familyId);
-  };
-
-  const handleNuanceToggle = (nuanceName: string, nuanceId: string, selected: boolean) => {
-    if (selected) {
-      // On ajoute à la liste globale sans supprimer les autres familles
-      setSelectedNuances(prev => Array.from(new Set([...prev, nuanceName])));
-      setNuanceIds(prev => ({ ...prev, [nuanceName]: nuanceId }));
-    } else {
-      setSelectedNuances(prev => prev.filter(n => n !== nuanceName));
-    }
-  };
-
-  const handleVariationUpdate = (colorName: string, field: keyof Variation, value: any) => {
-    setVariations(prev => {
-      const idx = prev.findIndex(v => v.colorName === colorName);
-      if (idx >= 0) {
-        const newVars = [...prev];
-        newVars[idx] = { ...newVars[idx], [field]: value };
-        return newVars;
+      // Variations
+      const { data: varData } = await supabase.from("product_variations").select("*").eq("product_id", productId);
+      if (varData) {
+        const mappedVars = varData.map(v => ({
+          id: v.id,
+          colorName: v.attributes?.Couleur || "",
+          colorId: "",
+          sku: v.sku || "",
+          regular_price: v.regular_price,
+          sale_price: v.sale_price,
+          stock_quantity: v.stock_quantity,
+          image_url: v.image_url
+        }));
+        setVariations(mappedVars);
+        setSelectedNuances(mappedVars.map(v => v.colorName));
       }
-      return prev;
-    });
-  };
+
+    } catch (e: any) { toast.error("Impossible de charger le produit"); } finally { setLoading(false); }
+  }
+
+  async function fetchOtherProducts() {
+    const { data } = await supabase.from("products").select("id, name").neq("id", productId).order("name");
+    if (data) setAllProducts(data);
+  }
+
+  // --- LOGIQUE CALCUL MARGE ---
+  const margin = useMemo(() => {
+    if (regularPrice > 0) {
+      const profit = regularPrice - purchasePrice;
+      return ((profit / regularPrice) * 100).toFixed(1);
+    }
+    return "0";
+  }, [purchasePrice, regularPrice]);
+
+  // --- LOGIQUE AUTO-SLUG ---
+  useEffect(() => {
+    if (name && !productId) { // Seulement à la création pour ne pas casser les URLs existantes
+       const s = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+       setSlug(s);
+    }
+  }, [name, productId]);
 
   const handleSave = async () => {
-    if (!name || !slug) { toast.error("Le nom et le slug sont requis"); return; }
-    if (selectedNuances.length === 0) { toast.error("Veuillez sélectionner au moins une nuance"); return; }
-
     setSaving(true);
     try {
-      const attributes: Record<string, string[]> = { ...selectedAttributes };
-      attributes['Couleur'] = selectedNuances;
+      const finalAttributes = { ...selectedAttributes };
+      if (hasVariations) finalAttributes['Couleur'] = selectedNuances;
 
-      // 1. PRODUIT (On utilise activeFamilyView pour la couleur de filtre front principale)
-      const { error: pErr } = await supabase.from("products").insert({
-        id: newProductId,
-        name: name.trim(),
-        slug: slug.trim(),
-        sku: sku.trim() || null,
-        description,
-        regular_price: regularPrice,
-        sale_price: salePrice,
-        stock_quantity: stockQuantity,
-        virtual_weight: virtualWeight,
-        status,
-        image_url: mainImage || null,
-        gallery_images: galleryImages.length > 0 ? galleryImages : null,
-        is_diamond: isDiamond,
-        is_featured: isFeatured,
-        is_variable_product: variations.length > 0,
-        has_variations: variations.length > 0,
-        main_color: activeFamilyView, 
-        size_range_start: sizeRangeStart,
-        size_range_end: sizeRangeEnd,
-        attributes,
-      });
+      const { error } = await supabase.from("products").update({
+        name, slug, sku, short_description: shortDescription.substring(0, 150),
+        description, andre_review: andreReview, video_url: videoUrl,
+        purchase_price: purchasePrice, regular_price: regularPrice, sale_price: salePrice,
+        stock_quantity: stockQuantity, virtual_weight: virtualWeight,
+        seo_title: seoTitle, seo_description: seoDescription,
+        status, is_featured: isFeatured, is_diamond: isDiamond, has_variations: hasVariations,
+        image_url: mainImage, gallery_images: galleryImages,
+        size_range_start: showSizes ? sizeRangeStart : null,
+        size_range_end: showSizes ? sizeRangeEnd : null,
+        attributes: finalAttributes,
+        related_product_ids: relatedProductIds
+      }).eq("id", productId);
 
-      if (pErr) throw pErr;
-
-      // 2. VARIATIONS
-      if (variations.length > 0) {
-        const toInsert = variations.map(v => ({
-          product_id: newProductId,
-          sku: v.sku || "",
-          attributes: { "Couleur": v.colorName },
-          regular_price: v.regular_price || regularPrice,
-          sale_price: v.sale_price || salePrice,
-          stock_quantity: v.stock_quantity || stockQuantity,
-          image_url: v.image_url || mainImage,
-          stock_status: (v.stock_quantity || stockQuantity) > 0 ? "instock" : "outofstock",
-          is_active: true,
-        }));
-        await supabase.from("product_variations").insert(toInsert);
-      }
-
-      // 3. CATÉGORIES
-      if (selectedCategories.length > 0) {
-        const mappings = selectedCategories.map((catId, index) => ({
-          product_id: newProductId,
-          category_id: catId,
-          is_primary: index === 0,
-          display_order: index,
-        }));
-        await supabase.from("product_category_mapping").insert(mappings);
-      }
-
-      clearSavedData();
-      toast.success("Produit et variations créés avec succès !");
-      router.push("/admin/products");
+      if (error) throw error;
+      toast.success("Produit mis à jour avec succès !");
       router.refresh();
-    } catch (error: any) {
-      toast.error(`Erreur: ${error.message}`);
-    } finally {
-      setSaving(false);
-    }
+    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
 
+  if (loading) return <div className="p-20 text-center flex flex-col items-center gap-4"><RefreshCw className="animate-spin h-8 w-8 text-[#d4af37]"/> Chargement de la fiche...</div>;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6 pb-24 space-y-8">
+      {/* HEADER */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link href="/admin/products"><Button variant="outline" size="icon" className="rounded-full"><ArrowLeft className="h-4 w-4"/></Button></Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Nouveau Produit</h1>
-            <div className="flex items-center gap-2 text-gray-600 mt-1">
-                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <RefreshCw className="w-3 h-3" /> Auto-save actif
-                </span>
-            </div>
+            <h1 className="text-3xl font-bold text-gray-900">Modifier : {name}</h1>
+            <p className="text-gray-500 italic text-sm">Concept Store KAVERN</p>
           </div>
-          <Link href="/admin/products">
-            <Button variant="outline"><ArrowLeft className="w-4 h-4 mr-2" /> Retour</Button>
-          </Link>
         </div>
+        <Button onClick={handleSave} disabled={saving} className="bg-[#d4af37] hover:bg-[#c19b2f] text-white px-10 shadow-lg">
+          {saving ? "Enregistrement..." : <><Save className="w-4 h-4 mr-2" /> Enregistrer les modifications</>}
+        </Button>
+      </div>
 
-        <div className="space-y-6">
-          {/* CARTE : INFORMATIONS GÉNÉRALES */}
-          <Card className="bg-white">
-            <CardHeader><CardTitle className="text-[#d4af37]">Informations Générales</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nom du Produit *</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nom du produit..." />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="slug">Slug (URL) *</Label>
-                  <Input id="slug" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="url-du-produit" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <RichTextEditor value={description} onChange={setDescription} />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="sku">SKU (Référence)</Label>
-                  <Input id="sku" value={sku} onChange={(e) => setSku(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="status">Statut</Label>
-                  <Select value={status} onValueChange={setStatus}>
-                    <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="draft">Brouillon</SelectItem>
-                      <SelectItem value="publish">Publié</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-end gap-4 pb-1">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="is_featured" checked={isFeatured} onCheckedChange={(c) => setIsFeatured(!!c)} />
-                    <Label htmlFor="is_featured" className="cursor-pointer">Vedette</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="is_diamond" checked={isDiamond} onCheckedChange={(c) => setIsDiamond(!!c)} />
-                    <Label htmlFor="is_diamond" className="cursor-pointer">Diamant</Label>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* MÉDIAS */}
-          <ProductMediaGalleryManager
-            mainImage={mainImage}
-            galleryImages={galleryImages}
-            onMainImageChange={setMainImage}
-            onGalleryImagesChange={setGalleryImages}
-          />
-
-          {/* PRIX ET STOCK */}
-          <Card className="bg-white">
-            <CardHeader>
-              <CardTitle className="text-[#d4af37]">Prix & Stock (Par défaut)</CardTitle>
-              <CardDescription>Sert de base automatique pour chaque nouvelle variation</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Prix Régulier (€) *</Label>
-                  <Input type="number" step="0.01" value={regularPrice} onChange={(e) => setRegularPrice(parseFloat(e.target.value) || 0)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Prix Promo (€)</Label>
-                  <Input type="number" step="0.01" value={salePrice || ""} onChange={(e) => setSalePrice(e.target.value ? parseFloat(e.target.value) : null)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Stock Initial</Label>
-                  <Input type="number" value={stockQuantity} onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* LOGISTIQUE */}
-          <Card className="bg-white border-2 border-[#D4AF37]/20">
-            <CardHeader className="bg-[#D4AF37]/5">
-              <div className="flex items-center gap-2">
-                <Weight className="h-5 w-5 text-[#D4AF37]" />
-                <CardTitle className="text-[#d4af37]">Logistique (Colis Ouvert)</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-2">
-              <Label>Poids Virtuel (en grammes) *</Label>
-              <div className="relative max-w-[200px]">
-                <Input type="number" value={virtualWeight} onChange={(e) => setVirtualWeight(parseInt(e.target.value) || 0)} className="pr-10" />
-                <div className="absolute inset-y-0 right-3 flex items-center text-gray-400 text-sm">g</div>
-              </div>
-              <p className="text-[10px] text-gray-500 italic">Estime le remplissage du carton (max 20kg).</p>
-            </CardContent>
-          </Card>
-
-          {/* COULEURS CUMULATIVES */}
-          <ColorSwatchSelector
-            selectedMainColor={activeFamilyView} // Gère l'onglet de vue (Gris, Bleu...)
-            selectedSecondaryColors={selectedNuances} // Liste globale persistante
-            onMainColorSelect={handleFamilySelect} // Change de vue sans effacer
-            onSecondaryColorToggle={handleNuanceToggle} // Ajoute ou retire de la liste globale
-            showSecondaryColors={true}
-          />
-
-          {/* VARIATIONS DÉTAILLÉES */}
-          <VariationDetailsForm
-            selectedSecondaryColors={selectedNuances}
-            secondaryColorIds={nuanceIds}
-            variations={variations}
-            onVariationUpdate={handleVariationUpdate}
-            defaultRegularPrice={regularPrice}
-            defaultSalePrice={salePrice}
-            defaultStock={stockQuantity}
-          />
-
-          {/* TAILLES AUTO */}
-          <Card className="bg-white">
-            <CardHeader><CardTitle className="text-[#d4af37]">Filtres de Taille</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Taille Minimum</Label>
-                  <Select value={sizeRangeStart?.toString() || "none"} onValueChange={(v) => setSizeRangeStart(v === "none" ? null : parseInt(v))}>
-                    <SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Aucune</SelectItem>
-                      {Array.from({ length: 11 }, (_, i) => 34 + (i * 2)).map(size => (
-                        <SelectItem key={size} value={size.toString()}>{size}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Taille Maximum</Label>
-                  <Select value={sizeRangeEnd?.toString() || "none"} onValueChange={(v) => setSizeRangeEnd(v === "none" ? null : parseInt(v))}>
-                    <SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Aucune</SelectItem>
-                      {Array.from({ length: 11 }, (_, i) => 34 + (i * 2)).map(size => (
-                        <SelectItem key={size} value={size.toString()}>{size}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* ATTRIBUTS ET CATÉGORIES */}
-          <GeneralAttributesSelector selectedAttributes={selectedAttributes} onAttributesChange={setSelectedAttributes} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* COLONNE GAUCHE : EDITORIAL & MÉDIAS */}
+        <div className="lg:col-span-2 space-y-8">
           
-          <HierarchicalCategorySelector selectedCategories={selectedCategories} onCategoriesChange={setSelectedCategories} />
+          {/* 1. ÂME DU PRODUIT */}
+          <Card className="border-none shadow-sm bg-white">
+            <CardHeader className="bg-gray-50/50 border-b">
+              <CardTitle className="text-[#C6A15B] flex items-center gap-2"><Heart className="h-5 w-5 fill-[#C6A15B]"/> L&apos;Âme du Produit</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2"><Label>Nom du produit *</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
+                <div className="space-y-2"><Label>Slug (URL)</Label><Input value={slug} onChange={(e) => setSlug(e.target.value)} className="bg-gray-50 font-mono text-xs" /></div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between items-center"><Label>Phrase d&apos;accroche (Max 150 chars)</Label><span className="text-[10px] text-gray-400">{shortDescription.length}/150</span></div>
+                <Input value={shortDescription} onChange={(e) => setShortDescription(e.target.value.substring(0, 150))} placeholder="Le goût authentique..." className="italic" />
+              </div>
 
-          <div className="flex justify-end gap-4 pb-12">
-            <Link href="/admin/products"><Button variant="outline">Annuler</Button></Link>
-            <Button onClick={handleSave} disabled={saving} className="bg-[#d4af37] hover:bg-[#c19b2f] px-10">
-              {saving ? "Création..." : <><Save className="w-4 h-4 mr-2" /> Créer le produit et les variations</>}
-            </Button>
-          </div>
+              <div className="space-y-2"><Label>Histoire du produit (Description longue)</Label><RichTextEditor value={description} onChange={setDescription} /></div>
+
+              <div className="p-5 bg-amber-50 rounded-2xl border border-amber-100 space-y-3">
+                <Label className="text-[#b8933d] font-bold flex items-center gap-2 uppercase tracking-tight"><Sparkles className="h-4 w-4"/> L&apos;avis d&apos;André</Label>
+                <Textarea value={andreReview} onChange={(e) => setAndreReview(e.target.value)} placeholder="Votre avis personnel..." rows={4} className="bg-white border-none italic shadow-inner" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 2. VISUELS & VIDÉO */}
+          <Card className="border-none shadow-sm bg-white">
+            <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="flex items-center gap-2"><Video className="h-5 w-5 text-red-500"/> Visuels & Démo Vidéo</CardTitle></CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <ProductMediaGalleryManager mainImage={mainImage} galleryImages={galleryImages} onMainImageChange={setMainImage} onGalleryImagesChange={setGalleryImages} />
+              <Separator />
+              <div className="space-y-2">
+                <Label>Lien Vidéo (Instagram Reel / YouTube)</Label>
+                <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://instagram.com/reel/..." />
+                <p className="text-[10px] text-gray-400 italic">Remplacera l&apos;image principale sur la fiche produit.</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 3. CROSS-SELLING */}
+          <Card className="border-none shadow-sm bg-white">
+            <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="flex items-center gap-2 text-blue-600"><Plus className="h-5 w-5"/> L&apos;Appât (Ventes Suggérées)</CardTitle></CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <Label className="italic">André vous conseille d&apos;accompagner cela avec...</Label>
+              <div className="flex flex-wrap gap-2">
+                {relatedProductIds.map(id => (
+                  <Badge key={id} variant="secondary" className="px-3 py-1 gap-2 bg-blue-50 text-blue-700 border-blue-100">
+                    {allProducts.find(p => p.id === id)?.name}
+                    <Trash2 className="h-3 w-3 cursor-pointer hover:text-red-500" onClick={() => setRelatedProductIds(relatedProductIds.filter(v => v !== id))} />
+                  </Badge>
+                ))}
+              </div>
+              <Select onValueChange={(id) => id && !relatedProductIds.includes(id) && setRelatedProductIds([...relatedProductIds, id])}>
+                <SelectTrigger className="bg-white"><SelectValue placeholder="Ajouter un produit suggéré..." /></SelectTrigger>
+                <SelectContent>{allProducts.map(p => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+
         </div>
+
+        {/* COLONNE DROITE : FINANCES, SEO & CONFIG */}
+        <div className="space-y-8">
+          
+          {/* FINANCES */}
+          <Card className="border-2 border-[#d4af37]/30 bg-amber-50/20 shadow-lg overflow-hidden">
+            <CardHeader className="bg-[#d4af37]/10 flex flex-row items-center justify-between pb-4">
+              <CardTitle className="text-lg text-[#b8933d] flex items-center gap-2"><Calculator className="h-5 w-5"/> Marge</CardTitle>
+              <Badge className="bg-[#d4af37] text-white border-none">{margin}%</Badge>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4 bg-white/80">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1"><Label className="text-[10px] uppercase text-gray-500">Achat (€)</Label><Input type="number" value={purchasePrice} onChange={(e) => setPurchasePrice(parseFloat(e.target.value) || 0)} className="font-mono" /></div>
+                <div className="space-y-1"><Label className="text-[10px] uppercase text-gray-500">Vente (€)</Label><Input type="number" value={regularPrice} onChange={(e) => setRegularPrice(parseFloat(e.target.value) || 0)} className="font-bold font-mono border-amber-200" /></div>
+              </div>
+              <div className="space-y-1"><Label className="text-[10px] uppercase text-gray-500">Promo (€)</Label><Input type="number" value={salePrice || ""} onChange={(e) => setSalePrice(e.target.value ? parseFloat(e.target.value) : null)} className="text-red-600 font-mono border-red-100" /></div>
+              <Separator />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1"><Label className="text-[10px] uppercase text-gray-500">Stock</Label><Input type="number" value={stockQuantity} onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)} /></div>
+                <div className="space-y-1"><Label className="text-[10px] uppercase text-gray-500">Poids (g)</Label><Input type="number" value={virtualWeight} onChange={(e) => setVirtualWeight(parseInt(e.target.value) || 0)} /></div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* SEO */}
+          <Card className="border-none shadow-sm bg-white">
+            <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="flex items-center gap-2 text-green-600"><Globe className="h-5 w-5"/> Référencement (SEO)</CardTitle></CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="space-y-2"><Label>Titre Google</Label><Input value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} /></div>
+              <div className="space-y-2"><Label>Description Google</Label><Textarea value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} rows={3} /></div>
+            </CardContent>
+          </Card>
+
+          {/* CONFIG & MODULES */}
+          <Card className="border-none shadow-sm bg-white">
+            <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="flex items-center gap-2 text-gray-600"><Package className="h-5 w-5"/> Options</CardTitle></CardHeader>
+            <CardContent className="p-6 space-y-5">
+              <div className="flex items-center justify-between p-3 border rounded-xl bg-blue-50/30">
+                <div className="space-y-0.5"><Label className="text-blue-900">Variantes ?</Label><p className="text-[10px] text-blue-500 italic">Couleurs & Stocks multiples</p></div>
+                <Switch checked={hasVariations} onCheckedChange={setHasVariations} />
+              </div>
+
+              <div className="flex items-center justify-between p-3 border rounded-xl bg-purple-50/30 opacity-60">
+                <div className="space-y-0.5"><Label className="text-purple-900">Module Tailles ?</Label><p className="text-[10px] text-purple-500 italic">Désactivé par défaut</p></div>
+                <Switch checked={showSizes} onCheckedChange={setShowSizes} />
+              </div>
+
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center gap-2"><Checkbox id="f" checked={isFeatured} onCheckedChange={(c) => setIsFeatured(!!c)}/><Label htmlFor="f">⭐ Mettre en Vedette</Label></div>
+                <div className="flex items-center gap-2"><Checkbox id="d" checked={isDiamond} onCheckedChange={(c) => setIsDiamond(!!c)}/><Label htmlFor="d">💎 Produit Diamant</Label></div>
+              </div>
+            </CardContent>
+          </Card>
+
+        </div>
+      </div>
+
+      {/* BLOCS LARGES : ATTRIBUTS & CATÉGORIES */}
+      <div className="space-y-8">
+        <GeneralAttributesSelector selectedAttributes={selectedAttributes} onAttributesChange={setSelectedAttributes} />
+        <HierarchicalCategorySelector selectedCategories={selectedCategories} onCategoriesChange={setSelectedCategories} />
+        
+        {hasVariations && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <ColorSwatchSelector selectedMainColor={activeFamilyView} selectedSecondaryColors={selectedNuances} onMainColorSelect={setActiveFamilyView} onSecondaryColorToggle={(name, id, sel) => {
+                if (sel) {
+                  setSelectedNuances([...selectedNuances, name]);
+                  setNuanceIds({...nuanceIds, [name]: id});
+                } else {
+                  setSelectedNuances(selectedNuances.filter(n => n !== name));
+                }
+            }} showSecondaryColors={true} />
+            <VariationDetailsForm selectedSecondaryColors={selectedNuances} secondaryColorIds={nuanceIds} variations={variations} onVariationUpdate={(name, field, val) => {
+                setVariations(prev => {
+                  const idx = prev.findIndex(v => v.colorName === name);
+                  const newVars = [...prev];
+                  newVars[idx] = { ...newVars[idx], [field]: val };
+                  return newVars;
+                });
+            }} defaultRegularPrice={regularPrice} defaultSalePrice={salePrice} defaultStock={stockQuantity} />
+          </div>
+        )}
       </div>
     </div>
   );

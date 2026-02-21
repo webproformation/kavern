@@ -1,17 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingCart, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
-import { useAuth } from '@/context/AuthContext';
 import { WishlistButton } from '@/components/wishlist-button';
-import { supabase } from '@/lib/supabase';
 import { CUSTOM_TEXTS } from '@/lib/texts';
-import { toast } from 'sonner';
 
 interface ProductCardProps {
   product: {
@@ -24,17 +21,16 @@ interface ProductCardProps {
     gallery_images?: string[] | null;
     is_variable_product?: boolean;
     stock_quantity?: number | null;
+    is_featured?: boolean;
+    is_diamond?: boolean;
+    attributes?: any;
   };
   showAddToCart?: boolean;
 }
 
 export function ProductCard({ product, showAddToCart = false }: ProductCardProps) {
   const { addToCart } = useCart();
-  const { user, profile } = useAuth();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [touchStart, setTouchStart] = useState(0);
-  const [touchEnd, setTouchEnd] = useState(0);
-  const [sizeMatch, setSizeMatch] = useState(false);
 
   const images = [
     product.image_url,
@@ -46,35 +42,8 @@ export function ProductCard({ product, showAddToCart = false }: ProductCardProps
   const isInStock = !product.stock_quantity || product.stock_quantity > 0;
   const isLowStock = product.stock_quantity && product.stock_quantity > 0 && product.stock_quantity <= 5;
 
-  useEffect(() => {
-    if (user && profile?.user_size && product.is_variable_product) {
-      checkSizeCompatibility();
-    }
-  }, [user, profile, product.id]);
-
-  const checkSizeCompatibility = async () => {
-    if (!profile?.user_size) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('product_variations')
-        .select('size_min, size_max')
-        .eq('product_id', product.id)
-        .not('size_min', 'is', null)
-        .not('size_max', 'is', null);
-
-      if (error) throw error;
-
-      const userSize = profile.user_size;
-      const hasMatch = data?.some(
-        (variation: any) => userSize >= variation.size_min && userSize <= variation.size_max
-      );
-
-      setSizeMatch(hasMatch || false);
-    } catch (error) {
-      console.error('Error checking size compatibility:', error);
-    }
-  };
+  // Récupération des attributs de mise en avant (ex: "Vite dernière pièce")
+  const highlights = product.attributes?.["Mise en avant"] || [];
 
   const handlePrevImage = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -86,32 +55,6 @@ export function ProductCard({ product, showAddToCart = false }: ProductCardProps
     e.preventDefault();
     e.stopPropagation();
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > 50;
-    const isRightSwipe = distance < -50;
-
-    if (isLeftSwipe && currentImageIndex < images.length - 1) {
-      setCurrentImageIndex(currentImageIndex + 1);
-    }
-    if (isRightSwipe && currentImageIndex > 0) {
-      setCurrentImageIndex(currentImageIndex - 1);
-    }
-
-    setTouchStart(0);
-    setTouchEnd(0);
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -133,130 +76,119 @@ export function ProductCard({ product, showAddToCart = false }: ProductCardProps
   };
 
   return (
-    <Card className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-[1.02] border-2 border-gray-100 hover:border-[#D4AF37]/30">
-      <Link href={`/product/${product.slug}`}>
-        <div
-          className="aspect-square relative overflow-hidden bg-gradient-to-br from-gray-50 to-white"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          {images.length > 0 ? (
-            <img
-              src={images[currentImageIndex]}
-              alt={product.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-300">
-              <ShoppingCart className="h-16 w-16" />
-            </div>
-          )}
+    <Card className="group relative overflow-hidden rounded-xl border-none shadow-sm hover:shadow-md transition-all duration-300 bg-white h-full flex flex-col">
+      {/* Zone Image cliquable */}
+      <Link href={`/product/${product.slug}`} className="relative aspect-[4/5] overflow-hidden block">
+        {images.length > 0 ? (
+          <img
+            src={images[currentImageIndex]}
+            alt={product.name}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-300">
+            <ShoppingCart className="h-12 w-12" />
+          </div>
+        )}
 
+        {/* BADGES DISCRETS (Taille réduite de 30%) */}
+        <div className="absolute top-2 left-2 flex flex-col gap-1 z-20">
+          {product.is_featured && (
+            <Badge className="bg-[#D4AF37] text-white border-none text-[9px] px-1.5 py-0 uppercase font-bold">
+              <Sparkles className="h-2.5 w-2.5 mr-1" /> Vedette
+            </Badge>
+          )}
+          {product.is_diamond && (
+            <Badge className="bg-blue-600 text-white border-none text-[9px] px-1.5 py-0 uppercase font-bold">
+              💎 Diamant
+            </Badge>
+          )}
           {hasDiscount && (
-            <div className="absolute top-3 left-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white px-4 py-2 rounded-full text-xs font-bold shadow-xl animate-pulse">
-              PROMO
-            </div>
+            <Badge className="bg-pink-600 text-white border-none text-[9px] px-1.5 py-0 uppercase font-bold">
+              Promo
+            </Badge>
           )}
-
-          {sizeMatch && (
-            <div className="absolute top-3 right-3 bg-gradient-to-r from-[#D4AF37] to-[#C6A15B] text-white px-3 py-2 rounded-full text-xs font-bold shadow-xl flex items-center gap-1 animate-bounce">
-              ✨ {CUSTOM_TEXTS.size.matchBadge}
-            </div>
-          )}
-
-          <WishlistButton productId={product.id} variant="card" />
-
-          {images.length > 1 && (
-            <>
-              <button
-                onClick={handlePrevImage}
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/95 hover:bg-white p-2.5 rounded-xl shadow-xl transition-all opacity-0 group-hover:opacity-100 hover:scale-110 z-10"
-              >
-                <ChevronLeft className="h-4 w-4 text-gray-900" />
-              </button>
-              <button
-                onClick={handleNextImage}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/95 hover:bg-white p-2.5 rounded-xl shadow-xl transition-all opacity-0 group-hover:opacity-100 hover:scale-110 z-10"
-              >
-                <ChevronRight className="h-4 w-4 text-gray-900" />
-              </button>
-
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10 bg-black/30 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                {images.map((_, index) => (
-                  <div
-                    key={index}
-                    className={`h-2 rounded-full transition-all ${
-                      index === currentImageIndex
-                        ? 'w-8 bg-white shadow-lg'
-                        : 'w-2 bg-white/60'
-                    }`}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-
+          {/* Affichage des attributs "Mise en avant" demandés par le client */}
+          {highlights.map((text: string, idx: number) => (
+            <Badge key={idx} className="bg-black/70 text-white border-none text-[9px] px-1.5 py-0 uppercase font-bold backdrop-blur-sm">
+              {text}
+            </Badge>
+          ))}
         </div>
 
-        <CardContent className="p-5 space-y-4 bg-gradient-to-b from-white to-gray-50">
-          <h3 className="font-bold text-gray-900 text-sm sm:text-base leading-tight line-clamp-2 min-h-[2.5rem] group-hover:text-[#b8933d] transition-colors">
+        {/* Wishlist Button - Positionné pour ne pas gêner le clic */}
+        <div className="absolute top-2 right-2 z-20">
+          <WishlistButton productId={product.id} variant="card" />
+        </div>
+
+        {/* Flèches de navigation (uniquement si plusieurs images) */}
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={handlePrevImage}
+              className="absolute left-1 top-1/2 -translate-y-1/2 bg-white/80 p-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-20 hover:bg-white"
+            >
+              <ChevronLeft className="h-3 w-3 text-gray-900" />
+            </button>
+            <button
+              onClick={handleNextImage}
+              className="absolute right-1 top-1/2 -translate-y-1/2 bg-white/80 p-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-20 hover:bg-white"
+            >
+              <ChevronRight className="h-3 w-3 text-gray-900" />
+            </button>
+          </>
+        )}
+      </Link>
+
+      {/* Contenu de la carte */}
+      <CardContent className="p-3 flex flex-col flex-1 space-y-2 bg-white">
+        <Link href={`/product/${product.slug}`} className="block group/title">
+          <h3 className="font-bold text-gray-900 text-xs sm:text-sm line-clamp-2 min-h-[2.5rem] group-hover/title:text-[#b8933d] transition-colors leading-tight">
             {product.name}
           </h3>
+        </Link>
 
-          <div className="flex items-center gap-2">
-            {!isInStock ? (
-              <Badge className="text-xs border-0 bg-gradient-to-r from-pink-500 to-pink-600 text-white font-semibold px-3 py-1.5 rounded-full shadow-md">
-                {CUSTOM_TEXTS.stock.outOfStock}
-              </Badge>
-            ) : isLowStock ? (
-              <Badge className="text-xs border-0 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold px-3 py-1.5 rounded-full shadow-md flex items-center gap-1.5">
-                <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                {CUSTOM_TEXTS.stock.lowStock}
-              </Badge>
-            ) : (
-              <Badge className="text-xs border-0 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold px-3 py-1.5 rounded-full shadow-md flex items-center gap-1.5">
-                <span className="w-2 h-2 bg-white rounded-full"></span>
-                {CUSTOM_TEXTS.stock.inStock}
-              </Badge>
-            )}
-          </div>
-
-          <div className="flex items-baseline gap-2.5">
-            {hasDiscount ? (
-              <>
-                <span className="text-gray-400 line-through text-sm font-medium">
-                  {product.regular_price?.toFixed(2)} €
-                </span>
-                <span className="text-[#b8933d] font-bold text-xl sm:text-2xl">
-                  {displayPrice.toFixed(2)} €
-                </span>
-              </>
-            ) : (
-              <span className="text-gray-900 font-bold text-xl sm:text-2xl">
-                {displayPrice.toFixed(2)} €
-              </span>
-            )}
-          </div>
-
-          {showAddToCart && (
-            <Button
-              onClick={handleAddToCart}
-              disabled={!isInStock}
-              className="w-full bg-gradient-to-r from-[#b8933d] to-[#D4AF37] hover:from-[#a07c2f] hover:to-[#C6A15B] text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 py-5 text-sm sm:text-base"
-            >
-              {product.is_variable_product ? (
-                <>{CUSTOM_TEXTS.buttons.chooseOptions}</>
-              ) : (
-                <>
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                  {CUSTOM_TEXTS.buttons.addToCart}
-                </>
-              )}
-            </Button>
+        {/* État du stock discret */}
+        <div className="flex items-center gap-2">
+          {!isInStock ? (
+            <span className="text-[9px] font-bold text-pink-600 uppercase tracking-tighter">Épuisé</span>
+          ) : isLowStock ? (
+            <span className="text-[9px] font-bold text-orange-500 uppercase tracking-tighter flex items-center gap-1">
+              <span className="w-1 h-1 bg-orange-500 rounded-full animate-pulse" />
+              Dernières pièces
+            </span>
+          ) : (
+            <span className="text-[9px] font-bold text-green-600 uppercase tracking-tighter">En stock</span>
           )}
-        </CardContent>
-      </Link>
+        </div>
+
+        {/* Prix */}
+        <div className="flex items-baseline gap-2 pt-1">
+          <span className={`font-bold text-base ${hasDiscount ? 'text-[#b8933d]' : 'text-gray-900'}`}>
+            {displayPrice.toFixed(2)} €
+          </span>
+          {hasDiscount && (
+            <span className="text-gray-400 line-through text-[10px]">
+              {product.regular_price?.toFixed(2)} €
+            </span>
+          )}
+        </div>
+
+        {/* Bouton Panier compact */}
+        {showAddToCart && (
+          <Button
+            onClick={handleAddToCart}
+            disabled={!isInStock}
+            className="w-full bg-[#b8933d] hover:bg-[#D4AF37] text-white font-bold rounded-lg transition-all text-[11px] h-8 mt-auto"
+          >
+            {product.is_variable_product ? (
+              CUSTOM_TEXTS.buttons.chooseOptions
+            ) : (
+              <><ShoppingCart className="h-3 w-3 mr-1.5" />{CUSTOM_TEXTS.buttons.addToCart}</>
+            )}
+          </Button>
+        )}
+      </CardContent>
     </Card>
   );
 }

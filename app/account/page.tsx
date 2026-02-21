@@ -10,7 +10,19 @@ import { Label } from '@/components/ui/label';
 import { ProfilePictureUpload } from '@/components/profile-picture-upload';
 import { PasswordInput } from '@/components/PasswordInput';
 import { LoyaltyEuroBar } from '@/components/LoyaltyEuroBar';
-import { User, Mail, Phone, Calendar, Save, Loader2, PiggyBank, Lock, Sparkles, Star, Coins, Award } from 'lucide-react';
+import { 
+  User, 
+  Mail, 
+  Phone, 
+  Calendar, 
+  Save, 
+  Loader2, 
+  PiggyBank, 
+  Lock, 
+  Sparkles, 
+  Ruler,
+  AlertCircle 
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -18,10 +30,14 @@ import { fr } from 'date-fns/locale';
 export default function AccountPage() {
   const { profile, updateProfile, updatePassword } = useAuth();
 
+  // FLAG DE CONFIGURATION : Permet de masquer/désactiver les mensurations pour le moment
+  const ENABLE_MEASUREMENTS = false;
+
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [birthDate, setBirthDate] = useState('');
+  const [userSize, setUserSize] = useState<string>('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -36,6 +52,7 @@ export default function AccountPage() {
       setPhone(profile.phone || '');
       setBirthDate(profile.birth_date || '');
       setAvatarUrl(profile.avatar_url || '');
+      setUserSize(profile.user_size?.toString() || '');
     }
   }, [profile]);
 
@@ -69,16 +86,11 @@ export default function AccountPage() {
       phone: phone.trim(),
       birth_date: birthDate || null,
       avatar_url: avatarUrl,
+      // On préserve la taille même si le champ est masqué
+      user_size: userSize ? parseInt(userSize) : null,
     });
 
     if (error) {
-      console.error('❌ ERREUR COMPLÈTE:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code,
-        full: error
-      });
       toast.error(`Erreur: ${error.message || 'Inconnue'}`, { id: toastId });
       setIsUpdating(false);
       return;
@@ -133,6 +145,7 @@ export default function AccountPage() {
 
   return (
     <div className="space-y-6">
+      {/* BANNIÈRE DE BIENVENUE */}
       <div className="bg-gradient-to-r from-[#D4AF37]/10 to-[#C6A15B]/10 border border-[#D4AF37]/20 rounded-xl p-6">
         <div className="flex items-start gap-4">
           {avatarUrl ? (
@@ -152,7 +165,6 @@ export default function AccountPage() {
             </h1>
             <p className="text-gray-700 leading-relaxed mb-2">
               Ici, chaque visite, chaque échange en live et chaque coup de cœur te rapproche de ta prochaine pépite.
-              Ta fidélité a de la valeur, et je suis ravie de la récompenser chaque jour.
             </p>
             <p className="text-sm text-gray-600">
               Membre depuis le {formatMemberSince(profile.created_at)}
@@ -161,6 +173,7 @@ export default function AccountPage() {
         </div>
       </div>
 
+      {/* PORTE-MONNAIE */}
       <Card className="bg-gradient-to-r from-[#b8933d] to-[#d4af37] border-[#b8933d]">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
@@ -184,18 +197,17 @@ export default function AccountPage() {
 
       <LoyaltyEuroBar />
 
+      {/* INFORMATIONS PERSONNELLES */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            {/* MODIFICATION : LIEN SECRET ADMIN */}
             {profile?.is_admin ? (
               <Link href="/account/admin-invoices" title="Accès Factures Admin">
-                <User className="h-5 w-5 text-[#D4AF37] hover: cursor-pointer transition-transform hover:scale-110" />
+                <User className="h-5 w-5 text-[#D4AF37] hover:cursor-pointer transition-transform hover:scale-110" />
               </Link>
             ) : (
               <User className="h-5 w-5 text-[#D4AF37]" />
             )}
-            {/* FIN MODIFICATION */}
             <CardTitle>Informations personnelles</CardTitle>
           </div>
           <CardDescription>Mettez à jour vos informations de compte</CardDescription>
@@ -214,27 +226,18 @@ export default function AccountPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="firstName">
-                  Prénom <span className="text-red-500">*</span>
-                </Label>
+                <Label htmlFor="firstName">Prénom *</Label>
                 <Input
                   id="firstName"
-                  type="text"
-                  placeholder="Claire"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   required
                 />
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="lastName">
-                  Nom <span className="text-red-500">*</span>
-                </Label>
+                <Label htmlFor="lastName">Nom *</Label>
                 <Input
                   id="lastName"
-                  type="text"
-                  placeholder="Dupont"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   required
@@ -242,33 +245,26 @@ export default function AccountPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  id="email"
-                  type="email"
-                  value={profile.email}
-                  disabled
-                  className="pl-10 bg-gray-100"
-                />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input id="email" value={profile.email} disabled className="pl-10 bg-gray-100" />
+                </div>
               </div>
-              <p className="text-xs text-gray-500">L'email ne peut pas être modifié</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">Téléphone</Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="+33 6 12 34 56 78"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="pl-10"
-                />
+              <div className="space-y-2">
+                <Label htmlFor="phone">Téléphone</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
               </div>
             </div>
 
@@ -285,39 +281,60 @@ export default function AccountPage() {
                   className="pl-10"
                 />
               </div>
-              <p className="text-xs text-gray-500">
-                Recevez un cadeau spécial pour votre anniversaire
-              </p>
-            </div>
-
-            <div className="pt-4 border-t">
-              <p className="text-sm text-gray-600">
-                Membre depuis le{' '}
-                <span className="font-medium">{formatMemberSince(profile.created_at)}</span>
-              </p>
+              <p className="text-xs text-gray-500">Recevez un cadeau spécial pour votre anniversaire</p>
             </div>
 
             <Button
               type="submit"
               disabled={isUpdating}
-              className="w-full bg-gradient-to-r from-[#b8933d] to-[#d4af37] hover:from-[#9a7a2f] hover:to-[#b8933d] text-white gap-2"
+              className="w-full bg-gradient-to-r from-[#b8933d] to-[#d4af37] text-white gap-2"
             >
-              {isUpdating ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Enregistrement...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" />
-                  Enregistrer
-                </>
-              )}
+              {isUpdating ? <><Loader2 className="h-4 w-4 animate-spin" /> Enregistrement...</> : <><Save className="h-4 w-4" /> Enregistrer les modifications</>}
             </Button>
           </form>
         </CardContent>
       </Card>
 
+      {/* SECTION MENSURATIONS (DÉSACTIVÉE MAIS PRÉSENTE DANS LE CODE) */}
+      {ENABLE_MEASUREMENTS ? (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Ruler className="h-5 w-5 text-[#D4AF37]" />
+              <CardTitle>Ma Morphologie</CardTitle>
+            </div>
+            <CardDescription>Indiquez votre taille pour des conseils personnalisés</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+             <div className="space-y-2">
+                <Label htmlFor="userSize">Votre Taille habituelle</Label>
+                <Input 
+                  id="userSize" 
+                  type="number" 
+                  value={userSize} 
+                  onChange={(e) => setUserSize(e.target.value)} 
+                  placeholder="Ex: 38"
+                />
+             </div>
+             <p className="text-xs text-gray-500 italic">Ces données nous permettent de vous proposer uniquement les articles à votre taille.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        /* BLOC DISCRET "BIENTÔT DISPONIBLE" POUR ANDRÉ */
+        <Card className="opacity-50 grayscale bg-gray-50 border-dashed">
+          <CardHeader className="py-4">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-gray-400" />
+              <CardTitle className="text-sm text-gray-500 uppercase tracking-widest">Module Mode (Désactivé)</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="pb-4">
+             <p className="text-[10px] text-gray-400 italic">Les mensurations et filtres de taille sont masqués pour le moment. Réactivation possible via ENABLE_MEASUREMENTS.</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* SÉCURITÉ */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -330,9 +347,7 @@ export default function AccountPage() {
         <CardContent>
           <form onSubmit={handlePasswordChange} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="newPassword">
-                Nouveau mot de passe <span className="text-red-500">*</span>
-              </Label>
+              <Label htmlFor="newPassword">Nouveau mot de passe *</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
                 <PasswordInput
@@ -343,13 +358,10 @@ export default function AccountPage() {
                   disabled={isUpdatingPassword}
                 />
               </div>
-              <p className="text-xs text-gray-500">Minimum 8 caractères</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">
-                Confirmer le mot de passe <span className="text-red-500">*</span>
-              </Label>
+              <Label htmlFor="confirmPassword">Confirmer le mot de passe *</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
                 <PasswordInput
@@ -365,19 +377,9 @@ export default function AccountPage() {
             <Button
               type="submit"
               disabled={isUpdatingPassword}
-              className="w-full bg-gradient-to-r from-[#b8933d] to-[#d4af37] hover:from-[#9a7a2f] hover:to-[#b8933d] text-white gap-2"
+              className="w-full bg-gradient-to-r from-[#b8933d] to-[#d4af37] text-white gap-2"
             >
-              {isUpdatingPassword ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Mise à jour...
-                </>
-              ) : (
-                <>
-                  <Lock className="h-4 w-4" />
-                  Changer le mot de passe
-                </>
-              )}
+              {isUpdatingPassword ? <><Loader2 className="h-4 w-4 animate-spin" /> Mise à jour...</> : <><Lock className="h-4 w-4" /> Changer le mot de passe</>}
             </Button>
           </form>
         </CardContent>

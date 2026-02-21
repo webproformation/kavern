@@ -11,9 +11,12 @@ import {
   Bell,
   Plus,
   Minus,
-  Edit,
-  Trash2,
   Shield,
+  Video,
+  Sparkles,
+  MessageCircle,
+  Heart,
+  Share2
 } from "lucide-react";
 import { ProductGallery } from "@/components/ProductGallery";
 import { ProductVariationSelector } from "@/components/ProductVariationSelector";
@@ -24,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Accordion,
   AccordionContent,
@@ -41,600 +45,327 @@ import {
 import { toast } from "sonner";
 import { decodeHtmlEntities } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
-import { useAuth } from "@/context/AuthContext";
 import { CUSTOM_TEXTS } from "@/lib/texts";
 
-const diamondPositions: Array<"title" | "image" | "description"> = ["title", "image", "description"];
-
 export default function ProductPage() {
-  const params = useParams();
+  const { slug } = useParams();
   const router = useRouter();
-  const slug = params.slug as string;
   const { addToCart } = useCart();
-  const { user } = useAuth();
 
-  const [product, setProduct] = useState<Product | null>(null);
+  const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedVariation, setSelectedVariation] = useState<any>(null);
-  
-  // --- ÉTAT POUR LA TAILLE SÉLECTIONNÉE ---
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
-  
-  const [notifyEmail, setNotifyEmail] = useState("");
   const [showNotifyDialog, setShowNotifyDialog] = useState(false);
-  const [userSelectedGalleryImage, setUserSelectedGalleryImage] = useState<string | null>(null);
-  const [initialAttributes, setInitialAttributes] = useState<Record<string, string>>({});
-  const [informativeAttributes, setInformativeAttributes] = useState<Array<{ name: string; values: string[] }>>([]);
-  const [diamondPosition] = useState<"title" | "image" | "description">(() =>
-    diamondPositions[Math.floor(Math.random() * diamondPositions.length)]
-  );
+  const [notifyEmail, setNotifyEmail] = useState("");
+  const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
 
   useEffect(() => {
-    loadProduct();
-    checkAdminStatus();
-  }, [slug, user]);
-
-  useEffect(() => {
-    if (product) {
-      loadInformativeAttributes(product);
-    }
-  }, [product]);
-
-  // --- INITIALISATION TAILLE PAR DÉFAUT ---
-  useEffect(() => {
-    if (product?.size_range_start) {
-      setSelectedSize(product.size_range_start.toString());
-    }
-  }, [product]);
-
-  // --- CALCUL DES TAILLES DISPONIBLES ---
-  const availableSizes = useMemo(() => {
-    if (!product?.size_range_start || !product?.size_range_end) return [];
-    const sizes = [];
-    for (let i = product.size_range_start; i <= product.size_range_end; i += 2) {
-      sizes.push(i.toString());
-    }
-    return sizes;
-  }, [product]);
-
-  useEffect(() => {
-    if (product && product.type === "VARIABLE" && product.attributes && product.variations && !selectedVariation) {
-      const firstSelections: Record<string, string> = {};
-
-      product.attributes.forEach((attr: any) => {
-        if (attr.options && attr.options.length > 0) {
-          firstSelections[attr.name] = attr.options[0];
-        }
-      });
-
-      const matchingVariation = product.variations.find((variation: any) =>
-        variation.attributes?.every((attr: any) =>
-          firstSelections[attr.name]?.toLowerCase() === attr.option?.toLowerCase()
-        )
-      );
-
-      if (matchingVariation) {
-        const variationAttributes: Record<string, string> = {};
-        matchingVariation.attributes?.forEach((attr: any) => {
-          variationAttributes[attr.name] = attr.option;
-        });
-
-        setInitialAttributes(variationAttributes);
-        setSelectedVariation(matchingVariation);
-      }
-    }
-  }, [product]);
-
-  async function loadInformativeAttributes(productData: Product) {
-    try {
-      const rawAttributes = productData.attributes;
-      if (!rawAttributes || typeof rawAttributes !== 'object') return;
-
-      const termNames: string[] = [];
-      Object.values(rawAttributes).forEach((names) => {
-        if (Array.isArray(names)) {
-          names.forEach(name => termNames.push(String(name)));
-        }
-      });
-
-      if (termNames.length === 0) return;
-
-      const { data, error } = await supabase
-        .from('product_attribute_terms')
-        .select(`
-          name, 
-          product_attributes (name, slug)
-        `)
-        .in('name', termNames);
-
-      if (error) return;
-      if (!data) return;
-
-      const groups = new Map<string, string[]>();
-
-      data.forEach((item: any) => {
-        const attrInfo = Array.isArray(item.product_attributes) ? item.product_attributes[0] : item.product_attributes;
-        const attrName = attrInfo?.name;
-        const attrSlug = attrInfo?.slug?.toLowerCase() || '';
-        const termValue = item.name;
-
-        if (attrName && termValue) {
-          if (
-            attrSlug.includes('couleur') || 
-            attrSlug.includes('taille') || 
-            attrSlug === 'color' || 
-            attrSlug === 'size' ||
-            attrName.toLowerCase() === 'couleur' ||
-            attrName.toLowerCase() === 'taille'
-          ) {
-            return;
-          }
-          
-          if (!groups.has(attrName)) groups.set(attrName, []);
-          if (!groups.get(attrName)?.includes(termValue)) {
-            groups.get(attrName)?.push(termValue);
-          }
-        }
-      });
-
-      const result = Array.from(groups.entries()).map(([name, values]) => ({ name, values }));
-      setInformativeAttributes(result);
-      
-    } catch (err) {
-      console.error("Exception loadInformativeAttributes:", err);
-    }
-  }
-
-  async function checkAdminStatus() {
-    if (!user) return;
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (!error && data) setIsAdmin(data.is_admin || false);
-    } catch (error) {
-      console.error('Error checking admin status:', error);
-    }
-  }
+    if (slug) loadProduct();
+  }, [slug]);
 
   async function loadProduct() {
     try {
-      const { data: productData, error: productError } = await supabase
+      const { data, error } = await supabase
         .from("products")
         .select("*")
         .eq("slug", slug)
-        .maybeSingle();
+        .single();
 
-      if (productError) throw productError;
-      if (!productData) {
-        router.push("/");
-        return;
-      }
-
-      if (productData.is_variable_product) {
-        const { data: variations } = await supabase
-          .from("product_variations")
-          .select("*")
-          .eq("product_id", productData.id);
-
-        if (variations) {
-          const attributesMap = new Map<string, Set<string>>();
-          const extractValue = (value: any): string => {
-            if (typeof value === 'object' && value !== null) return value.name || value.value || String(value);
-            return String(value);
-          };
-          const normalizeAttributeName = (key: string): string => {
-            const lowerKey = key.toLowerCase();
-            if (lowerKey.includes('couleur') || lowerKey === 'couleur_name') return 'Couleur';
-            if (lowerKey.includes('taille') || lowerKey.includes('size')) return 'Taille';
-            return key.charAt(0).toUpperCase() + key.slice(1);
-          };
-
-          variations.forEach((variation) => {
-            if (variation.attributes && typeof variation.attributes === 'object') {
-              Object.entries(variation.attributes).forEach(([key, value]) => {
-                const lowerKey = key.toLowerCase();
-                if (lowerKey.includes('color_code') || lowerKey.includes('id')) return;
-                const displayName = normalizeAttributeName(key);
-                const displayValue = extractValue(value);
-                if (displayValue && displayValue.trim()) {
-                  if (!attributesMap.has(displayName)) attributesMap.set(displayName, new Set());
-                  attributesMap.get(displayName)?.add(displayValue);
-                }
-              });
-            }
-          });
-
-          const originalAttributesJSON = JSON.parse(JSON.stringify(productData.attributes || {}));
-
-          const attributesForSelector = Array.from(attributesMap.entries()).map(([name, options]) => ({
-            name,
-            options: Array.from(options),
-          }));
-
-          const allOptionNames = attributesForSelector.flatMap(a => a.options);
-          
-          if (allOptionNames.length > 0) {
-             const { data: termsData } = await supabase
-               .from('product_attribute_terms')
-               .select('name, color_code')
-               .in('name', allOptionNames);
-               
-             if (termsData) {
-               const colorMap = new Map(termsData.map(t => [t.name, t.color_code]));
-               attributesForSelector.forEach((attr: any) => {
-                 if (attr.name.toLowerCase().includes('couleur') || attr.name.toLowerCase().includes('color')) {
-                   attr.colorCodes = attr.options.map((opt: string) => colorMap.get(opt) || undefined);
-                 }
-               });
-             }
-          }
-
-          const formattedVariations = variations.map((v) => {
-            const variationAttributes: Array<{name: string; option: string}> = [];
-            if (v.attributes && typeof v.attributes === 'object') {
-              Object.entries(v.attributes).forEach(([key, value]) => {
-                const lowerKey = key.toLowerCase();
-                if (lowerKey.includes('color_code') || lowerKey.includes('id')) return;
-                const displayName = normalizeAttributeName(key);
-                const displayValue = extractValue(value);
-                if (displayValue && displayValue.trim()) {
-                  variationAttributes.push({ name: displayName, option: displayValue });
-                }
-              });
-            }
-            return {
-              id: v.id,
-              attributes: variationAttributes,
-              price: v.sale_price || v.regular_price || productData.sale_price || productData.regular_price || "0",
-              regular_price: v.regular_price || productData.regular_price || "0",
-              sale_price: v.sale_price || (v.regular_price ? null : productData.sale_price),
-              stock_status: v.stock_status || "outofstock",
-              stock_quantity: v.stock_quantity,
-              image: v.image_url
-                ? { src: v.image_url, alt: productData.name }
-                : (productData.image_url ? { src: productData.image_url, alt: productData.name } : undefined),
-            };
-          });
-
-          productData.attributes = attributesForSelector;
-          (productData as any).original_attributes_json = originalAttributesJSON;
-          productData.variations = formattedVariations;
-          productData.type = "VARIABLE";
-        }
-      } else if (productData.attributes && typeof productData.attributes === 'object') {
-        const simpleAttributes = productData.attributes;
-        (productData as any).original_attributes_json = simpleAttributes;
-
-        const attributeTermIds: string[] = [];
-        Object.values(simpleAttributes).forEach((termIds: any) => {
-          if (Array.isArray(termIds)) attributeTermIds.push(...termIds);
-        });
-
-        if (attributeTermIds.length > 0) {
-          const { data: attributeTerms } = await supabase
-            .from("product_attribute_terms")
-            .select("id, name, slug, color_code, attribute_id, product_attributes!inner(name, slug)")
-            .in("id", attributeTermIds);
-
-          if (attributeTerms) {
-            const attributesMap = new Map<string, { options: string[], colorCodes?: string[] }>();
-            attributeTerms.forEach((term: any) => {
-              const attrName = term.product_attributes?.name || "Attribut";
-              if (!attributesMap.has(attrName)) attributesMap.set(attrName, { options: [], colorCodes: [] });
-              attributesMap.get(attrName)?.options.push(term.name);
-              if (term.color_code) attributesMap.get(attrName)?.colorCodes?.push(term.color_code);
-            });
-            const formattedAttributes = Array.from(attributesMap.entries()).map(([name, data]) => ({
-              name,
-              options: data.options,
-              colorCodes: data.colorCodes && data.colorCodes.length > 0 ? data.colorCodes : undefined,
-            }));
-            productData.attributes = formattedAttributes;
-            productData.type = "SIMPLE";
-          }
+      if (error) throw error;
+      if (data) {
+        setProduct(data);
+        // CHARGEMENT CROSS-SELLING (L'Appât)
+        if (data.related_product_ids && data.related_product_ids.length > 0) {
+          const { data: related } = await supabase
+            .from("products")
+            .select("id, name, slug, image_url, regular_price")
+            .in("id", data.related_product_ids);
+          setRelatedProducts(related || []);
         }
       }
-
-      setProduct(productData);
-      const dataForInfo = { ...productData, attributes: (productData as any).original_attributes_json || productData.attributes };
-      loadInformativeAttributes(dataForInfo);
-
     } catch (error) {
       console.error("Error loading product:", error);
+      toast.error("Produit introuvable");
     } finally {
       setLoading(false);
     }
   }
 
-  const handleQuantityChange = (delta: number) => {
-    setQuantity((prev) => Math.max(1, prev + delta));
-  };
+  const currentPrice = useMemo(() => {
+    if (selectedVariation) return selectedVariation.sale_price || selectedVariation.regular_price;
+    return product?.sale_price || product?.regular_price || 0;
+  }, [product, selectedVariation]);
 
-  const handleVariationChange = (variation: any) => {
-    setSelectedVariation(variation);
-    setUserSelectedGalleryImage(null);
-  };
+  const oldPrice = useMemo(() => {
+    if (selectedVariation) return selectedVariation.sale_price ? selectedVariation.regular_price : null;
+    return product?.sale_price ? product?.regular_price : null;
+  }, [product, selectedVariation]);
 
-  const handleImageClick = (image: { id: string; src: string }) => {
-    let isVariation = false;
-    let targetVariation = null;
-
-    if (image.id.startsWith("variation") || image.id === "variation-selected") {
-      isVariation = true;
-      if (image.id.startsWith("variation-") && image.id !== "variation-selected") {
-        const parts = image.id.split("-");
-        const idx = parseInt(parts[1]);
-        if (!isNaN(idx) && product?.variations && product.variations[idx]) {
-          targetVariation = product.variations[idx];
-        }
-      }
+  const isOutOfStock = useMemo(() => {
+    if (product?.has_variations) {
+      return selectedVariation ? selectedVariation.stock_quantity <= 0 : false;
     }
+    return product?.stock_quantity <= 0;
+  }, [product, selectedVariation]);
 
-    if (!isVariation && product?.variations) {
-      const matchingVar = product.variations.find((v: any) => v.image?.src === image.src);
-      if (matchingVar) {
-        isVariation = true;
-        targetVariation = matchingVar;
-      }
-    }
-
-    if (isVariation) {
-      setUserSelectedGalleryImage(null);
-
-      if (targetVariation && targetVariation.id !== selectedVariation?.id) {
-        const variationAttributes: Record<string, string> = {};
-        targetVariation.attributes?.forEach((attr: any) => {
-          variationAttributes[attr.name] = attr.option;
-        });
-        setInitialAttributes(variationAttributes);
-        setSelectedVariation(targetVariation);
-      }
-    } else {
-      setUserSelectedGalleryImage(image.src);
-    }
-  };
-  
   const handleAddToCart = () => {
-    if (!product) return;
-
-    // --- VÉRIFICATION TAILLE OBLIGATOIRE ---
-    if (availableSizes.length > 0 && !selectedSize) {
-      toast.error("Veuillez sélectionner une taille");
+    if (product.has_variations && !selectedVariation) {
+      toast.error("Veuillez sélectionner une option");
       return;
     }
-
-    if (product?.type === "VARIABLE" && !selectedVariation) {
-      toast.error("Veuillez sélectionner toutes les options");
-      return;
-    }
-
-    const productToAdd = {
+    
+    addToCart({
       id: product.id,
       name: product.name,
       slug: product.slug,
-      price: selectedVariation?.sale_price || selectedVariation?.price || product.sale_price || product.regular_price || 0,
-      image: selectedVariation?.image?.src
-        ? { sourceUrl: selectedVariation.image.src }
-        : (product.image_url ? { sourceUrl: product.image_url } : undefined),
-      variationId: selectedVariation?.id || null,
-      variationPrice: selectedVariation?.sale_price || selectedVariation?.price || product.sale_price || product.regular_price || null,
-      variationImage: selectedVariation?.image || (product.image_url ? { src: product.image_url, alt: product.name } : null),
-      // --- TRANSMISSION DE LA TAILLE ---
-      selectedAttributes: {
-        ...selectedVariation?.attributes,
-        ...(selectedSize ? { "Taille": selectedSize } : {})
-      },
-    };
-    addToCart(productToAdd, quantity);
-    toast.success("Ajouté au panier !");
+      price: currentPrice.toString(),
+      image: { sourceUrl: selectedVariation?.image_url || product.image_url || "" },
+      variationId: selectedVariation?.id,
+      variationData: selectedVariation?.attributes
+    }, quantity);
+    
+    toast.success(`${product.name} ajouté au panier`);
   };
 
   const handleNotifyMe = async () => {
-    if (!notifyEmail) { toast.error("Veuillez entrer votre email"); return; }
-    toast.success(CUSTOM_TEXTS.stockAlert.success);
+    if (!notifyEmail) return;
+    toast.success("C'est noté ! Nous vous préviendrons dès le retour en stock.");
     setShowNotifyDialog(false);
     setNotifyEmail("");
   };
 
-  const handleDeleteProduct = async () => {
-    if (!product || !isAdmin) return;
-    if (!confirm(`Supprimer "${decodeHtmlEntities(product.name)}" ?`)) return;
-    try {
-      const { error } = await supabase.from('products').delete().eq('id', product.id);
-      if (error) throw error;
-      toast.success('Produit supprimé');
-      router.push('/admin/products');
-    } catch (error: any) {
-      toast.error(`Erreur: ${error.message}`);
-    }
-  };
-
-  const getCurrentImageUrl = (): string | undefined => {
-    if (!product) return undefined;
-    if (userSelectedGalleryImage) return userSelectedGalleryImage;
-    if (selectedVariation?.image?.src) return selectedVariation.image.src;
-    if (product?.image_url) return product.image_url;
-    return undefined;
-  };
-
-  const galleryImages = useMemo(() => {
-    if (!product) return [{ id: "placeholder", src: "/placeholder.png", alt: "Product" }];
-    const images: Array<{ id: string; src: string; alt: string }> = [];
-    if (product.variations && Array.isArray(product.variations)) {
-      product.variations.forEach((variation: any, idx: number) => {
-        if (variation.image?.src && !images.some(i => i.src === variation.image.src)) {
-          images.push({ id: `variation-${idx}`, src: variation.image.src, alt: variation.image.alt || product.name });
-        }
-      });
-    }
-    if (product.image_url && !images.some(i => i.src === product.image_url)) {
-      images.push({ id: "main", src: product.image_url, alt: product.name });
-    }
-    if (product.gallery_images && Array.isArray(product.gallery_images)) {
-      product.gallery_images.forEach((imgUrl: string, idx: number) => {
-        if (imgUrl && !images.some(i => i.src === imgUrl)) {
-          images.push({ id: `gallery-${idx}`, src: imgUrl, alt: product.name });
-        }
-      });
-    }
-    return images.length > 0 ? images : [{ id: "placeholder", src: "/placeholder.png", alt: product.name }];
-  }, [product]);
-
-  const currentPrice = selectedVariation?.sale_price || selectedVariation?.price || product?.sale_price || product?.regular_price;
-  const regularPrice = selectedVariation?.regular_price || product?.regular_price;
-  const hasDiscount = currentPrice && regularPrice && currentPrice < regularPrice;
-  const isVariable = product?.type === "VARIABLE";
-  const isInStock = isVariable
-    ? selectedVariation?.stock_status === "instock"
-    : product?.stock_status === "instock" && (product?.stock_quantity ?? 0) > 0;
-
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#b8933d]"></div></div>;
   if (!product) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-[#FFF9F0] to-white">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <nav className="flex items-center gap-2 text-sm text-gray-600 mb-6 sm:mb-8">
-          <Link href="/" className="hover:text-[#b8933d] transition-colors flex items-center gap-1">
-            <Home className="h-4 w-4" />
-            <span className="hidden sm:inline">Accueil</span>
-          </Link>
+    <div className="min-h-screen bg-[#FDFCFB]">
+      {/* FIL D'ARIANE */}
+      <nav className="bg-white border-b overflow-x-auto whitespace-nowrap">
+        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-2 text-sm text-gray-500">
+          <Link href="/" className="hover:text-[#b8933d] flex items-center gap-1"><Home className="h-4 w-4" /> Accueil</Link>
+          <ChevronRight className="h-4 w-4" />
+          <Link href="/shop" className="hover:text-[#b8933d]">Boutique</Link>
           <ChevronRight className="h-4 w-4" />
           <span className="text-gray-900 font-medium truncate">{decodeHtmlEntities(product.name)}</span>
-        </nav>
+        </div>
+      </nav>
 
-        {isAdmin && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-8">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-3">
-                <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
-                <div><p className="text-sm font-medium text-blue-900">Mode Administrateur</p></div>
+      <main className="max-w-7xl mx-auto px-4 py-8 lg:py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          
+          {/* GALERIE OU VIDÉO (PRIORITAIRE) */}
+          <div className="space-y-6 sticky top-24">
+            {product.video_url ? (
+              <div className="aspect-[4/5] rounded-3xl overflow-hidden bg-black shadow-2xl border-4 border-[#d4af37]/20 relative group">
+                <iframe 
+                  src={product.video_url.replace("watch?v=", "embed/").replace("reel/", "embed/")} 
+                  className="w-full h-full" 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                  allowFullScreen
+                />
+                <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 shadow-lg">
+                  <Video className="h-3 w-3" /> VU EN LIVE
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Link href={`/admin/products/${product.id}`}><Button variant="outline" size="sm" className="border-blue-300 text-blue-700 hover:bg-blue-100"><Edit className="h-4 w-4 mr-2" /> Modifier</Button></Link>
-                <Button variant="outline" size="sm" onClick={handleDeleteProduct} className="border-red-300 text-red-700 hover:bg-red-100"><Trash2 className="h-4 w-4 mr-2" /> Supprimer</Button>
-              </div>
+            ) : (
+              <ProductGallery 
+                images={[{ id: 'main', src: product.image_url || '', alt: product.name }, ...(product.gallery_images?.map((img: string, i: number) => ({ id: `gal-${i}`, src: img, alt: `${product.name} ${i + 1}` })) || [])]} 
+                productName={product.name}
+                selectedImageUrl={selectedVariation?.image_url}
+              />
+            )}
+            
+            <div className="flex justify-center">
+              <ShareButtons url={typeof window !== 'undefined' ? window.location.href : ''} title={product.name} />
             </div>
           </div>
-        )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-12 sm:mb-16">
-          <div className="relative lg:sticky lg:top-4 lg:self-start">
-            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-              <ProductGallery images={galleryImages} productName={decodeHtmlEntities(product.name)} selectedImageUrl={getCurrentImageUrl()} onImageClick={handleImageClick} />
-            </div>
-            {product.is_diamond && <div className="mt-4"><HiddenDiamond productId={product.id} position="image" selectedPosition={diamondPosition} /></div>}
-          </div>
+          {/* DÉTAILS PRODUIT */}
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <div className="flex justify-between items-start gap-4">
+                <div className="space-y-1">
+                  <h1 className="text-3xl md:text-4xl font-bold text-gray-900 leading-tight">
+                    {decodeHtmlEntities(product.name)}
+                  </h1>
+                  {product.short_description && (
+                    <p className="text-xl text-[#C6A15B] italic font-medium">
+                      {product.short_description}
+                    </p>
+                  )}
+                </div>
+                <WishlistButton productId={product.id} className="mt-2" />
+              </div>
 
-          <div className="space-y-6 bg-white rounded-2xl shadow-lg p-6 sm:p-8 h-fit">
-            {product.is_diamond && <HiddenDiamond productId={product.id} position="title" selectedPosition={diamondPosition} />}
-
-            <div className="border-b border-gray-100 pb-6">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#b8933d] mb-4 leading-tight">{decodeHtmlEntities(product.name)}</h1>
-              <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-4">
+              <div className="flex items-center gap-4">
                 <div className="flex items-baseline gap-3">
-                  {hasDiscount && regularPrice && <span className="text-xl sm:text-2xl text-gray-400 line-through">{Number(regularPrice).toFixed(2)} €</span>}
-                  <span className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-[#b8933d] to-[#D4AF37] bg-clip-text text-transparent">{currentPrice ? Number(currentPrice).toFixed(2) : "0.00"} €</span>
+                  <span className="text-4xl font-black text-gray-900">{currentPrice.toFixed(2)} €</span>
+                  {oldPrice && (
+                    <span className="text-xl text-gray-400 line-through font-light">{oldPrice.toFixed(2)} €</span>
+                  )}
                 </div>
-                {hasDiscount && <Badge className="bg-gradient-to-r from-pink-500 to-pink-600 text-white px-4 py-1.5 text-sm font-bold animate-pulse">PROMO</Badge>}
+                {product.is_featured && <Badge className="bg-[#D4AF37] text-white px-3 py-1">⭐ Vedette</Badge>}
+              </div>
+            </div>
+
+            {/* L'AVIS D'ANDRÉ (Touche Concept Store) */}
+            {product.andre_review && (
+              <Card className="bg-gradient-to-br from-amber-50 to-white border-2 border-amber-100/50 shadow-sm rounded-3xl overflow-hidden">
+                <CardContent className="p-8 space-y-4 relative">
+                  <MessageCircle className="absolute right-6 top-6 w-12 h-12 text-[#d4af37]/10" />
+                  <h3 className="text-sm font-black flex items-center gap-2 text-[#b8933d] uppercase tracking-widest">
+                    <Sparkles className="w-4 h-4"/> L&apos;avis d&apos;André
+                  </h3>
+                  <p className="text-gray-700 leading-relaxed italic text-lg font-medium">
+                    &quot;{product.andre_review}&quot;
+                  </p>
+                  <div className="flex items-center gap-2 pt-2">
+                    <div className="h-px w-8 bg-[#d4af37]/30"></div>
+                    <p className="text-xs font-bold text-[#b8933d] uppercase">Fondateur de KAVERN</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* VARIANTES */}
+            {product.has_variations && (
+              <div className="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
+                <Label className="text-base font-bold flex items-center gap-2">
+                  <Plus className="h-4 w-4 text-[#b8933d]" /> Choisir votre option
+                </Label>
+                <ProductVariationSelector
+                  productId={product.id}
+                  onVariationSelect={setSelectedVariation}
+                />
+              </div>
+            )}
+
+            {/* ACHAT */}
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex items-center border-2 rounded-xl bg-white h-14 px-2">
+                  <Button variant="ghost" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="text-[#b8933d]">
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <Input 
+                    type="number" 
+                    value={quantity} 
+                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                    className="w-16 border-none text-center font-bold text-lg focus-visible:ring-0"
+                  />
+                  <Button variant="ghost" size="icon" onClick={() => setQuantity(quantity + 1)} className="text-[#b8933d]">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <Button 
+                  onClick={handleAddToCart}
+                  disabled={isOutOfStock}
+                  className="flex-1 h-14 rounded-xl bg-[#b8933d] hover:bg-[#D4AF37] text-white text-lg font-bold shadow-lg shadow-amber-100 transition-all active:scale-95"
+                >
+                  {isOutOfStock ? (
+                    <span className="flex items-center gap-2"><Bell className="h-5 w-5" /> M'alerter du retour</span>
+                  ) : (
+                    <span className="flex items-center gap-2"><ShoppingCart className="h-5 w-5" /> Ajouter au panier</span>
+                  )}
+                </Button>
               </div>
 
-              {informativeAttributes.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
-                  {informativeAttributes.map((attr) => (
-                    <div key={attr.name} className="flex flex-col gap-1 items-center text-center">
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{attr.name}</span>
-                      <span className="text-sm font-medium text-gray-900">{attr.values.join(", ")}</span>
-                    </div>
-                  ))}
-                </div>
+              {isOutOfStock && (
+                <p className="text-center">
+                  <button onClick={() => setShowNotifyDialog(true)} className="text-sm text-[#b8933d] font-semibold hover:underline">
+                    Cette pépite est victime de son succès ? Cliquez ici pour être prévenu.
+                  </button>
+                </p>
               )}
             </div>
 
-            {/* --- SECTION TAILLES PAR BOUTONS --- */}
-            {availableSizes.length > 0 && (
-              <div className="space-y-4 pt-4">
-                <Label className="text-sm font-bold text-gray-700">Choisir ma taille :</Label>
-                <div className="flex flex-wrap gap-2">
-                  {availableSizes.map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`h-11 w-11 sm:h-12 sm:w-12 rounded-xl border-2 font-bold transition-all ${
-                        selectedSize === size
-                          ? "border-[#b8933d] bg-[#b8933d] text-white shadow-md scale-105"
-                          : "border-gray-200 bg-white text-gray-600 hover:border-[#b8933d] hover:text-[#b8933d]"
-                      }`}
-                    >
-                      {size}
-                    </button>
+            {/* CROSS-SELLING (L'Appât) */}
+            {relatedProducts.length > 0 && (
+              <div className="pt-8 border-t space-y-6">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <Heart className="h-5 w-5 text-pink-500 fill-pink-500" />
+                  André vous conseille d&apos;accompagner cela avec...
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {relatedProducts.map(p => (
+                    <Link key={p.id} href={`/product/${p.slug}`} className="group block space-y-2">
+                      <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100 border transition-all group-hover:shadow-md group-hover:border-[#d4af37]/30">
+                        <img src={p.image_url} className="h-full w-full object-cover transition-transform group-hover:scale-110" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-xs line-clamp-1 group-hover:text-[#b8933d]">{p.name}</p>
+                        <p className="text-[#b8933d] font-bold text-sm">{p.regular_price?.toFixed(2)} €</p>
+                      </div>
+                    </Link>
                   ))}
                 </div>
               </div>
             )}
 
-            {isVariable && product.attributes && product.variations && (
-              <ProductVariationSelector attributes={product.attributes} variations={product.variations} onVariationChange={handleVariationChange} initialSelectedAttributes={initialAttributes} />
-            )}
-
-            <div className="space-y-6 bg-gradient-to-br from-gray-50 to-white rounded-xl p-6 border border-gray-100">
-              <div>
-                <Label htmlFor="quantity" className="mb-3 block text-sm font-semibold text-gray-700">{CUSTOM_TEXTS.product.quantity}</Label>
-                <div className="flex items-center bg-white border-2 border-gray-200 rounded-xl w-36 shadow-sm hover:border-[#b8933d] transition-colors">
-                  <Button variant="ghost" size="icon" onClick={() => handleQuantityChange(-1)} disabled={quantity <= 1} className="hover:bg-[#FFF9F0] rounded-l-xl"><Minus className="h-4 w-4" /></Button>
-                  <Input id="quantity" type="number" min="1" value={quantity} onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))} className="border-0 text-center focus-visible:ring-0 font-semibold text-lg" />
-                  <Button variant="ghost" size="icon" onClick={() => handleQuantityChange(1)} className="hover:bg-[#FFF9F0] rounded-r-xl"><Plus className="h-4 w-4" /></Button>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                {isInStock ? (
-                  <Button onClick={handleAddToCart} disabled={isVariable && !selectedVariation} className="flex-1 bg-gradient-to-r from-[#b8933d] to-[#D4AF37] hover:from-[#a07c2f] hover:to-[#C6A15B] text-white font-bold py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] text-base">
-                    <ShoppingCart className="h-5 w-5 mr-2" /> {CUSTOM_TEXTS.buttons.addToCart}
-                  </Button>
-                ) : (
-                  <Button onClick={() => setShowNotifyDialog(true)} className="flex-1 bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-bold py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] text-base">
-                    <Bell className="h-5 w-5 mr-2" /> {CUSTOM_TEXTS.buttons.alertStock}
-                  </Button>
-                )}
-                <WishlistButton productId={product.id} variant="icon" size="icon" className="border-2 border-gray-200 hover:border-pink-300 hover:bg-pink-50 rounded-xl shadow-sm hover:shadow-md transition-all w-14 h-14" />
-              </div>
-              <ShareButtons url={`/product/${product.slug}`} title={product.name} description={product.short_description || undefined} />
-            </div>
-
-            <Accordion type="single" collapsible defaultValue="description" className="w-full border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-              <AccordionItem value="description" className="border-b last:border-b-0">
-                <AccordionTrigger className="px-6 py-4 hover:bg-[#FFF9F0] transition-colors text-base font-semibold">📝 Description</AccordionTrigger>
-                <AccordionContent className="px-6 pb-6 pt-2">
-                   {product.is_diamond && <div className="mb-4"><HiddenDiamond productId={product.id} position="description" selectedPosition={diamondPosition} /></div>}
-                   {product.description ? <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: product.description }} /> : <p className="text-gray-600">Aucune description disponible.</p>}
+            {/* ACCORDIONS */}
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="description" className="border-b">
+                <AccordionTrigger className="font-bold text-gray-900 uppercase text-xs tracking-widest">L&apos;histoire & composition</AccordionTrigger>
+                <AccordionContent>
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: product.description }} 
+                    className="prose prose-amber prose-sm max-w-none text-gray-600 leading-relaxed pt-4"
+                  />
                 </AccordionContent>
               </AccordionItem>
-              <AccordionItem value="delivery" className="border-b-0">
-                <AccordionTrigger className="px-6 py-4 hover:bg-[#FFF9F0] transition-colors text-base font-semibold">{CUSTOM_TEXTS.shipping.label}</AccordionTrigger>
-                <AccordionContent className="px-6 pb-6 pt-2">
-                  <div className="space-y-3 text-gray-700">
-                    <div className="flex items-start gap-2"><span className="text-green-600">✅</span><span>Livraison standard : 3-5 jours ouvrés</span></div>
-                    <div className="flex items-start gap-2"><span className="text-blue-600">↩️</span><span>Retours gratuits sous 30 jours</span></div>
+
+              <AccordionItem value="delivery" className="border-b">
+                <AccordionTrigger className="font-bold text-gray-900 uppercase text-xs tracking-widest">Livraison & Retours</AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-4 text-sm text-gray-600">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-green-100 p-1.5 rounded-full"><Shield className="h-4 w-4 text-green-600" /></div>
+                    <p><strong>Vite chez vous :</strong> André prépare votre pépite avec soin en 24h/48h.</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="bg-blue-100 p-1.5 rounded-full"><Plus className="h-4 w-4 text-blue-600" /></div>
+                    <p><strong>Droit à l&apos;erreur :</strong> 14 jours pour changer d&apos;avis (échange contre crédit boutique).</p>
                   </div>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
+
+            {/* DIAMANT CACHÉ */}
+            <HiddenDiamond product={product} />
           </div>
         </div>
       </main>
 
+      {/* DIALOGUE NOTIFICATION STOCK */}
       <Dialog open={showNotifyDialog} onOpenChange={setShowNotifyDialog}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
-          <DialogHeader><DialogTitle className="text-2xl font-bold flex items-center gap-2"><Bell className="h-6 w-6 text-[#b8933d]" />{CUSTOM_TEXTS.buttons.alertStock}</DialogTitle><DialogDescription>Entrez votre email pour être notifié quand cette pépite sera de nouveau disponible.</DialogDescription></DialogHeader>
-          <div className="py-4"><Label htmlFor="email">Adresse email</Label><Input id="email" type="email" placeholder="votre@email.com" value={notifyEmail} onChange={(e) => setNotifyEmail(e.target.value)} className="mt-2" /></div>
-          <DialogFooter><Button variant="outline" onClick={() => setShowNotifyDialog(false)}>Annuler</Button><Button onClick={handleNotifyMe} className="bg-[#b8933d] text-white">Me notifier</Button></DialogFooter>
+        <DialogContent className="sm:max-w-md rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+              <Bell className="h-6 w-6 text-[#b8933d]" />
+              {CUSTOM_TEXTS.buttons.alertStock}
+            </DialogTitle>
+            <DialogDescription>
+              Entrez votre email pour être notifié personnellement dès que cette pépite revient à l&apos;atelier.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Votre adresse email</Label>
+              <Input 
+                id="email" 
+                type="email" 
+                placeholder="votre@email.com" 
+                value={notifyEmail} 
+                onChange={(e) => setNotifyEmail(e.target.value)}
+                className="rounded-xl h-12"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNotifyDialog(false)} className="rounded-xl">Annuler</Button>
+            <Button onClick={handleNotifyMe} className="bg-[#b8933d] text-white rounded-xl px-8 h-10 shadow-lg">Me notifier</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

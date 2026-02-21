@@ -48,6 +48,7 @@ const categories = [
 const informations = [
   { name: 'Qui sommes-nous', href: '/qui-sommes-nous' },
   { name: 'Contact', href: '/contact' },
+  { name: 'Le colis ouvert', href: '/colis-ouvert' }, // AJOUT DU LIEN ICI
   { name: 'Le droit à l\'erreur', href: '/le-droit-a-lerreur' },
   { name: 'Vite chez vous', href: '/vite-chez-vous' },
   { name: 'Transactions protégées', href: '/transactions-protegees' },
@@ -276,7 +277,7 @@ export function SiteFooter() {
                 <h4 className="text-white font-semibold mb-3">Suivez-nous</h4>
                 <div className="flex gap-3 justify-center md:justify-start">
                   <a
-                    href="https://www.facebook.com/p/"
+                    href="https://www.facebook.com/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="bg-gray-800 hover:bg-gray-700 p-3 rounded-full transition-colors"

@@ -18,7 +18,7 @@ interface FilterOption {
 }
 
 export interface FilterState {
-  mySize: boolean; // Nouveau champ dédié
+  mySize: boolean;
   sizes: string[];
   colors: string[];
   comfort: string[];
@@ -30,230 +30,237 @@ export interface FilterState {
 interface ProductFiltersProps {
   categorySlug?: string;
   activeFilters: FilterState;
-  availableTerms: Set<string>; // Nouvelle prop : liste des termes présents dans les produits
+  availableTerms: Set<string>;
   onFiltersChange: (filters: FilterState) => void;
 }
 
 const FALLBACK_COLORS: Record<string, string> = {
   'blanc': '#FFFFFF', 'noir': '#000000', 'gris': '#808080', 'beige': '#F5F5DC',
-  'marron': '#8B4513', 'rouge': '#FF0000', 'orange': '#FFA500', 'jaune': '#FFFF00',
-  'vert': '#008000', 'bleu': '#0000FF', 'violet': '#800080', 'rose': '#FFC0CB',
-  'or': '#FFD700', 'argent': '#C0C0C0', 'kaki': '#556B2F', 'marine': '#000080',
-  'ciel': '#87CEEB', 'bordeaux': '#800000', 'fushia': '#FF00FF', 'camel': '#C19A6B',
-  'multicolore': 'linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet)',
-  'métallisé': 'linear-gradient(to right, #C0C0C0, #808080)',
+  'marron': '#8B4513', 'bleu': '#0000FF', 'vert': '#008000', 'jaune': '#FFFF00',
+  'orange': '#FFA500', 'rouge': '#FF0000', 'rose': '#FFC0CB', 'violet': '#800080'
 };
 
-const MAIN_COLORS_WHITELIST = [
-  'jaune', 'noir', 'blanc', 'orange', 'rouge', 'violet', 'gris', 'bleu', 
-  'vert', 'marron', 'beige', 'multicolore', 'métallisé', 'autre', 'rose', 'or', 'argent'
-];
-
-export function ProductFilters({ categorySlug, activeFilters, availableTerms, onFiltersChange }: ProductFiltersProps) {
+export default function ProductFilters({ 
+  categorySlug, 
+  activeFilters, 
+  availableTerms,
+  onFiltersChange 
+}: ProductFiltersProps) {
   const { profile } = useAuth();
-  
-  const [colorOptions, setColorOptions] = useState<FilterOption[]>([]);
-  const [confortOptions, setConfortOptions] = useState<FilterOption[]>([]);
-  const [coupeOptions, setCoupeOptions] = useState<FilterOption[]>([]);
-  
-  // Tailles standards à afficher
-  const allSizes = ['34', '36', '38', '40', '42', '44', '46', '48', '50', '52', '54', 'TU'];
-  
-  // On filtre les tailles pour n'afficher que celles disponibles
-  const visibleSizes = allSizes.filter(size => availableTerms.has(size.toLowerCase()));
+  const [attributes, setAttributes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // FLAG DE CONFIGURATION (Permet de réactiver les filtres vêtements plus tard)
+  const ENABLE_CLOTHING_FILTERS = false; 
 
   useEffect(() => {
-    loadFilterOptions();
-  }, [availableTerms]); // Recharger si les termes disponibles changent
+    loadFilterData();
+  }, []);
 
-  const loadFilterOptions = async () => {
+  async function loadFilterData() {
     try {
-      const { data: attributes } = await supabase.from('product_attributes').select('id, name, slug');
-      if (!attributes) return;
+      const { data: attrs, error } = await supabase
+        .from('product_attributes')
+        .select(`
+          id, name, slug,
+          terms:product_attribute_terms(id, name, slug, color_code)
+        `)
+        .eq('is_visible', true)
+        .order('order_by');
 
-      const confortAttr = attributes.find(a => a.slug.includes('confort') || a.name.toLowerCase().includes('confort'));
-      const coupeAttr = attributes.find(a => a.slug.includes('coupe') || a.name.toLowerCase().includes('coupe'));
-
-      const { data: allTerms } = await supabase.from('product_attribute_terms').select('id, name, slug, color_code, attribute_id').order('name');
-
-      if (allTerms) {
-        // --- COULEURS ---
-        // 1. Filtrer par whitelist (Couleurs principales)
-        // 2. Filtrer par disponibilité (Est-ce que cette couleur existe dans les produits ?)
-        const potentialColors = allTerms.filter(t => 
-          (t.color_code !== null || MAIN_COLORS_WHITELIST.includes(t.name.toLowerCase())) &&
-          MAIN_COLORS_WHITELIST.includes(t.name.toLowerCase())
-        );
-
-        // On ne garde que celles qui sont dans availableTerms (soit par nom, soit par ID)
-        const activeColors = potentialColors.filter(t => 
-          availableTerms.has(t.name.toLowerCase()) || availableTerms.has(String(t.id))
-        );
-
-        const uniqueColors = Array.from(new Map(activeColors.map(item => [item.name, item])).values());
-        
-        setColorOptions(uniqueColors.map(c => ({
-          ...c,
-          color_code: c.color_code || FALLBACK_COLORS[c.slug.toLowerCase()] || FALLBACK_COLORS[c.name.toLowerCase()]
-        })));
-
-        // --- CONFORT ---
-        if (confortAttr) {
-          const opts = allTerms.filter(t => t.attribute_id === confortAttr.id);
-          setConfortOptions(opts.filter(t => availableTerms.has(t.name.toLowerCase()) || availableTerms.has(String(t.id))));
-        }
-
-        // --- COUPE ---
-        if (coupeAttr) {
-          const opts = allTerms.filter(t => t.attribute_id === coupeAttr.id);
-          setCoupeOptions(opts.filter(t => availableTerms.has(t.name.toLowerCase()) || availableTerms.has(String(t.id))));
-        }
-      }
+      if (error) throw error;
+      setAttributes(attrs || []);
     } catch (error) {
-      console.error('Erreur chargement filtres:', error);
+      console.error('Error loading filters:', error);
+    } finally {
+      setLoading(false);
     }
-  };
+  }
 
-  const toggleFilter = (type: keyof FilterState, value: any) => {
+  const toggleFilter = (key: keyof FilterState, value: string | boolean) => {
     const newFilters = { ...activeFilters };
-    if (type === 'live' || type === 'nouveautes' || type === 'mySize') {
-      newFilters[type] = value;
+    if (typeof value === 'boolean') {
+      (newFilters as any)[key] = value;
     } else {
-      const list = newFilters[type] as string[];
-      newFilters[type] = list.includes(value) ? list.filter(v => v !== value) : [...list, value];
+      const current = (newFilters as any)[key] as string[];
+      if (current.includes(value)) {
+        (newFilters as any)[key] = current.filter(v => v !== value);
+      } else {
+        (newFilters as any)[key] = [...current, value];
+      }
     }
     onFiltersChange(newFilters);
   };
 
   const clearFilters = () => {
-    onFiltersChange({ mySize: false, sizes: [], colors: [], comfort: [], coupe: [], live: false, nouveautes: false });
+    onFiltersChange({
+      mySize: false,
+      sizes: [],
+      colors: [],
+      comfort: [],
+      coupe: [],
+      live: false,
+      nouveautes: false
+    });
   };
 
-  const hasActiveFilters = activeFilters.mySize || Object.values(activeFilters).some(val => Array.isArray(val) ? val.length > 0 : val === true);
+  if (loading) return <div className="animate-pulse space-y-4"><div className="h-8 bg-gray-100 rounded w-full"></div></div>;
+
+  // Filtrage des groupes d'attributs
+  const sizeGroup = attributes.find(a => a.slug === 'tailles');
+  const colorGroup = attributes.find(a => a.slug === 'couleurs');
+  const otherGroups = attributes.filter(a => a.slug !== 'tailles' && a.slug !== 'couleurs');
 
   return (
-    <Card className="border-0 shadow-none sm:border sm:shadow-sm">
-      <CardHeader className="px-0 sm:px-6">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2"><Filter className="h-4 w-4" /> Critères</CardTitle>
-          {hasActiveFilters && (
-            <button onClick={clearFilters} className="text-sm text-gray-500 hover:text-[#D4AF37] flex items-center gap-1">
-              <X className="h-4 w-4" /> Effacer
-            </button>
-          )}
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 font-bold text-gray-900">
+          <Filter className="h-4 w-4" /> Filtres
         </div>
-      </CardHeader>
-      <CardContent className="space-y-6 px-0 sm:px-6">
-        
-        {/* FILTRE A MA TAILLE */}
-        {profile?.user_size && (
-          <div className="bg-[#FFF9F0] p-3 rounded-lg border border-[#D4AF37]/20 mb-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="my-size-toggle" 
-                checked={activeFilters.mySize} 
-                onCheckedChange={(c) => toggleFilter('mySize', !!c)} 
-                className="data-[state=checked]:bg-[#D4AF37] border-[#D4AF37]" 
-              />
-              <Label htmlFor="my-size-toggle" className="text-sm font-semibold cursor-pointer text-[#b8933d]">
-                À ma taille ({profile.user_size})
+        <button onClick={clearFilters} className="text-xs text-gray-500 hover:text-[#D4AF37] transition-colors flex items-center gap-1">
+          <X className="h-3 w-3" /> Effacer tout
+        </button>
+      </div>
+
+      <Separator />
+
+      {/* 1. SECTION MA TAILLE (Désactivée selon demande André) */}
+      {ENABLE_CLOTHING_FILTERS && profile?.user_size && (
+        <div className="space-y-3">
+          <div className="flex items-center space-x-2 bg-amber-50 p-3 rounded-xl border border-amber-100">
+            <Checkbox 
+              id="filter-mysize" 
+              checked={activeFilters.mySize} 
+              onCheckedChange={(c) => toggleFilter('mySize', !!c)}
+              className="data-[state=checked]:bg-[#D4AF37] border-[#D4AF37]" 
+            />
+            <div className="grid gap-1.5 leading-none">
+              <Label htmlFor="filter-mysize" className="text-sm font-bold text-[#b8933d] cursor-pointer flex items-center gap-1">
+                ✨ Ma taille ({profile.user_size})
               </Label>
+              <p className="text-[10px] text-amber-700 italic">Afficher uniquement ce qui me va</p>
             </div>
           </div>
-        )}
+          <Separator />
+        </div>
+      )}
 
-        {/* TAILLES */}
-        {visibleSizes.length > 0 && (
-          <>
-            <div className="space-y-3">
-              <h3 className="font-semibold text-sm text-gray-900">Tailles</h3>
-              <div className="grid grid-cols-4 gap-2">
-                {visibleSizes.map(size => (
-                  <button
-                    key={size}
-                    onClick={() => toggleFilter('sizes', size)}
-                    className={`px-1 py-2 text-xs sm:text-sm rounded-md border transition-all ${
-                      activeFilters.sizes.includes(size)
-                        ? 'bg-[#D4AF37] text-white border-[#D4AF37] font-bold shadow-sm'
-                        : 'bg-white text-gray-700 border-gray-200 hover:border-[#D4AF37] hover:text-[#D4AF37]'
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <Separator />
-          </>
-        )}
+      {/* 2. SECTION TAILLES (Désactivée selon demande André) */}
+      {ENABLE_CLOTHING_FILTERS && sizeGroup && (
+        <div className="space-y-3">
+          <h3 className="font-semibold text-sm text-gray-900">{sizeGroup.name}</h3>
+          <div className="grid grid-cols-4 gap-2">
+            {sizeGroup.terms.map((opt: FilterOption) => {
+              const isActive = activeFilters.sizes.includes(opt.name);
+              const isAvailable = availableTerms.has(opt.name);
+              return (
+                <button
+                  key={opt.id}
+                  disabled={!isAvailable}
+                  onClick={() => toggleFilter('sizes', opt.name)}
+                  className={`h-9 rounded-lg text-xs font-bold transition-all border ${
+                    isActive 
+                      ? 'bg-[#D4AF37] border-[#D4AF37] text-white shadow-md' 
+                      : isAvailable 
+                        ? 'bg-white border-gray-200 text-gray-700 hover:border-[#D4AF37]' 
+                        : 'bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed opacity-50'
+                  }`}
+                >
+                  {opt.name}
+                </button>
+              );
+            })}
+          </div>
+          <Separator />
+        </div>
+      )}
 
-        {/* COULEURS */}
-        {colorOptions.length > 0 && (
-          <>
-            <div className="space-y-3">
-              <h3 className="font-semibold text-sm text-gray-900">Couleurs Principales</h3>
-              <div className="flex flex-wrap gap-2">
-                {colorOptions.map(option => {
-                  const isSelected = activeFilters.colors.includes(option.name);
-                  
-                  return (
-                    <div 
-                      key={option.id} 
-                      onClick={() => toggleFilter('colors', option.name)}
-                      className={`cursor-pointer w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
-                        isSelected 
-                          ? 'border-[#D4AF37] scale-110 shadow-md ring-2 ring-[#D4AF37] ring-opacity-30' 
-                          : 'border-transparent hover:scale-105 shadow-sm'
-                      }`}
-                      style={{ background: option.color_code }}
-                      title={option.name}
-                    >
-                      {isSelected && !option.slug.includes('multi') && <div className="w-2 h-2 bg-white rounded-full shadow-sm" />}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            <Separator />
-          </>
-        )}
+      {/* 3. SECTION COULEURS (Désactivée selon demande André) */}
+      {ENABLE_CLOTHING_FILTERS && colorGroup && (
+        <div className="space-y-3">
+          <h3 className="font-semibold text-sm text-gray-900">{colorGroup.name}</h3>
+          <div className="flex flex-wrap gap-3">
+            {colorGroup.terms.map((opt: FilterOption) => {
+              const isActive = activeFilters.colors.includes(opt.name);
+              const isAvailable = availableTerms.has(opt.name);
+              const colorCode = opt.color_code || FALLBACK_COLORS[opt.name.toLowerCase()] || '#CCCCCC';
+              
+              return (
+                <button
+                  key={opt.id}
+                  disabled={!isAvailable}
+                  onClick={() => toggleFilter('colors', opt.name)}
+                  title={opt.name}
+                  className={`w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center ${
+                    isActive ? 'border-[#D4AF37] scale-110 shadow-md' : 'border-transparent'
+                  } ${!isAvailable && 'opacity-20 grayscale cursor-not-allowed'}`}
+                >
+                  <div 
+                    className="w-6 h-6 rounded-full border border-gray-100" 
+                    style={{ backgroundColor: colorCode }}
+                  />
+                </button>
+              );
+            })}
+          </div>
+          <Separator />
+        </div>
+      )}
 
-        {/* CONFORT & COUPE */}
-        {[ { title: 'Confort', opts: confortOptions, key: 'comfort' }, { title: 'Coupe', opts: coupeOptions, key: 'coupe' } ].map(group => group.opts.length > 0 && (
-          <div key={group.key} className="space-y-3">
-            <h3 className="font-semibold text-sm text-gray-900">{group.title}</h3>
-            <div className="space-y-2">
-              {group.opts.map(opt => (
+      {/* 4. AUTRES ATTRIBUTS DYNAMIQUES (Confort, Coupe, Matière...) */}
+      {otherGroups.map((group) => (
+        <div key={group.id} className="space-y-4">
+          <h3 className="font-semibold text-sm text-gray-900">{group.name}</h3>
+          <div className="space-y-2">
+            {group.terms
+              .filter((opt: any) => availableTerms.has(opt.name))
+              .map((opt: FilterOption) => (
                 <div key={opt.id} className="flex items-center space-x-2">
                   <Checkbox 
-                    id={`${group.key}-${opt.id}`} 
-                    checked={(activeFilters as any)[group.key].includes(opt.name)} 
-                    onCheckedChange={() => toggleFilter(group.key as any, opt.name)} 
+                    id={`${group.slug}-${opt.id}`} 
+                    checked={(activeFilters as any)[group.slug]?.includes(opt.name) || false} 
+                    onCheckedChange={() => toggleFilter(group.slug as any, opt.name)} 
                     className="data-[state=checked]:bg-[#D4AF37] border-[#D4AF37]" 
                   />
-                  <Label htmlFor={`${group.key}-${opt.id}`} className="text-sm cursor-pointer">{opt.name}</Label>
+                  <Label htmlFor={`${group.slug}-${opt.id}`} className="text-sm cursor-pointer hover:text-[#D4AF37] transition-colors">
+                    {opt.name}
+                  </Label>
                 </div>
               ))}
-            </div>
-            <Separator />
           </div>
-        ))}
+          <Separator />
+        </div>
+      ))}
 
-        {/* AUTRES */}
+      {/* 5. FILTRES SPÉCIAUX (Live, Nouveautés) */}
+      <div className="space-y-3 pt-2">
+        <h3 className="font-semibold text-sm text-gray-900 uppercase tracking-tighter text-gray-400">Expérience Kavern</h3>
         <div className="space-y-3">
-          <h3 className="font-semibold text-sm text-gray-900">Autres</h3>
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <Checkbox id="filter-live" checked={activeFilters.live} onCheckedChange={(c) => toggleFilter('live', !!c)} className="data-[state=checked]:bg-pink-500 border-pink-500" />
-              <Label htmlFor="filter-live" className="text-sm cursor-pointer">🎥 Vu en Live</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox id="filter-nouveautes" checked={activeFilters.nouveautes} onCheckedChange={(c) => toggleFilter('nouveautes', !!c)} className="data-[state=checked]:bg-[#D4AF37] border-[#D4AF37]" />
-              <Label htmlFor="filter-nouveautes" className="text-sm cursor-pointer">✨ Nouveautés</Label>
-            </div>
+          <div className="flex items-center space-x-2 group">
+            <Checkbox 
+              id="filter-live" 
+              checked={activeFilters.live} 
+              onCheckedChange={(c) => toggleFilter('live', !!c)} 
+              className="data-[state=checked]:bg-pink-500 border-pink-500" 
+            />
+            <Label htmlFor="filter-live" className="text-sm font-medium cursor-pointer group-hover:text-pink-600 transition-colors">
+              🎥 Vu en Live
+            </Label>
+          </div>
+          
+          <div className="flex items-center space-x-2 group">
+            <Checkbox 
+              id="filter-nouveautes" 
+              checked={activeFilters.nouveautes} 
+              onCheckedChange={(c) => toggleFilter('nouveautes', !!c)} 
+              className="data-[state=checked]:bg-[#D4AF37] border-[#D4AF37]" 
+            />
+            <Label htmlFor="filter-nouveautes" className="text-sm font-medium cursor-pointer group-hover:text-[#D4AF37] transition-colors">
+              ✨ Nouveautés
+            </Label>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

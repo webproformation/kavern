@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -9,16 +9,39 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Save, ArrowLeft } from "lucide-react";
+import { 
+  Save, 
+  ArrowLeft, 
+  RefreshCw, 
+  Weight, 
+  Calculator, 
+  Globe, 
+  Video, 
+  Heart, 
+  Package, 
+  Sparkles,
+  Plus,
+  Trash2,
+  AlertCircle,
+  ImageIcon,
+  Layers,
+  Settings2
+} from "lucide-react";
 import Link from "next/link";
 import RichTextEditor from "@/components/RichTextEditor";
-import ColorSwatchSelector from "@/components/ColorSwatchSelector";
 import ProductMediaGalleryManager from "@/components/ProductMediaGalleryManager";
 import HierarchicalCategorySelector from "@/components/HierarchicalCategorySelector";
 import GeneralAttributesSelector from "@/components/GeneralAttributesSelector";
+import ColorSwatchSelector from "@/components/ColorSwatchSelector";
 import VariationDetailsForm from "@/components/VariationDetailsForm";
+
+// --- IMPORT DU HOOK DE SAUVEGARDE ---
+import { useAutoSave } from "@/hooks/useAutoSave"; 
 
 interface Category {
   id: string;
@@ -42,495 +65,335 @@ export default function NewProductPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
 
+  // --- GÉNÉRATION DE L'ID ANTICIPÉ ---
+  const [newProductId] = useState(() => crypto.randomUUID());
+
+  // --- ÉTATS : INFORMATIONS GÉNÉRALES ---
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
+  const [sku, setSku] = useState("");
+  const [shortDescription, setShortDescription] = useState(""); // Phrase d'accroche (150 chars)
   const [description, setDescription] = useState("");
+  const [andreReview, setAndreReview] = useState(""); // L'avis d'André
+  const [videoUrl, setVideoUrl] = useState(""); // Lien Vidéo
+
+  // --- ÉTATS : FINANCES & LOGISTIQUE ---
+  const [purchasePrice, setPurchasePrice] = useState<number>(0);
   const [regularPrice, setRegularPrice] = useState<number>(0);
   const [salePrice, setSalePrice] = useState<number | null>(null);
   const [stockQuantity, setStockQuantity] = useState<number>(0);
-  const [sku, setSku] = useState("");
+  const [virtualWeight, setVirtualWeight] = useState<number>(0);
+
+  // --- ÉTATS : CONFIGURATION & SEO ---
   const [status, setStatus] = useState("draft");
   const [isFeatured, setIsFeatured] = useState(false);
   const [isDiamond, setIsDiamond] = useState(false);
+  const [hasVariations, setHasVariations] = useState(false);
+  const [showSizes, setShowSizes] = useState(false);
+  const [seoTitle, setSeoTitle] = useState("");
+  const [seoDescription, setSeoDescription] = useState("");
 
+  // --- ÉTATS : MÉDIAS & RELATIONS ---
   const [mainImage, setMainImage] = useState<string>("");
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
-
-  // activeFamily: La famille de couleur actuellement affichée dans le sélecteur (Gris, Bleu...)
-  const [mainColor, setMainColor] = useState<string>("");
-  const [mainColorId, setMainColorId] = useState<string>("");
-  
-  // selectedSecondaryColors: Liste persistante de TOUTES les nuances cochées (cumulatif)
-  const [selectedSecondaryColors, setSelectedSecondaryColors] = useState<string[]>([]);
-  const [secondaryColorIds, setSecondaryColorIds] = useState<Record<string, string>>({});
-  
-  // selectedFamilies: Pour garder trace de toutes les familles de couleurs sélectionnées pour le front
-  const [selectedFamilies, setSelectedFamilies] = useState<string[]>([]);
-
-  const [sizeRangeStart, setSizeRangeStart] = useState<number | null>(null);
-  const [sizeRangeEnd, setSizeRangeEnd] = useState<number | null>(null);
-
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string[]>>({});
+  const [relatedProductIds, setRelatedProductIds] = useState<string[]>([]); 
+  const [allProducts, setAllProducts] = useState<{id: string, name: string}[]>([]);
 
+  // --- ÉTATS : COULEURS & VARIANTES (LOGIQUE CUMULATIVE) ---
+  const [activeFamilyView, setActiveFamilyView] = useState<string>("");
+  const [selectedNuances, setSelectedNuances] = useState<string[]>([]);
+  const [nuanceIds, setNuanceIds] = useState<Record<string, string>>({});
+  const [sizeRangeStart, setSizeRangeStart] = useState<number | null>(null);
+  const [sizeRangeEnd, setSizeRangeEnd] = useState<number | null>(null);
   const [variations, setVariations] = useState<Variation[]>([]);
 
+  // --- INTÉGRATION AUTO-SAVE ---
+  const currentFormData = {
+    newProductId, name, slug, sku, shortDescription, description, andreReview, videoUrl,
+    purchasePrice, regularPrice, salePrice, stockQuantity, virtualWeight,
+    status, isFeatured, isDiamond, hasVariations, showSizes, seoTitle, seoDescription,
+    mainImage, galleryImages, selectedCategories, selectedAttributes, relatedProductIds,
+    selectedNuances, nuanceIds, sizeRangeStart, sizeRangeEnd, variations
+  };
+
+  const { clearSavedData } = useAutoSave(
+    `new_product_creation`,
+    currentFormData,
+    (savedData: any) => {
+        if (savedData.name !== undefined) setName(savedData.name);
+        if (savedData.slug !== undefined) setSlug(savedData.slug);
+        if (savedData.sku !== undefined) setSku(savedData.sku);
+        if (savedData.shortDescription !== undefined) setShortDescription(savedData.shortDescription);
+        if (savedData.description !== undefined) setDescription(savedData.description);
+        if (savedData.andreReview !== undefined) setAndreReview(savedData.andreReview);
+        if (savedData.videoUrl !== undefined) setVideoUrl(savedData.videoUrl);
+        if (savedData.purchasePrice !== undefined) setPurchasePrice(savedData.purchasePrice);
+        if (savedData.regularPrice !== undefined) setRegularPrice(savedData.regularPrice);
+        if (savedData.salePrice !== undefined) setSalePrice(savedData.salePrice);
+        if (savedData.stockQuantity !== undefined) setStockQuantity(savedData.stockQuantity);
+        if (savedData.virtualWeight !== undefined) setVirtualWeight(savedData.virtualWeight);
+        if (savedData.status !== undefined) setStatus(savedData.status);
+        if (savedData.isFeatured !== undefined) setIsFeatured(savedData.isFeatured);
+        if (savedData.isDiamond !== undefined) setIsDiamond(savedData.isDiamond);
+        if (savedData.hasVariations !== undefined) setHasVariations(savedData.hasVariations);
+        if (savedData.showSizes !== undefined) setShowSizes(savedData.showSizes);
+        if (savedData.seoTitle !== undefined) setSeoTitle(savedData.seoTitle);
+        if (savedData.seoDescription !== undefined) setSeoDescription(savedData.seoDescription);
+        if (savedData.mainImage !== undefined) setMainImage(savedData.mainImage);
+        if (savedData.galleryImages !== undefined) setGalleryImages(savedData.galleryImages);
+        if (savedData.selectedCategories !== undefined) setSelectedCategories(savedData.selectedCategories);
+        if (savedData.selectedAttributes !== undefined) setSelectedAttributes(savedData.selectedAttributes);
+        if (savedData.relatedProductIds !== undefined) setRelatedProductIds(savedData.relatedProductIds);
+        if (savedData.selectedNuances !== undefined) setSelectedNuances(savedData.selectedNuances);
+        if (savedData.nuanceIds !== undefined) setNuanceIds(savedData.nuanceIds);
+        if (savedData.variations !== undefined) setVariations(savedData.variations);
+    }
+  );
+
+  // --- LOGIQUE : GÉNÉRATION AUTOMATIQUE DU SLUG ---
   useEffect(() => {
-    // No need to load categories here anymore, HierarchicalCategorySelector handles it
+    if (name) {
+      setSlug(name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""));
+    }
+  }, [name]);
+
+  // --- LOGIQUE : CHARGEMENT DES PRODUITS (CROSS-SELLING) ---
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const { data } = await supabase.from("products").select("id, name").order("name");
+      if (data) setAllProducts(data);
+    };
+    fetchProducts();
   }, []);
 
-  // LOGIQUE DES VARIATIONS (MISE À JOUR POUR LE CUMUL)
+  // --- LOGIQUE : CALCUL DE LA MARGE ---
+  const margin = useMemo(() => {
+    if (regularPrice > 0) {
+      return (((regularPrice - purchasePrice) / regularPrice) * 100).toFixed(1);
+    }
+    return "0";
+  }, [purchasePrice, regularPrice]);
+
+  // --- LOGIQUE : VARIATIONS (SANS ÉCRASEMENT) ---
   useEffect(() => {
-    if (selectedSecondaryColors.length > 0) {
+    if (hasVariations) {
       setVariations(prev => {
-        // 1. On garde les variations dont la nuance est toujours sélectionnée
-        const existingVars = prev.filter(v => selectedSecondaryColors.includes(v.colorName));
-        
-        // 2. On ajoute les nouvelles nuances qui n'ont pas encore de bloc
-        const newNuances = selectedSecondaryColors.filter(
-          name => !existingVars.some(v => v.colorName === name)
-        );
-
-        const addedVars: Variation[] = newNuances.map(colorName => ({
-          colorName,
-          colorId: secondaryColorIds[colorName] || "",
-          sku: "",
-          regular_price: regularPrice || null,
-          sale_price: salePrice,
-          stock_quantity: stockQuantity || null,
-          image_url: null,
-        }));
-
-        return [...existingVars, ...addedVars];
+        const kept = prev.filter(v => selectedNuances.includes(v.colorName));
+        const added = selectedNuances
+          .filter(name => !kept.some(v => v.colorName === name))
+          .map(colorName => ({
+            colorName, colorId: nuanceIds[colorName] || "", sku: "",
+            regular_price: regularPrice || null, sale_price: salePrice,
+            stock_quantity: stockQuantity || null, image_url: null,
+          }));
+        return [...kept, ...added];
       });
-    } else {
-      setVariations([]);
     }
-  }, [selectedSecondaryColors, secondaryColorIds]);
+  }, [selectedNuances, nuanceIds, hasVariations]);
 
-
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-  };
-
-  const handleNameChange = (value: string) => {
-    setName(value);
-    if (!slug) {
-      setSlug(generateSlug(value));
-    }
-  };
-
-
-  const handleMainColorSelect = (colorName: string, colorId: string) => {
-    // CORRECTION : On ne vide plus selectedSecondaryColors
-    // On change juste la "vue" du sélecteur vers la famille Gris ou Bleu
-    setMainColor(colorName);
-    setMainColorId(colorId);
-    
-    // On garde trace de cette famille pour les filtres front
-    if (colorName && !selectedFamilies.includes(colorName)) {
-      setSelectedFamilies(prev => [...prev, colorName]);
-    }
-  };
-
-  const handleSecondaryColorToggle = (colorName: string, colorId: string, selected: boolean) => {
+  // --- HANDLERS ---
+  const handleFamilySelect = (name: string, id: string) => { setActiveFamilyView(name); };
+  const handleNuanceToggle = (name: string, id: string, selected: boolean) => {
     if (selected) {
-      // On ajoute à la liste globale sans supprimer ce qui vient d'autres familles
-      setSelectedSecondaryColors(prev => Array.from(new Set([...prev, colorName])));
-      setSecondaryColorIds(prev => ({ ...prev, [colorName]: colorId }));
+      setSelectedNuances(prev => Array.from(new Set([...prev, name])));
+      setNuanceIds(prev => ({ ...prev, [name]: id }));
     } else {
-      setSelectedSecondaryColors(prev => prev.filter(c => c !== colorName));
-      setSecondaryColorIds(prev => {
-        const newIds = { ...prev };
-        delete newIds[colorName];
-        return newIds;
-      });
+      setSelectedNuances(prev => prev.filter(n => n !== name));
     }
-  };
-
-  const updateVariation = (index: number, field: keyof Variation, value: any) => {
-    setVariations(prev => {
-      const newVars = [...prev];
-      newVars[index] = { ...newVars[index], [field]: value };
-      return newVars;
-    });
-  };
-
-  const handleVariationUpdate = (colorName: string, field: keyof Variation, value: any) => {
-    setVariations(prev => {
-      const existingIndex = prev.findIndex(v => v.colorName === colorName);
-
-      if (existingIndex >= 0) {
-        const newVars = [...prev];
-        newVars[existingIndex] = { ...newVars[existingIndex], [field]: value };
-        return newVars;
-      } else {
-        const newVar: Variation = {
-          colorName,
-          colorId: secondaryColorIds[colorName] || "",
-          sku: field === 'sku' ? value : "",
-          regular_price: field === 'regular_price' ? value : regularPrice || null,
-          sale_price: field === 'sale_price' ? value : salePrice,
-          stock_quantity: field === 'stock_quantity' ? value : stockQuantity || null,
-          image_url: field === 'image_url' ? value : null,
-        };
-        return [...prev, newVar];
-      }
-    });
   };
 
   const handleSave = async () => {
-    if (!name || !slug) {
-      toast.error("Le nom et le slug sont requis");
-      return;
-    }
-
-    if (!mainColor) {
-      toast.error("Veuillez sélectionner une couleur principale (famille)");
-      return;
-    }
-
+    if (!name || !slug) { toast.error("Le nom et le slug sont requis"); return; }
     setSaving(true);
-
     try {
-      const allAttributes: Record<string, string[]> = { ...selectedAttributes };
-      
-      // On enregistre toutes les nuances sélectionnées dans l'attribut Couleur
-      allAttributes['Couleur'] = selectedSecondaryColors;
-      
-      // On peut aussi enregistrer la liste des familles pour les filtres front
-      allAttributes['Familles de Couleurs'] = selectedFamilies;
+      const finalAttributes = { ...selectedAttributes };
+      if (hasVariations) finalAttributes['Couleur'] = selectedNuances;
 
-      const productData = {
-        name: name.trim(),
-        slug: slug.trim(),
-        sku: sku.trim() || null,
-        description: description || "",
-        regular_price: parseFloat(String(regularPrice)) || 0,
-        sale_price: salePrice ? parseFloat(String(salePrice)) : null,
-        stock_quantity: parseInt(String(stockQuantity)) || 0,
-        status: status || "draft",
-        image_url: mainImage || null,
-        gallery_images: galleryImages.length > 0 ? galleryImages : null,
-        is_diamond: isDiamond,
-        is_featured: isFeatured,
-        is_variable_product: variations.length > 0,
-        has_variations: variations.length > 0,
-        main_color: mainColor, // Utilisé pour le filtre principal front
-        size_range_start: sizeRangeStart,
-        size_range_end: sizeRangeEnd,
-        attributes: Object.keys(allAttributes).length > 0 ? allAttributes : null,
-      };
+      const { data: newProd, error: pErr } = await supabase.from("products").insert({
+        id: newProductId, name: name.trim(), slug: slug.trim(), sku: sku.trim() || null,
+        short_description: shortDescription.substring(0, 150), description, andre_review: andreReview,
+        video_url: videoUrl, purchase_price: purchasePrice, regular_price: regularPrice,
+        sale_price: salePrice, stock_quantity: stockQuantity, virtual_weight: virtualWeight,
+        status, is_featured: isFeatured, is_diamond: isDiamond, has_variations: hasVariations,
+        seo_title: seoTitle || name, seo_description: seoDescription || shortDescription,
+        image_url: mainImage, gallery_images: galleryImages, attributes: finalAttributes,
+        related_product_ids: relatedProductIds,
+        size_range_start: showSizes ? sizeRangeStart : null,
+        size_range_end: showSizes ? sizeRangeEnd : null
+      }).select().single();
 
-      const { data: newProduct, error: productError } = await supabase
-        .from("products")
-        .insert(productData)
-        .select()
-        .single();
-
-      if (productError) throw productError;
-      if (!newProduct) throw new Error("Produit non créé");
-
-      const productId = newProduct.id;
+      if (pErr) throw pErr;
 
       if (selectedCategories.length > 0) {
-        const categoryMappings = selectedCategories.map((catId, index) => ({
-          product_id: productId,
-          category_id: catId,
-          is_primary: index === 0,
-          display_order: index,
-        }));
-
-        const { error: catError } = await supabase
-          .from("product_category_mapping")
-          .insert(categoryMappings);
-
-        if (catError) throw catError;
+        const mappings = selectedCategories.map((id, i) => ({ product_id: newProductId, category_id: id, is_primary: i === 0, display_order: i }));
+        await supabase.from("product_category_mapping").insert(mappings);
       }
 
-      if (variations.length > 0) {
-        const variationsToInsert = variations.map(v => ({
-          product_id: productId,
-          sku: v.sku || "",
-          attributes: { "Couleur": v.colorName },
-          regular_price: v.regular_price ? parseFloat(String(v.regular_price)) : regularPrice,
-          sale_price: v.sale_price ? parseFloat(String(v.sale_price)) : salePrice,
-          stock_quantity: v.stock_quantity ? parseInt(String(v.stock_quantity)) : stockQuantity,
-          image_url: v.image_url || null,
-          stock_status: (v.stock_quantity || 0) > 0 ? "instock" : "outofstock",
-          is_active: true,
+      if (hasVariations && variations.length > 0) {
+        const toInsert = variations.map(v => ({
+          product_id: newProductId, sku: v.sku, attributes: { "Couleur": v.colorName },
+          regular_price: v.regular_price || regularPrice, sale_price: v.sale_price || salePrice,
+          stock_quantity: v.stock_quantity || stockQuantity, image_url: v.image_url || mainImage,
+          stock_status: (v.stock_quantity || 0) > 0 ? "instock" : "outofstock", is_active: true,
         }));
-
-        const { error: varError } = await supabase
-          .from("product_variations")
-          .insert(variationsToInsert);
-
-        if (varError) throw varError;
+        await supabase.from("product_variations").insert(toInsert);
       }
 
-      toast.success("Produit créé avec succès!");
+      clearSavedData();
+      toast.success("Nouvelle pépite créée !");
       router.push("/admin/products");
-    } catch (error: any) {
-      console.error("Error creating product:", error);
-      toast.error(`Erreur: ${error.message}`);
-    } finally {
-      setSaving(false);
-    }
+    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Nouveau Produit</h1>
-            <p className="text-gray-600 mt-1">Créez un nouveau produit pour votre boutique</p>
+    <div className="min-h-screen bg-gray-50/50 pb-24">
+      {/* HEADER FIXE */}
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/admin/products"><Button variant="ghost" size="icon" className="rounded-full"><ArrowLeft className="h-5 w-5"/></Button></Link>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">Nouveau Produit</h1>
+              <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1 w-fit mt-1"><RefreshCw className="w-2.5 h-2.5" /> Auto-save actif</span>
+            </div>
           </div>
-          <Link href="/admin/products">
-            <Button variant="outline">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Retour
-            </Button>
-          </Link>
-        </div>
-
-        <div className="space-y-6">
-          <Card className="bg-white">
-            <CardHeader>
-              <CardTitle className="text-[#d4af37]">Informations Générales</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Nom du Produit *</Label>
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => handleNameChange(e.target.value)}
-                    placeholder="Ex: Robe d'été fleurie"
-                    className="bg-white"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="slug">Slug (URL) *</Label>
-                  <Input
-                    id="slug"
-                    value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
-                    placeholder="robe-ete-fleurie"
-                    className="bg-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <RichTextEditor
-                  value={description}
-                  onChange={setDescription}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="sku">SKU (Référence)</Label>
-                  <Input
-                    id="sku"
-                    value={sku}
-                    onChange={(e) => setSku(e.target.value)}
-                    placeholder="PRD-001"
-                    className="bg-white"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="status">Statut</Label>
-                  <Select value={status} onValueChange={setStatus}>
-                    <SelectTrigger className="bg-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="draft">Brouillon</SelectItem>
-                      <SelectItem value="publish">Publié</SelectItem>
-                      <SelectItem value="private">Privé</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-end gap-4">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="is_featured"
-                      checked={isFeatured}
-                      onCheckedChange={(checked) => setIsFeatured(!!checked)}
-                    />
-                    <Label htmlFor="is_featured" className="cursor-pointer">Vedette</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="is_diamond"
-                      checked={isDiamond}
-                      onCheckedChange={(checked) => setIsDiamond(!!checked)}
-                    />
-                    <Label htmlFor="is_diamond" className="cursor-pointer">Diamant</Label>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <ProductMediaGalleryManager
-            mainImage={mainImage}
-            galleryImages={galleryImages}
-            onMainImageChange={setMainImage}
-            onGalleryImagesChange={setGalleryImages}
-          />
-
-          <Card className="bg-white">
-            <CardHeader>
-              <CardTitle className="text-[#d4af37]">Prix & Stock (Par défaut)</CardTitle>
-              <CardDescription>
-                Ces valeurs seront utilisées si aucune variation n'est définie
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="regularPrice">Prix Régulier (€) *</Label>
-                  <Input
-                    id="regularPrice"
-                    type="number"
-                    step="0.01"
-                    value={regularPrice}
-                    onChange={(e) => setRegularPrice(parseFloat(e.target.value) || 0)}
-                    className="bg-white"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="salePrice">Prix Promo (€)</Label>
-                  <Input
-                    id="salePrice"
-                    type="number"
-                    step="0.01"
-                    value={salePrice || ""}
-                    onChange={(e) => setSalePrice(e.target.value ? parseFloat(e.target.value) : null)}
-                    className="bg-white"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="stockQuantity">Stock</Label>
-                  <Input
-                    id="stockQuantity"
-                    type="number"
-                    value={stockQuantity}
-                    onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)}
-                    className="bg-white"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <ColorSwatchSelector
-            selectedMainColor={mainColor}
-            selectedSecondaryColors={selectedSecondaryColors}
-            onMainColorSelect={handleMainColorSelect}
-            onSecondaryColorToggle={handleSecondaryColorToggle}
-            showSecondaryColors={true}
-          />
-
-          <VariationDetailsForm
-            selectedSecondaryColors={selectedSecondaryColors}
-            secondaryColorIds={secondaryColorIds}
-            variations={variations}
-            onVariationUpdate={handleVariationUpdate}
-            defaultRegularPrice={regularPrice}
-            defaultSalePrice={salePrice}
-            defaultStock={stockQuantity}
-          />
-
-          <Card className="bg-white">
-            <CardHeader>
-              <CardTitle className="text-[#d4af37]">Filtres de Taille</CardTitle>
-              <CardDescription>
-                Définissez les tailles min/max pour le filtre "À ma taille"
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Taille Minimum</Label>
-                  <Select
-                    value={sizeRangeStart?.toString() || "none"}
-                    onValueChange={(value) => setSizeRangeStart(value === "none" ? null : parseInt(value))}
-                  >
-                    <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Choisir" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Aucune</SelectItem>
-                      {Array.from({ length: 11 }, (_, i) => 34 + (i * 2)).map(size => (
-                        <SelectItem key={size} value={size.toString()}>{size}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>Taille Maximum</Label>
-                  <Select
-                    value={sizeRangeEnd?.toString() || "none"}
-                    onValueChange={(value) => setSizeRangeEnd(value === "none" ? null : parseInt(value))}
-                  >
-                    <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Choisir" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Aucune</SelectItem>
-                      {Array.from({ length: 11 }, (_, i) => 34 + (i * 2)).map(size => (
-                        <SelectItem key={size} value={size.toString()}>{size}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <GeneralAttributesSelector
-            selectedAttributes={selectedAttributes}
-            onAttributesChange={setSelectedAttributes}
-          />
-
-          <HierarchicalCategorySelector
-            selectedCategories={selectedCategories}
-            onCategoriesChange={setSelectedCategories}
-          />
-
-          <div className="flex justify-end gap-4 pb-6">
-            <Link href="/admin/products">
-              <Button variant="outline">Annuler</Button>
-            </Link>
-            <Button onClick={handleSave} disabled={saving} className="bg-[#d4af37] hover:bg-[#c19b2f]">
-              {saving ? (
-                <>Enregistrement...</>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Créer le Produit
-                </>
-              )}
+          <div className="flex gap-3">
+            <Link href="/admin/products"><Button variant="outline">Annuler</Button></Link>
+            <Button onClick={handleSave} disabled={saving} className="bg-[#d4af37] hover:bg-[#c19b2f] text-white px-8 shadow-lg shadow-amber-200">
+              {saving ? "Création..." : <><Save className="w-4 h-4 mr-2" /> Créer la pépite</>}
             </Button>
           </div>
         </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+          
+          {/* 1. L'ÂME DU PRODUIT */}
+          <Card className="shadow-sm border-none bg-white">
+            <CardHeader className="border-b bg-gray-50/50">
+              <div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-[#C6A15B]"/><CardTitle className="text-lg">L&apos;Âme du Produit</CardTitle></div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2"><Label>Nom de la pépite *</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Bougie Ambre & Soja" /></div>
+                <div className="space-y-2"><Label>Slug (URL)</Label><Input value={slug} onChange={(e) => setSlug(e.target.value)} className="bg-gray-50 font-mono text-xs" /></div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between"><Label>La &quot;Phrase d&apos;Accroche&quot;</Label><span className="text-[10px] text-gray-400">{shortDescription.length}/150</span></div>
+                <Input value={shortDescription} onChange={(e) => setShortDescription(e.target.value.substring(0, 150))} placeholder="Le goût authentique..." className="italic" />
+              </div>
+              <div className="space-y-2"><Label>Histoire du produit (Description longue)</Label><RichTextEditor value={description} onChange={setDescription} /></div>
+              <div className="p-5 bg-amber-50 rounded-2xl border border-amber-100 space-y-3">
+                <Label className="text-[#b8933d] font-bold flex items-center gap-2 uppercase tracking-tighter"><Heart className="h-4 w-4 fill-[#b8933d]" /> L&apos;avis d&apos;André</Label>
+                <Textarea value={andreReview} onChange={(e) => setAndreReview(e.target.value)} placeholder="Pourquoi avez-vous craqué pour ce produit ?" rows={4} className="bg-white border-none italic shadow-inner" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 2. VISUELS & VIDÉO */}
+          <Card className="shadow-sm border-none bg-white">
+            <CardHeader className="border-b bg-gray-50/50">
+              <div className="flex items-center gap-2"><Video className="h-5 w-5 text-gray-800" /><CardTitle className="text-lg">Visuels & Démo</CardTitle></div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-8">
+              <ProductMediaGalleryManager mainImage={mainImage} galleryImages={galleryImages} onMainImageChange={setMainImage} onGalleryImagesChange={setGalleryImages} />
+              <Separator />
+              <div className="space-y-4">
+                <div className="flex items-center gap-2"><Video className="h-5 w-5 text-red-500" /><Label>Lien Vidéo (Instagram Reel / Live)</Label></div>
+                <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="Lien direct pour remplacer la photo principale..." className="border-red-100 focus:border-red-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 3. LE CROSS-SELLING */}
+          <Card className="shadow-sm border-none bg-white">
+            <CardHeader className="border-b bg-gray-50/50"><CardTitle className="text-lg flex items-center gap-2"><Layers className="h-5 w-5 text-blue-500" /> Ventes Suggérées</CardTitle></CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {relatedProductIds.map(id => (
+                  <Badge key={id} variant="secondary" className="px-3 py-1 gap-2 bg-blue-50 text-blue-700 border-blue-100">
+                    {allProducts.find(p => p.id === id)?.name}
+                    <Trash2 className="h-3 w-3 cursor-pointer hover:text-red-500" onClick={() => setRelatedProductIds(relatedProductIds.filter(v => v !== id))} />
+                  </Badge>
+                ))}
+              </div>
+              <Select onValueChange={(id) => id && !relatedProductIds.includes(id) && relatedProductIds.length < 3 && setRelatedProductIds([...relatedProductIds, id])}>
+                <SelectTrigger className="bg-white"><SelectValue placeholder="Ajouter une suggestion d'André..." /></SelectTrigger>
+                <SelectContent>{allProducts.map(p => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* COLONNE DROITE */}
+        <div className="space-y-8">
+          <Card className="shadow-lg border-2 border-[#d4af37]/30 bg-amber-50/20 overflow-hidden">
+            <CardHeader className="bg-[#d4af37]/10 flex flex-row items-center justify-between pb-4">
+              <CardTitle className="text-lg text-[#b8933d] flex items-center gap-2"><Calculator className="h-5 w-5"/> Marge</CardTitle>
+              <Badge className="bg-[#d4af37] text-white border-none">{margin}%</Badge>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4 bg-white/80">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Achat (€)</Label><Input type="number" step="0.01" value={purchasePrice} onChange={(e) => setPurchasePrice(parseFloat(e.target.value) || 0)} className="font-mono" /></div>
+                <div className="space-y-1"><Label className="text-xs font-bold text-[#b8933d] uppercase">Vente (€) *</Label><Input type="number" step="0.01" value={regularPrice} onChange={(e) => setRegularPrice(parseFloat(e.target.value) || 0)} className="font-bold font-mono border-amber-200" /></div>
+              </div>
+              <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Promo (€)</Label><Input type="number" step="0.01" value={salePrice || ""} onChange={(e) => setSalePrice(e.target.value ? parseFloat(e.target.value) : null)} className="text-red-600 font-mono border-red-100" /></div>
+              <Separator />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Stock</Label><Input type="number" value={stockQuantity} onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)} /></div>
+                <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Poids (g)</Label><Input type="number" value={virtualWeight} onChange={(e) => setVirtualWeight(parseInt(e.target.value) || 0)} /></div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-sm border-none bg-white">
+            <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="text-lg flex items-center gap-2"><Globe className="h-5 w-5 text-green-600" /> SEO</CardTitle></CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div><Label>Titre Google</Label><Input value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} placeholder={name} /></div>
+              <div><Label>Description Google</Label><Textarea value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} placeholder={shortDescription} rows={3} /></div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-sm border-none bg-white">
+            <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="text-lg flex items-center gap-2 text-gray-600"><Settings2 className="h-5 w-5"/> Options</CardTitle></CardHeader>
+            <CardContent className="p-6 space-y-5">
+              <div className="flex items-center justify-between p-3 border rounded-xl bg-blue-50/30">
+                <div className="space-y-0.5"><Label className="text-blue-900">Variantes ?</Label><p className="text-[10px] text-blue-500 italic">Couleurs & Stocks multiples</p></div>
+                <Switch checked={hasVariations} onCheckedChange={setHasVariations} />
+              </div>
+              <div className="flex items-center justify-between p-3 border rounded-xl bg-purple-50/30 opacity-60">
+                <div className="space-y-0.5"><Label className="text-purple-900">Module Tailles ?</Label><p className="text-[10px] text-purple-500 italic">Désactivé par défaut</p></div>
+                <Switch checked={showSizes} onCheckedChange={setShowSizes} />
+              </div>
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center gap-2"><Checkbox id="f" checked={isFeatured} onCheckedChange={(c) => setIsFeatured(!!c)}/><Label htmlFor="f">⭐ Mettre en Vedette</Label></div>
+                <div className="flex items-center gap-2"><Checkbox id="d" checked={isDiamond} onCheckedChange={(c) => setIsDiamond(!!c)}/><Label htmlFor="d">💎 Produit Diamant</Label></div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 mt-8 space-y-8">
+        <GeneralAttributesSelector selectedAttributes={selectedAttributes} onAttributesChange={setSelectedAttributes} />
+        <HierarchicalCategorySelector selectedCategories={selectedCategories} onCategoriesChange={setSelectedCategories} />
+        
+        {hasVariations && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <ColorSwatchSelector selectedMainColor={activeFamilyView} selectedSecondaryColors={selectedNuances} onMainColorSelect={setActiveFamilyView} onSecondaryColorToggle={handleNuanceToggle} showSecondaryColors={true} />
+            <VariationDetailsForm selectedSecondaryColors={selectedNuances} secondaryColorIds={nuanceIds} variations={variations} onVariationUpdate={(name, field, val) => {
+                setVariations(prev => {
+                  const idx = prev.findIndex(v => v.colorName === name);
+                  const newVars = [...prev];
+                  newVars[idx] = { ...newVars[idx], [field]: val };
+                  return newVars;
+                });
+            }} defaultRegularPrice={regularPrice} defaultSalePrice={salePrice} defaultStock={stockQuantity} />
+          </div>
+        )}
       </div>
     </div>
   );
