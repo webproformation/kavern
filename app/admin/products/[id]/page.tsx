@@ -1,374 +1,466 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { 
-  Save, 
-  ArrowLeft, 
-  Image as ImageIcon, 
-  Plus, 
-  Trash2, 
-  Loader2, 
-  ExternalLink,
-  Sparkles
-} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { 
+  Save, 
+  ArrowLeft, 
+  RefreshCw, 
+  Weight, 
+  Calculator, 
+  Globe, 
+  Video, 
+  Heart, 
+  Package, 
+  Sparkles,
+  Plus,
+  Trash2,
+  AlertCircle,
+  ImageIcon,
+  Layers,
+  Settings2,
+  Loader2
+} from "lucide-react";
 import Link from "next/link";
+import RichTextEditor from "@/components/RichTextEditor";
+import ProductMediaGalleryManager from "@/components/ProductMediaGalleryManager";
+import HierarchicalCategorySelector from "@/components/HierarchicalCategorySelector";
+import GeneralAttributesSelector from "@/components/GeneralAttributesSelector";
+import ColorSwatchSelector from "@/components/ColorSwatchSelector";
+import VariationDetailsForm from "@/components/VariationDetailsForm";
 
-export default function AdminProductEditPage() {
+// --- IMPORT DU HOOK DE SAUVEGARDE ---
+import { useAutoSave } from "@/hooks/useAutoSave"; 
+
+interface Variation {
+  id?: string;
+  colorName: string;
+  colorId: string;
+  sku: string;
+  regular_price: number | null;
+  sale_price: number | null;
+  stock_quantity: number | null;
+  image_url: string | null;
+}
+
+export default function EditProductPage() {
   const { id } = useParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
-  // --- ÉTAT DU PRODUIT ---
-  const [product, setProduct] = useState<any>({
-    name: "",
-    slug: "",
-    regular_price: 0,
-    sale_price: null,
-    stock_quantity: 0,
-    short_description: "",
-    description: "",
-    andre_review: "",
-    video_url: "",
-    image_url: "",
-    gallery_images: [],
-    status: "publish",
-    is_featured: false,
-    related_product_ids: []
-  });
 
-  // --- ÉTATS AUXILIAIRES ---
-  const [categories, setCategories] = useState<any[]>([]);
+  // --- ÉTATS : INFORMATIONS GÉNÉRALES ---
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [sku, setSku] = useState("");
+  const [shortDescription, setShortDescription] = useState("");
+  const [description, setDescription] = useState("");
+  const [andreReview, setAndreReview] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
+
+  // --- ÉTATS : FINANCES & LOGISTIQUE ---
+  const [purchasePrice, setPurchasePrice] = useState<number>(0);
+  const [regularPrice, setRegularPrice] = useState<number>(0);
+  const [salePrice, setSalePrice] = useState<number | null>(null);
+  const [stockQuantity, setStockQuantity] = useState<number>(0);
+  const [virtualWeight, setVirtualWeight] = useState<number>(0);
+
+  // --- ÉTATS : CONFIGURATION & SEO ---
+  const [status, setStatus] = useState("draft");
+  const [isFeatured, setIsFeatured] = useState(false);
+  const [isDiamond, setIsDiamond] = useState(false);
+  const [hasVariations, setHasVariations] = useState(false);
+  const [showSizes, setShowSizes] = useState(false);
+  const [seoTitle, setSeoTitle] = useState("");
+  const [seoDescription, setSeoDescription] = useState("");
+
+  // --- ÉTATS : MÉDIAS & RELATIONS ---
+  const [mainImage, setMainImage] = useState<string>("");
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string[]>>({});
+  const [relatedProductIds, setRelatedProductIds] = useState<string[]>([]); 
+  const [allProducts, setAllProducts] = useState<{id: string, name: string}[]>([]);
 
+  // --- ÉTATS : COULEURS & VARIANTES ---
+  const [activeFamilyView, setActiveFamilyView] = useState<string>("");
+  const [selectedNuances, setSelectedNuances] = useState<string[]>([]);
+  const [nuanceIds, setNuanceIds] = useState<Record<string, string>>({});
+  const [sizeRangeStart, setSizeRangeStart] = useState<number | null>(null);
+  const [sizeRangeEnd, setSizeRangeEnd] = useState<number | null>(null);
+  const [variations, setVariations] = useState<Variation[]>([]);
+
+  // --- CHARGEMENT DES DONNÉES EXISTANTES ---
   useEffect(() => {
-    if (id) loadInitialData();
+    const fetchInitialData = async () => {
+      if (!id) return;
+      setLoading(true);
+      try {
+        // 1. Charger le produit
+        const { data: prod, error } = await supabase
+          .from("products")
+          .select("*")
+          .eq("id", id)
+          .single();
+
+        if (error) throw error;
+
+        // Mapper les données vers les états
+        setName(prod.name || "");
+        setSlug(prod.slug || "");
+        setSku(prod.sku || "");
+        setShortDescription(prod.short_description || "");
+        setDescription(prod.description || "");
+        setAndreReview(prod.andre_review || "");
+        setVideoUrl(prod.video_url || "");
+        setPurchasePrice(prod.purchase_price || 0);
+        setRegularPrice(prod.regular_price || 0);
+        setSalePrice(prod.sale_price);
+        setStockQuantity(prod.stock_quantity || 0);
+        setVirtualWeight(prod.virtual_weight || 0);
+        setStatus(prod.status || "draft");
+        setIsFeatured(prod.is_featured || false);
+        setIsDiamond(prod.is_diamond || false);
+        setHasVariations(prod.has_variations || false);
+        setShowSizes(!!prod.size_range_start);
+        setSeoTitle(prod.seo_title || "");
+        setSeoDescription(prod.seo_description || "");
+        setMainImage(prod.image_url || "");
+        setGalleryImages(prod.gallery_images || []);
+        setSelectedAttributes(prod.attributes || {});
+        setRelatedProductIds(prod.related_product_ids || []);
+        setSizeRangeStart(prod.size_range_start);
+        setSizeRangeEnd(prod.size_range_end);
+
+        // 2. Charger les catégories
+        const { data: catMapping } = await supabase
+          .from("product_category_mapping")
+          .select("category_id")
+          .eq("product_id", id);
+        setSelectedCategories(catMapping?.map(c => c.category_id) || []);
+
+        // 3. Charger les variations
+        const { data: varData } = await supabase
+          .from("product_variations")
+          .select("*")
+          .eq("product_id", id);
+        
+        if (varData && varData.length > 0) {
+          const loadedVariations = varData.map(v => ({
+            id: v.id,
+            colorName: v.attributes?.Couleur || "",
+            colorId: "", // Sera synchronisé si besoin
+            sku: v.sku || "",
+            regular_price: v.regular_price,
+            sale_price: v.sale_price,
+            stock_quantity: v.stock_quantity,
+            image_url: v.image_url
+          }));
+          setVariations(loadedVariations);
+          setSelectedNuances(loadedVariations.map(v => v.colorName));
+        }
+
+        // 4. Charger la liste des produits (Cross-selling)
+        const { data: prods } = await supabase.from("products").select("id, name").order("name");
+        if (prods) setAllProducts(prods);
+
+      } catch (e: any) {
+        toast.error("Erreur de chargement : " + e.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInitialData();
   }, [id]);
 
-  async function loadInitialData() {
-    setLoading(true);
-    try {
-      // 1. Charger le produit par ID
-      const { data: prodData, error: prodError } = await supabase
-        .from("products")
-        .select("*")
-        .eq("id", id)
-        .single();
+  // --- INTÉGRATION AUTO-SAVE ---
+  const currentFormData = {
+    id, name, slug, sku, shortDescription, description, andreReview, videoUrl,
+    purchasePrice, regularPrice, salePrice, stockQuantity, virtualWeight,
+    status, isFeatured, isDiamond, hasVariations, showSizes, seoTitle, seoDescription,
+    mainImage, galleryImages, selectedCategories, selectedAttributes, relatedProductIds,
+    selectedNuances, nuanceIds, sizeRangeStart, sizeRangeEnd, variations
+  };
 
-      if (prodError) throw prodError;
-      setProduct(prodData);
+  const { clearSavedData } = useAutoSave(`edit_product_${id}`, currentFormData, () => {});
 
-      // 2. Charger les catégories liées au produit
-      const { data: mappingData } = await supabase
-        .from("product_category_mapping")
-        .select("category_id")
-        .eq("product_id", id);
-      setSelectedCategories(mappingData?.map(m => m.category_id) || []);
-
-      // 3. Charger toutes les catégories disponibles
-      const { data: cats } = await supabase.from("categories").select("*").order("name");
-      setCategories(cats || []);
-
-      // 4. Charger les autres produits pour les suggestions (Cross-selling)
-      const { data: prods } = await supabase.from("products").select("id, name").neq("id", id);
-      setAllProducts(prods || []);
-
-    } catch (error: any) {
-      console.error("Erreur chargement admin:", error);
-      toast.error("Impossible de charger la pépite");
-    } finally {
-      setLoading(false);
+  // --- LOGIQUE : CALCUL DE LA MARGE ---
+  const margin = useMemo(() => {
+    if (regularPrice > 0) {
+      return (((regularPrice - purchasePrice) / regularPrice) * 100).toFixed(1);
     }
-  }
+    return "0";
+  }, [purchasePrice, regularPrice]);
 
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      // 1. Mise à jour des données du produit (incluant le champ status)
-      const { error: updateError } = await supabase
-        .from("products")
-        .update({
-          ...product,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", id);
+  // --- LOGIQUE : VARIATIONS (SANS ÉCRASEMENT) ---
+  useEffect(() => {
+    if (hasVariations && !loading) {
+      setVariations(prev => {
+        const kept = prev.filter(v => selectedNuances.includes(v.colorName));
+        const added = selectedNuances
+          .filter(name => !kept.some(v => v.colorName === name))
+          .map(colorName => ({
+            colorName, colorId: nuanceIds[colorName] || "", sku: "",
+            regular_price: regularPrice || null, sale_price: salePrice,
+            stock_quantity: stockQuantity || null, image_url: null,
+          }));
+        return [...kept, ...added];
+      });
+    }
+  }, [selectedNuances, nuanceIds, hasVariations, loading]);
 
-      if (updateError) throw updateError;
-
-      // 2. Mise à jour des catégories (Mapping)
-      await supabase.from("product_category_mapping").delete().eq("product_id", id);
-      
-      if (selectedCategories.length > 0) {
-        const newMappings = selectedCategories.map(catId => ({
-          product_id: id,
-          category_id: catId
-        }));
-        await supabase.from("product_category_mapping").insert(newMappings);
-      }
-
-      toast.success("Modifications enregistrées !");
-    } catch (error: any) {
-      console.error("Erreur sauvegarde:", error);
-      toast.error("Erreur lors de l'enregistrement");
-    } finally {
-      setSaving(false);
+  // --- HANDLERS ---
+  const handleNuanceToggle = (name: string, id: string, selected: boolean) => {
+    if (selected) {
+      setSelectedNuances(prev => Array.from(new Set([...prev, name])));
+      setNuanceIds(prev => ({ ...prev, [name]: id }));
+    } else {
+      setSelectedNuances(prev => prev.filter(n => n !== name));
     }
   };
 
+  const handleSave = async () => {
+    if (!name || !slug) { toast.error("Le nom et le slug sont requis"); return; }
+    setSaving(true);
+    try {
+      const finalAttributes = { ...selectedAttributes };
+      if (hasVariations) finalAttributes['Couleur'] = selectedNuances;
+
+      // 1. Update Produit
+      const { error: pErr } = await supabase.from("products").update({
+        name: name.trim(), slug: slug.trim(), sku: sku.trim() || null,
+        short_description: shortDescription.substring(0, 150), description, andre_review: andreReview,
+        video_url: videoUrl, purchase_price: purchasePrice, regular_price: regularPrice,
+        sale_price: salePrice, stock_quantity: stockQuantity, virtual_weight: virtualWeight,
+        status, is_featured: isFeatured, is_diamond: isDiamond, has_variations: hasVariations,
+        seo_title: seoTitle || name, seo_description: seoDescription || shortDescription,
+        image_url: mainImage, gallery_images: galleryImages, attributes: finalAttributes,
+        related_product_ids: relatedProductIds,
+        size_range_start: showSizes ? sizeRangeStart : null,
+        size_range_end: showSizes ? sizeRangeEnd : null,
+        updated_at: new Date().toISOString()
+      }).eq("id", id);
+
+      if (pErr) throw pErr;
+
+      // 2. Update Catégories (Delete then Insert)
+      await supabase.from("product_category_mapping").delete().eq("product_id", id);
+      if (selectedCategories.length > 0) {
+        const mappings = selectedCategories.map((catId, i) => ({ product_id: id, category_id: catId, is_primary: i === 0, display_order: i }));
+        await supabase.from("product_category_mapping").insert(mappings);
+      }
+
+      // 3. Update Variations (Delete then Insert)
+      await supabase.from("product_variations").delete().eq("product_id", id);
+      if (hasVariations && variations.length > 0) {
+        const toInsert = variations.map(v => ({
+          product_id: id, sku: v.sku, attributes: { "Couleur": v.colorName },
+          regular_price: v.regular_price || regularPrice, sale_price: v.sale_price || salePrice,
+          stock_quantity: v.stock_quantity || stockQuantity, image_url: v.image_url || mainImage,
+          stock_status: (v.stock_quantity || 0) > 0 ? "instock" : "outofstock", is_active: true,
+        }));
+        await supabase.from("product_variations").insert(toInsert);
+      }
+
+      clearSavedData();
+      toast.success("La pépite a été mise à jour !");
+      router.refresh();
+    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+  };
+
   if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-      <Loader2 className="h-10 w-10 animate-spin text-[#b8933d]" />
-      <p className="text-gray-500 font-medium">Chargement de la fiche...</p>
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gray-50">
+      <Loader2 className="h-12 w-12 animate-spin text-[#d4af37]" />
+      <p className="text-gray-500 font-medium">Chargement de la pépite d'André...</p>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50/50 pb-20">
-      {/* BARRE D'ACTION SUPÉRIEURE */}
-      <div className="bg-white border-b sticky top-0 z-50 px-6 py-4 shadow-sm">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+    <div className="min-h-screen bg-gray-50/50 pb-24">
+      {/* HEADER FIXE */}
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/admin/products"><ArrowLeft className="h-5 w-5" /></Link>
-            </Button>
+            <Link href="/admin/products"><Button variant="ghost" size="icon" className="rounded-full"><ArrowLeft className="h-5 w-5"/></Button></Link>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">{product.name}</h1>
-              <p className="text-xs text-gray-400 font-mono">ID: {id}</p>
+              <h1 className="text-xl font-bold text-gray-900">Modifier : {name}</h1>
+              <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1 w-fit mt-1"><RefreshCw className="w-2.5 h-2.5" /> Auto-save actif</span>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-             <Button variant="outline" asChild className="hidden sm:flex">
-               <Link href={`/product/${product.slug}`} target="_blank">
-                 <ExternalLink className="h-4 w-4 mr-2" /> Voir la fiche
-               </Link>
-             </Button>
-             <Button 
-               onClick={handleSave} 
-               disabled={saving}
-               className="bg-[#b8933d] hover:bg-[#D4AF37] text-white px-8 font-bold"
-             >
-               {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-               ENREGISTRER
-             </Button>
+          <div className="flex gap-3">
+            <Link href={`/product/${slug}`} target="_blank"><Button variant="outline">Voir sur le site</Button></Link>
+            <Button onClick={handleSave} disabled={saving} className="bg-[#d4af37] hover:bg-[#c19b2f] text-white px-8 shadow-lg shadow-amber-200">
+              {saving ? "Mise à jour..." : <><Save className="w-4 h-4 mr-2" /> Enregistrer les modifications</>}
+            </Button>
           </div>
         </div>
       </div>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="bg-white border p-1 rounded-xl shadow-sm">
-            <TabsTrigger value="general" className="rounded-lg font-bold px-6">Informations</TabsTrigger>
-            <TabsTrigger value="media" className="rounded-lg font-bold px-6">Médias</TabsTrigger>
-            <TabsTrigger value="logic" className="rounded-lg font-bold px-6">Catégories & Suggestions</TabsTrigger>
-          </TabsList>
-
-          {/* INFORMATIONS GÉNÉRALES */}
-          <TabsContent value="general" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-6">
-                <Card className="rounded-2xl border-none shadow-sm overflow-hidden">
-                  <CardHeader className="bg-white border-b py-4">
-                    <CardTitle className="text-sm uppercase tracking-widest font-black text-gray-400">Contenu</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6 space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Nom du produit</Label>
-                      <Input id="name" value={product.name} onChange={(e) => setProduct({...product, name: e.target.value})} className="h-12 text-lg font-semibold" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="slug">URL (Slug)</Label>
-                      <Input id="slug" value={product.slug} onChange={(e) => setProduct({...product, slug: e.target.value})} className="font-mono text-xs bg-gray-50" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="short">Accroche</Label>
-                      <Input id="short" value={product.short_description || ""} onChange={(e) => setProduct({...product, short_description: e.target.value})} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="desc">Description complète (HTML autorisé)</Label>
-                      <Textarea id="desc" value={product.description || ""} onChange={(e) => setProduct({...product, description: e.target.value})} className="min-h-[250px]" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="rounded-2xl border-none shadow-sm overflow-hidden border-l-4 border-[#b8933d]">
-                  <CardHeader className="py-4">
-                    <CardTitle className="text-sm font-black flex items-center gap-2 text-[#b8933d]">
-                      <Sparkles className="h-4 w-4" /> L'AVIS D'ANDRÉ
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <Textarea 
-                      value={product.andre_review || ""} 
-                      onChange={(e) => setProduct({...product, andre_review: e.target.value})} 
-                      placeholder="Pourquoi cette pépite est-elle spéciale ?" 
-                      className="italic text-gray-700 min-h-[100px]" 
-                    />
-                  </CardContent>
-                </Card>
+      <div className="max-w-7xl mx-auto px-6 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+          
+          {/* 1. L'ÂME DU PRODUIT */}
+          <Card className="shadow-sm border-none bg-white">
+            <CardHeader className="border-b bg-gray-50/50">
+              <div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-[#C6A15B]"/><CardTitle className="text-lg">L&apos;Âme du Produit</CardTitle></div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2"><Label>Nom de la pépite *</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Bougie Ambre & Soja" /></div>
+                <div className="space-y-2"><Label>Slug (URL)</Label><Input value={slug} onChange={(e) => setSlug(e.target.value)} className="bg-gray-50 font-mono text-xs" /></div>
               </div>
-
-              {/* COLONNE DROITE : PRIX, STOCK ET STATUS */}
-              <div className="space-y-6">
-                <Card className="rounded-2xl border-none shadow-sm overflow-hidden">
-                  <CardHeader className="bg-white border-b py-4">
-                    <CardTitle className="text-sm font-black text-gray-400 uppercase tracking-widest">Inventaire</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6 space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="price">Prix standard (€)</Label>
-                      <Input id="price" type="number" step="0.01" value={product.regular_price} onChange={(e) => setProduct({...product, regular_price: parseFloat(e.target.value)})} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="sale">Prix Promotionnel (€)</Label>
-                      <Input id="sale" type="number" step="0.01" value={product.sale_price || ""} onChange={(e) => setProduct({...product, sale_price: e.target.value ? parseFloat(e.target.value) : null})} className="text-red-600 font-bold" />
-                    </div>
-                    <div className="space-y-2 pt-2">
-                      <Label htmlFor="stock">Stock disponible</Label>
-                      <Input id="stock" type="number" value={product.stock_quantity} onChange={(e) => setProduct({...product, stock_quantity: parseInt(e.target.value)})} />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="rounded-2xl border-none shadow-sm overflow-hidden">
-                  <CardHeader className="bg-white border-b py-4">
-                    <CardTitle className="text-sm font-black text-gray-400 uppercase tracking-widest">Options de publication</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6 space-y-6">
-                    <div className="flex items-center justify-between">
-                      <Label className="cursor-pointer font-bold" htmlFor="status">Produit publié ✅</Label>
-                      <Switch 
-                        id="status" 
-                        checked={product.status === "publish"} 
-                        onCheckedChange={(c) => setProduct({...product, status: c ? "publish" : "draft"})} 
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Label className="cursor-pointer" htmlFor="featured">Mise en vedette ⭐</Label>
-                      <Switch 
-                        id="featured" 
-                        checked={product.is_featured} 
-                        onCheckedChange={(c) => setProduct({...product, is_featured: c})} 
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+              <div className="space-y-2">
+                <div className="flex justify-between"><Label>La &quot;Phrase d&apos;Accroche&quot;</Label><span className="text-[10px] text-gray-400">{shortDescription.length}/150</span></div>
+                <Input value={shortDescription} onChange={(e) => setShortDescription(e.target.value.substring(0, 150))} placeholder="Le goût authentique..." className="italic" />
               </div>
-            </div>
-          </TabsContent>
+              <div className="space-y-2"><Label>Histoire du produit (Description longue)</Label><RichTextEditor value={description} onChange={setDescription} /></div>
+              <div className="p-5 bg-amber-50 rounded-2xl border border-amber-100 space-y-3">
+                <Label className="text-[#b8933d] font-bold flex items-center gap-2 uppercase tracking-tighter"><Heart className="h-4 w-4 fill-[#b8933d]" /> L&apos;avis d&apos;André</Label>
+                <Textarea value={andreReview} onChange={(e) => setAndreReview(e.target.value)} placeholder="Pourquoi avez-vous craqué pour ce produit ?" rows={4} className="bg-white border-none italic shadow-inner" />
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* MÉDIAS ET GALERIE */}
-          <TabsContent value="media" className="space-y-6">
-             <Card className="rounded-2xl border-none shadow-sm">
-                <CardContent className="p-8 space-y-8">
-                  <div className="space-y-4">
-                    <Label className="font-bold flex items-center gap-2"><ImageIcon className="h-4 w-4" /> Image mise en avant (URL)</Label>
-                    <div className="flex gap-4">
-                      <Input value={product.image_url} onChange={(e) => setProduct({...product, image_url: e.target.value})} className="flex-1" placeholder="https://..." />
-                      {product.image_url && <div className="h-12 w-12 rounded-lg border overflow-hidden shadow-sm"><img src={product.image_url} className="h-full w-full object-cover" /></div>}
-                    </div>
-                  </div>
+          {/* 2. VISUELS & VIDÉO */}
+          <Card className="shadow-sm border-none bg-white">
+            <CardHeader className="border-b bg-gray-50/50">
+              <div className="flex items-center gap-2"><Video className="h-5 w-5 text-gray-800" /><CardTitle className="text-lg">Visuels & Démo</CardTitle></div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-8">
+              <ProductMediaGalleryManager mainImage={mainImage} galleryImages={galleryImages} onMainImageChange={setMainImage} onGalleryImagesChange={setGalleryImages} />
+              <Separator />
+              <div className="space-y-4">
+                <div className="flex items-center gap-2"><Video className="h-5 w-5 text-red-500" /><Label>Lien Vidéo (Instagram Reel / Live)</Label></div>
+                <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="Lien direct pour remplacer la photo principale..." className="border-red-100 focus:border-red-400" />
+              </div>
+            </CardContent>
+          </Card>
 
-                  <div className="space-y-4">
-                    <Label className="font-bold">Galerie d'images complémentaires</Label>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                      {product.gallery_images?.map((url: string, index: number) => (
-                        <div key={index} className="relative group aspect-square rounded-xl border overflow-hidden">
-                           <img src={url} className="h-full w-full object-cover" />
-                           <button 
-                             onClick={() => setProduct({...product, gallery_images: product.gallery_images.filter((_:any, i:any) => i !== index)})}
-                             className="absolute top-2 right-2 bg-red-600 text-white p-1.5 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                           >
-                             <Trash2 className="h-3.5 w-3.5" />
-                           </button>
-                        </div>
-                      ))}
-                      <button 
-                        onClick={() => {
-                          const url = prompt("Coller l'URL de l'image :");
-                          if (url) setProduct({...product, gallery_images: [...(product.gallery_images || []), url]});
-                        }}
-                        className="aspect-square rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 hover:border-[#b8933d] hover:text-[#b8933d] transition-all"
-                      >
-                        <Plus className="h-6 w-6" />
-                        <span className="text-[10px] font-bold mt-1">Ajouter</span>
-                      </button>
-                    </div>
-                  </div>
+          {/* 3. LE CROSS-SELLING */}
+          <Card className="shadow-sm border-none bg-white">
+            <CardHeader className="border-b bg-gray-50/50"><CardTitle className="text-lg flex items-center gap-2"><Layers className="h-5 w-5 text-blue-500" /> Ventes Suggérées</CardTitle></CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {relatedProductIds.map(rid => (
+                  <Badge key={rid} variant="secondary" className="px-3 py-1 gap-2 bg-blue-50 text-blue-700 border-blue-100">
+                    {allProducts.find(p => p.id === rid)?.name}
+                    <Trash2 className="h-3 w-3 cursor-pointer hover:text-red-500" onClick={() => setRelatedProductIds(relatedProductIds.filter(v => v !== rid))} />
+                  </Badge>
+                ))}
+              </div>
+              <Select onValueChange={(rid) => rid && !relatedProductIds.includes(rid) && relatedProductIds.length < 3 && setRelatedProductIds([...relatedProductIds, rid])}>
+                <SelectTrigger className="bg-white"><SelectValue placeholder="Ajouter une suggestion d'André..." /></SelectTrigger>
+                <SelectContent>{allProducts.map(p => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+        </div>
 
-                  <div className="space-y-4 pt-4 border-t">
-                    <Label className="font-bold">Vidéo (URL YouTube ou Reels)</Label>
-                    <Input value={product.video_url || ""} onChange={(e) => setProduct({...product, video_url: e.target.value})} placeholder="Lien de la vidéo" />
-                  </div>
-                </CardContent>
-             </Card>
-          </TabsContent>
+        {/* COLONNE DROITE */}
+        <div className="space-y-8">
+          <Card className="shadow-lg border-2 border-[#d4af37]/30 bg-amber-50/20 overflow-hidden">
+            <CardHeader className="bg-[#d4af37]/10 flex flex-row items-center justify-between pb-4">
+              <CardTitle className="text-lg text-[#b8933d] flex items-center gap-2"><Calculator className="h-5 w-5"/> Marge</CardTitle>
+              <Badge className="bg-[#d4af37] text-white border-none">{margin}%</Badge>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4 bg-white/80">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Achat (€)</Label><Input type="number" step="0.01" value={purchasePrice} onChange={(e) => setPurchasePrice(parseFloat(e.target.value) || 0)} className="font-mono" /></div>
+                <div className="space-y-1"><Label className="text-xs font-bold text-[#b8933d] uppercase">Vente (€) *</Label><Input type="number" step="0.01" value={regularPrice} onChange={(e) => setRegularPrice(parseFloat(e.target.value) || 0)} className="font-bold font-mono border-amber-200" /></div>
+              </div>
+              <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Promo (€)</Label><Input type="number" step="0.01" value={salePrice || ""} onChange={(e) => setSalePrice(e.target.value ? parseFloat(e.target.value) : null)} className="text-red-600 font-mono border-red-100" /></div>
+              <Separator />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Stock</Label><Input type="number" value={stockQuantity} onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)} /></div>
+                <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Poids (g)</Label><Input type="number" value={virtualWeight} onChange={(e) => setVirtualWeight(parseInt(e.target.value) || 0)} /></div>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* CATÉGORIES ET CROSS-SELLING */}
-          <TabsContent value="logic" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="rounded-2xl border-none shadow-sm">
-                <CardHeader className="border-b py-4">
-                  <CardTitle className="text-sm font-black text-gray-400 uppercase tracking-widest">Catégories assignées</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                    {categories.map(cat => (
-                      <div key={cat.id} className="flex items-center space-x-2 py-2 border-b border-gray-50 last:border-0">
-                        <Switch 
-                          checked={selectedCategories.includes(cat.id)} 
-                          onCheckedChange={(checked) => {
-                            if (checked) setSelectedCategories([...selectedCategories, cat.id]);
-                            else setSelectedCategories(selectedCategories.filter(cid => cid !== cat.id));
-                          }}
-                        />
-                        <span className="text-sm font-medium">{cat.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+          <Card className="shadow-sm border-none bg-white">
+            <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="text-lg flex items-center gap-2"><Globe className="h-5 w-5 text-green-600" /> SEO</CardTitle></CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div><Label>Titre Google</Label><Input value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} placeholder={name} /></div>
+              <div><Label>Description Google</Label><Textarea value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} placeholder={shortDescription} rows={3} /></div>
+            </CardContent>
+          </Card>
 
-              <Card className="rounded-2xl border-none shadow-sm">
-                <CardHeader className="border-b py-4">
-                  <CardTitle className="text-sm font-black text-gray-400 uppercase tracking-widest">Suggestions d'André (Cross-Selling)</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                   <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                    {allProducts.map(p => (
-                      <div key={p.id} className="flex items-center space-x-2 py-2 border-b border-gray-50 last:border-0">
-                        <Switch 
-                          checked={product.related_product_ids?.includes(p.id)} 
-                          onCheckedChange={(checked) => {
-                            const ids = [...(product.related_product_ids || [])];
-                            if (checked) ids.push(p.id);
-                            else {
-                               const idx = ids.indexOf(p.id);
-                               if (idx > -1) ids.splice(idx, 1);
-                            }
-                            setProduct({...product, related_product_ids: ids});
-                          }}
-                        />
-                        <span className="text-sm font-medium">{p.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </main>
+          <Card className="shadow-sm border-none bg-white">
+            <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="text-lg flex items-center gap-2 text-gray-600"><Settings2 className="h-5 w-5"/> Options</CardTitle></CardHeader>
+            <CardContent className="p-6 space-y-5">
+              <div className="flex items-center justify-between p-3 border rounded-xl bg-blue-50/30">
+                <div className="space-y-0.5"><Label className="text-blue-900">Variantes ?</Label><p className="text-[10px] text-blue-500 italic">Couleurs & Stocks multiples</p></div>
+                <Switch checked={hasVariations} onCheckedChange={setHasVariations} />
+              </div>
+              <div className="flex items-center justify-between p-3 border rounded-xl bg-purple-50/30 opacity-60">
+                <div className="space-y-0.5"><Label className="text-purple-900">Module Tailles ?</Label><p className="text-[10px] text-purple-500 italic">Désactivé par défaut</p></div>
+                <Switch checked={showSizes} onCheckedChange={setShowSizes} />
+              </div>
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center gap-2"><Checkbox id="f" checked={isFeatured} onCheckedChange={(c) => setIsFeatured(!!c)}/><Label htmlFor="f">⭐ Mettre en Vedette</Label></div>
+                <div className="flex items-center gap-2"><Checkbox id="d" checked={isDiamond} onCheckedChange={(c) => setIsDiamond(!!c)}/><Label htmlFor="d">💎 Produit Diamant</Label></div>
+              </div>
+              <div className="space-y-2 pt-4">
+                <Label>Statut de publication</Label>
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="publish">Publié ✅</SelectItem>
+                    <SelectItem value="draft">Brouillon 📝</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 mt-8 space-y-8">
+        <GeneralAttributesSelector selectedAttributes={selectedAttributes} onAttributesChange={setSelectedAttributes} />
+        <HierarchicalCategorySelector selectedCategories={selectedCategories} onCategoriesChange={setSelectedCategories} />
+        
+        {hasVariations && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <ColorSwatchSelector 
+              selectedMainColor={activeFamilyView} 
+              selectedSecondaryColors={selectedNuances} 
+              onMainColorSelect={setActiveFamilyView} 
+              onSecondaryColorToggle={handleNuanceToggle} 
+              showSecondaryColors={true} 
+            />
+            <VariationDetailsForm 
+              selectedSecondaryColors={selectedNuances} 
+              secondaryColorIds={nuanceIds} 
+              variations={variations} 
+              onVariationUpdate={(vName, field, val) => {
+                setVariations(prev => {
+                  const idx = prev.findIndex(v => v.colorName === vName);
+                  if (idx === -1) return prev;
+                  const newVars = [...prev];
+                  newVars[idx] = { ...newVars[idx], [field]: val };
+                  return newVars;
+                });
+            }} 
+            defaultRegularPrice={regularPrice} 
+            defaultSalePrice={salePrice} 
+            defaultStock={stockQuantity} 
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
