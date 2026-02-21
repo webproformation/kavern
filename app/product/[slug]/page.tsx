@@ -8,7 +8,6 @@ import {
   ChevronRight,
   Home,
   ShoppingCart,
-  Bell,
   Plus,
   Minus,
   Shield,
@@ -58,7 +57,7 @@ export default function ProductPage() {
   const { slug } = useParams();
   const router = useRouter();
   const { addToCart } = useCart();
-  const { profile } = useAuth(); // Utilise le profil sécurisé
+  const { profile } = useAuth();
 
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -95,7 +94,6 @@ export default function ProductPage() {
 
   async function loadRelatedAndReviews(prod: any) {
     try {
-        // Chargement des produits suggérés
         if (prod.related_product_ids?.length > 0) {
           const { data: related } = await supabase
             .from("products")
@@ -104,7 +102,6 @@ export default function ProductPage() {
           setRelatedProducts(related || []);
         }
 
-        // Chargement des avis du Livre d'Or
         const { data: revs } = await supabase
           .from("livre-dor") 
           .select("*")
@@ -201,12 +198,23 @@ export default function ProductPage() {
           {/* DÉTAILS */}
           <div className="space-y-8">
             <div className="space-y-4">
-              <div className="flex justify-between items-start gap-4">
-                <div className="space-y-2">
-                  <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-[1.1] uppercase">{decodeHtmlEntities(product.name)}</h1>
-                  {product.short_description && <p className="text-xl text-[#C6A15B] italic font-semibold leading-relaxed">&quot;{product.short_description}&quot;</p>}
+              <div className="space-y-2">
+                {/* TITRE ET WISHLIST CŒUR */}
+                <div className="flex items-center gap-4">
+                  <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-[1.1] uppercase tracking-tighter">
+                    {decodeHtmlEntities(product.name)}
+                  </h1>
+                  <WishlistButton 
+                    productId={product.id} 
+                    className="shrink-0 h-10 w-10 md:h-12 md:w-12 bg-white shadow-sm border border-gray-100 rounded-full hover:bg-pink-50 hover:text-pink-500 transition-all duration-300" 
+                  />
                 </div>
-                <WishlistButton productId={product.id} className="h-12 w-12 bg-white shadow-md border-none rounded-2xl hover:scale-110" />
+                
+                {product.short_description && (
+                  <p className="text-xl text-[#C6A15B] italic font-semibold leading-relaxed">
+                    &quot;{product.short_description}&quot;
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center gap-6 py-2">
