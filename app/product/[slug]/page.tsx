@@ -113,8 +113,8 @@ export default function ProductPage() {
   }
 
   async function loadRelatedAndReviews(prod: any) {
-    // 1. Cross-selling
-    if (prod.related_product_ids?.length > 0) {
+    // 1. Cross-selling (Nouveauté Concept Store)
+    if (prod.related_product_ids && prod.related_product_ids.length > 0) {
       const { data: related } = await supabase
         .from("products")
         .select("id, name, slug, image_url, regular_price")
@@ -122,7 +122,7 @@ export default function ProductPage() {
       setRelatedProducts(related || []);
     }
 
-    // 2. Avis clients (Sans récompense cagnotte comme demandé)
+    // 2. Avis clients (Restauré)
     const { data: revs } = await supabase
       .from("product_reviews")
       .select("*")
@@ -191,7 +191,7 @@ export default function ProductPage() {
 
   return (
     <div className="min-h-screen bg-[#FDFCFB]">
-      {/* 🛠️ BARRE D'OUTILS ADMIN (Restaurée) */}
+      {/* 🛠️ BARRE D'OUTILS ADMIN (Restaurée et intacte) */}
       {profile?.is_admin && (
         <div className="bg-red-50 border-b border-red-100 py-3 sticky top-0 z-40">
           <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
@@ -224,7 +224,7 @@ export default function ProductPage() {
       <main className="max-w-7xl mx-auto px-4 py-8 lg:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
           
-          {/* ZONE MÉDIA (Vidéo prioritiaire ou Galerie) */}
+          {/* ZONE MÉDIA (Vidéo prioritiaire OU Galerie restaurée) */}
           <div className="space-y-6 sticky top-24">
             {product.video_url ? (
               <div className="aspect-[4/5] rounded-3xl overflow-hidden bg-black shadow-2xl border-4 border-[#d4af37]/20 relative group">
@@ -262,6 +262,7 @@ export default function ProductPage() {
                   <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-[1.1]">
                     {decodeHtmlEntities(product.name)}
                   </h1>
+                  {/* Phrase d'accroche (Nouveauté Concept Store) */}
                   {product.short_description && (
                     <p className="text-xl text-[#C6A15B] italic font-semibold leading-relaxed">
                       &quot;{product.short_description}&quot;
@@ -288,7 +289,7 @@ export default function ProductPage() {
               </div>
             </div>
 
-            {/* L'AVIS D'ANDRÉ (Touche Concept Store) */}
+            {/* L'AVIS D'ANDRÉ (Nouveauté Concept Store) */}
             {product.andre_review && (
               <Card className="bg-gradient-to-br from-amber-50 to-white border-2 border-amber-100/30 shadow-xl shadow-amber-50/50 rounded-[2.5rem] overflow-hidden">
                 <CardContent className="p-10 space-y-5 relative">
@@ -307,7 +308,7 @@ export default function ProductPage() {
               </Card>
             )}
 
-            {/* SÉLECTEUR DE VARIANTES */}
+            {/* SÉLECTEUR DE VARIANTES (Intact) */}
             {product.has_variations && (
               <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-100/50 space-y-6">
                 <Label className="text-sm font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
@@ -317,7 +318,7 @@ export default function ProductPage() {
               </div>
             )}
 
-            {/* LOGIQUE MORPHOLOGIE (Masquée mais présente dans le code) */}
+            {/* LOGIQUE MORPHOLOGIE (Masquée mais restaurée) */}
             {ENABLE_MORPHOLOGY_LOGIC && profile?.user_size && (
               <div className="flex items-center gap-3 p-4 bg-green-50 rounded-2xl border border-green-100">
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -325,7 +326,7 @@ export default function ProductPage() {
               </div>
             )}
 
-            {/* ACHAT & QUANTITÉ */}
+            {/* ACHAT & QUANTITÉ (Intact) */}
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex items-center border-2 border-gray-100 rounded-2xl bg-white h-16 px-3 shadow-inner">
@@ -360,7 +361,7 @@ export default function ProductPage() {
               )}
             </div>
 
-            {/* CROSS-SELLING (L'Appât) */}
+            {/* CROSS-SELLING (L'Appât - Nouveauté Concept Store) */}
             {relatedProducts.length > 0 && (
               <div className="pt-10 border-t-2 border-gray-50 space-y-8">
                 <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-3">
@@ -383,7 +384,7 @@ export default function ProductPage() {
               </div>
             )}
 
-            {/* ACCORDÉONS DÉTAILLÉS */}
+            {/* ACCORDÉONS DÉTAILLÉS (Intact) */}
             <Accordion type="single" collapsible className="w-full space-y-2">
               <AccordionItem value="description" className="border-none bg-white rounded-2xl px-6">
                 <AccordionTrigger className="font-black text-gray-900 uppercase text-[10px] tracking-[0.2em] hover:no-underline py-5">L&apos;histoire & Secrets de fabrication</AccordionTrigger>
@@ -413,7 +414,7 @@ export default function ProductPage() {
               </AccordionItem>
             </Accordion>
 
-            {/* SECTION AVIS CLIENTS (Ajoutée) */}
+            {/* SECTION AVIS CLIENTS (Restaurée et intacte) */}
             <div className="pt-10 border-t-2 border-gray-50 space-y-8" id="avis">
                 <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] flex items-center justify-between">
                   <span>Avis des collectionneurs ({reviews.length})</span>
@@ -444,13 +445,13 @@ export default function ProductPage() {
                 )}
             </div>
 
-            {/* DIAMANT CACHÉ */}
+            {/* DIAMANT CACHÉ (Intact) */}
             <HiddenDiamond product={product} />
           </div>
         </div>
       </main>
 
-      {/* DIALOGUES & MODALES */}
+      {/* DIALOGUES & MODALES (Intacts) */}
       <Dialog open={showNotifyDialog} onOpenChange={setShowNotifyDialog}>
         <DialogContent className="sm:max-w-md rounded-[2.5rem] border-none shadow-2xl">
           <DialogHeader>
