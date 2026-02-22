@@ -13,7 +13,9 @@ import {
   Package,
   MapPin,
   LogOut,
-  Play
+  Play,
+  MoreHorizontal,
+  ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -58,6 +60,7 @@ export function SiteHeader() {
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [openMegaMenu, setOpenMegaMenu] = useState<string | null>(null);
   const [navigation, setNavigation] = useState<NavigationItem[]>([]);
+  const [otherCategories, setOtherCategories] = useState<NavigationItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -68,17 +71,17 @@ export function SiteHeader() {
 
   async function loadNavigationCategories() {
     try {
-      const { data: level1Categories } = await supabase
+      // On récupère TOUTES les catégories parentes visibles
+      const { data: allParentCategories } = await supabase
         .from('categories')
-        .select('id, name, slug, display_order')
+        .select('id, name, slug, display_order, show_in_main_menu')
         .is('parent_id', null)
         .eq('is_visible', true)
-        .eq('show_in_main_menu', true)
         .order('display_order', { ascending: true });
 
-      if (level1Categories) {
-        const dynamicNav: NavigationItem[] = await Promise.all(
-          level1Categories.map(async (cat) => {
+      if (allParentCategories) {
+        const processedCategories = await Promise.all(
+          allParentCategories.map(async (cat) => {
             const { count } = await supabase
               .from('categories')
               .select('id', { count: 'exact', head: true })
@@ -89,14 +92,20 @@ export function SiteHeader() {
 
             return {
               name: decodeHtmlEntities(cat.name),
-              href: `/category/${cat.slug}`,
+              href: `/categorie/${cat.slug}`,
               slug: cat.slug,
               hasMegaMenu: hasSubCategories,
+              showInMain: cat.show_in_main_menu
             };
           })
         );
 
-        setNavigation([...dynamicNav, ...STATIC_LINKS]);
+        // On filtre : celles pour le menu principal et les autres
+        const mainNav = processedCategories.filter(c => c.showInMain);
+        const others = processedCategories.filter(c => !c.showInMain);
+
+        setNavigation([...mainNav, ...STATIC_LINKS]);
+        setOtherCategories(others);
       }
     } catch (error) {
       console.error('Error loading navigation categories:', error);
@@ -163,28 +172,65 @@ export function SiteHeader() {
               {loading ? (
                 <div className="text-gray-400 text-xs">Chargement...</div>
               ) : (
-                navigation.map((item) => (
-                  <div
-                    key={item.slug}
-                    className="relative"
-                    onMouseEnter={() => item.hasMegaMenu && handleMouseEnter(item.slug)}
-                    onMouseLeave={handleMouseLeave}
-                  >
-                    <Link
-                      href={item.href}
-                      className={`flex items-center gap-1.5 text-center text-xs lg:text-sm font-medium leading-tight transition-colors ${
-                        item.slug === 'live'
-                          ? 'text-[#D4AF37] hover:text-[#C5A028] font-bold'
-                          : pathname === item.href || pathname.startsWith(item.href + '/')
-                          ? 'text-[#D4AF37]'
-                          : 'text-gray-900 hover:text-[#D4AF37]'
-                      }`}
+                <>
+                  {navigation.map((item) => (
+                    <div
+                      key={item.slug}
+                      className="relative"
+                      onMouseEnter={() => item.hasMegaMenu && handleMouseEnter(item.slug)}
+                      onMouseLeave={handleMouseLeave}
                     >
-                      {item.slug === 'live' && <Play className="h-3.5 w-3.5 lg:h-4 lg:w-4 fill-current" />}
-                      {item.name}
-                    </Link>
-                  </div>
-                ))
+                      <Link
+                        href={item.href}
+                        className={`flex items-center gap-1.5 text-center text-xs lg:text-sm font-medium leading-tight transition-colors ${
+                          item.slug === 'live'
+                            ? 'text-[#D4AF37] hover:text-[#C5A028] font-bold'
+                            : pathname === item.href || pathname.startsWith(item.href + '/')
+                            ? 'text-[#D4AF37]'
+                            : 'text-gray-900 hover:text-[#D4AF37]'
+                        }`}
+                      >
+                        {item.slug === 'live' && <Play className="h-3.5 w-3.5 lg:h-4 lg:w-4 fill-current" />}
+                        {item.name}
+                      </Link>
+                    </div>
+                  ))}
+
+                  {/* BOUTON 3 PETITS POINTS - NAVIGATION ÉTENDUE */}
+                  {otherCategories.length > 0 && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-amber-50 text-gray-400 hover:text-[#D4AF37] transition-all">
+                          <MoreHorizontal className="h-5 w-5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="center" className="w-64 rounded-[2rem] p-4 shadow-2xl border-none bg-white/95 backdrop-blur-md animate-in slide-in-from-top-2">
+                        <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-2 py-2">
+                          Autres Collections
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator className="bg-gray-100" />
+                        <div className="max-h-[60vh] overflow-y-auto py-2">
+                          {otherCategories.map((cat) => (
+                            <DropdownMenuItem key={cat.slug} asChild className="rounded-2xl focus:bg-amber-50 mb-1">
+                              <Link href={cat.href} className="flex items-center justify-between w-full px-4 py-3 cursor-pointer group">
+                                <span className="font-bold text-gray-800 group-hover:text-[#D4AF37] transition-colors text-sm">
+                                  {cat.name}
+                                </span>
+                                <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-[#D4AF37] transition-transform group-hover:translate-x-1" />
+                              </Link>
+                            </DropdownMenuItem>
+                          ))}
+                        </div>
+                        <DropdownMenuSeparator className="bg-gray-100" />
+                        <DropdownMenuItem asChild className="rounded-2xl focus:bg-amber-50 mt-1">
+                          <Link href="/shop" className="flex items-center gap-2 w-full px-4 py-3 font-black text-[10px] uppercase tracking-widest text-[#D4AF37]">
+                            Voir toute la boutique
+                          </Link>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </>
               )}
             </nav>
 
@@ -205,7 +251,7 @@ export function SiteHeader() {
                   className="relative text-gray-900 hover:text-[#D4AF37] hover:bg-transparent"
                 >
                   <Heart className="h-5 w-5" />
-                  {wishlistCount > 0 && (
+                  {(wishlistCount || 0) > 0 && (
                     <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-[#D4AF37] text-black text-xs font-black">
                       {wishlistCount}
                     </Badge>
@@ -280,7 +326,7 @@ export function SiteHeader() {
                 >
                   <ShoppingCart className="h-5 w-5" />
                   <span className="hidden md:inline text-xs font-black uppercase tracking-widest">{CUSTOM_TEXTS.buttons.cart}</span>
-                  {cartItemCount > 0 && (
+                  {(cartItemCount || 0) > 0 && (
                     <Badge className="absolute -top-2 -right-2 md:relative md:top-0 md:right-0 h-5 w-5 flex items-center justify-center p-0 bg-[#D4AF37] text-black text-xs font-black">
                       {cartItemCount}
                     </Badge>

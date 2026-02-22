@@ -31,7 +31,8 @@ import {
   ImageIcon,
   Layers,
   Settings2,
-  Loader2
+  Loader2,
+  Tag // Ajout de l'icône Tag
 } from "lucide-react";
 import Link from "next/link";
 import RichTextEditor from "@/components/RichTextEditor";
@@ -85,6 +86,7 @@ export default function EditProductPage() {
   const [showSizes, setShowSizes] = useState(false);
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
+  const [tags, setTags] = useState<string[]>([]); // NOUVEL ÉTAT POUR LES TAGS
 
   // --- ÉTATS : MÉDIAS & RELATIONS ---
   const [mainImage, setMainImage] = useState<string>("");
@@ -137,6 +139,7 @@ export default function EditProductPage() {
         setShowSizes(!!prod.size_range_start);
         setSeoTitle(prod.seo_title || "");
         setSeoDescription(prod.seo_description || "");
+        setTags(prod.tags || []); // Charger les tags
         setMainImage(prod.image_url || "");
         setGalleryImages(prod.gallery_images || []);
         setSelectedAttributes(prod.attributes || {});
@@ -161,7 +164,7 @@ export default function EditProductPage() {
           const loadedVariations = varData.map(v => ({
             id: v.id,
             colorName: v.attributes?.Couleur || "",
-            colorId: "", // Sera synchronisé si besoin
+            colorId: "", 
             sku: v.sku || "",
             regular_price: v.regular_price,
             sale_price: v.sale_price,
@@ -190,7 +193,7 @@ export default function EditProductPage() {
   const currentFormData = {
     id, name, slug, sku, shortDescription, description, andreReview, videoUrl,
     purchasePrice, regularPrice, salePrice, stockQuantity, virtualWeight,
-    status, isFeatured, isDiamond, hasVariations, showSizes, seoTitle, seoDescription,
+    status, isFeatured, isDiamond, hasVariations, showSizes, seoTitle, seoDescription, tags,
     mainImage, galleryImages, selectedCategories, selectedAttributes, relatedProductIds,
     selectedNuances, nuanceIds, sizeRangeStart, sizeRangeEnd, variations
   };
@@ -220,7 +223,7 @@ export default function EditProductPage() {
         return [...kept, ...added];
       });
     }
-  }, [selectedNuances, nuanceIds, hasVariations, loading]);
+  }, [selectedNuances, nuanceIds, hasVariations, loading, regularPrice, salePrice, stockQuantity]);
 
   // --- HANDLERS ---
   const handleNuanceToggle = (name: string, id: string, selected: boolean) => {
@@ -247,6 +250,7 @@ export default function EditProductPage() {
         sale_price: salePrice, stock_quantity: stockQuantity, virtual_weight: virtualWeight,
         status, is_featured: isFeatured, is_diamond: isDiamond, has_variations: hasVariations,
         seo_title: seoTitle || name, seo_description: seoDescription || shortDescription,
+        tags: tags, // SAUVEGARDE DES TAGS
         image_url: mainImage, gallery_images: galleryImages, attributes: finalAttributes,
         related_product_ids: relatedProductIds,
         size_range_start: showSizes ? sizeRangeStart : null,
@@ -391,10 +395,28 @@ export default function EditProductPage() {
           </Card>
 
           <Card className="shadow-sm border-none bg-white">
-            <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="text-lg flex items-center gap-2"><Globe className="h-5 w-5 text-green-600" /> SEO</CardTitle></CardHeader>
+            <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="text-lg flex items-center gap-2 text-green-600"><Globe className="h-5 w-5" /> SEO & Tags</CardTitle></CardHeader>
             <CardContent className="p-6 space-y-4">
               <div><Label>Titre Google</Label><Input value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} placeholder={name} /></div>
               <div><Label>Description Google</Label><Textarea value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} placeholder={shortDescription} rows={3} /></div>
+              
+              <Separator className="my-2" />
+              
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2 text-[#b8933d] font-bold"><Tag className="h-4 w-4" /> Mots-clés (Tags)</Label>
+                <Input 
+                  placeholder="vintage, doré, été..." 
+                  value={tags.join(", ")}
+                  onChange={(e) => setTags(e.target.value.split(",").map(t => t.trim()).filter(t => t !== ""))}
+                />
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {tags.map((tag, i) => (
+                      <Badge key={i} variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[10px] font-bold">#{tag}</Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
 

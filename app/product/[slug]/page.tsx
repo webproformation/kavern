@@ -20,7 +20,9 @@ import {
   Trash2,
   AlertTriangle,
   Star,
-  Info
+  Info,
+  ArrowRight,
+  Tag // Ajout de l'icône Tag
 } from "lucide-react";
 import { ProductGallery } from "@/components/ProductGallery";
 import { ProductVariationSelector } from "@/components/ProductVariationSelector";
@@ -94,10 +96,10 @@ export default function ProductPage() {
 
   async function loadRelatedAndReviews(prod: any) {
     try {
-        if (prod.related_product_ids?.length > 0) {
+        if (prod.related_product_ids && prod.related_product_ids.length > 0) {
           const { data: related } = await supabase
             .from("products")
-            .select("id, name, slug, image_url, regular_price")
+            .select("id, name, slug, image_url, regular_price, sale_price")
             .in("id", prod.related_product_ids);
           setRelatedProducts(related || []);
         }
@@ -180,16 +182,18 @@ export default function ProductPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-8 lg:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-          {/* GALERIE / VIDÉO */}
-          <div className="space-y-6 sticky top-24">
-            {product.video_url ? (
-              <div className="aspect-[4/5] rounded-3xl overflow-hidden bg-black shadow-2xl border-4 border-[#d4af37]/20 relative group">
-                <iframe src={product.video_url.replace("watch?v=", "embed/").replace("reel/", "embed/")} className="w-full h-full" allowFullScreen />
-                <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase shadow-lg flex items-center gap-1.5 animate-pulse"><Video className="h-3 w-3" /> Vu en Live</div>
-              </div>
-            ) : (
-              <ProductGallery images={[{ id: 'main', src: product.image_url || '', alt: product.name }, ...(product.gallery_images?.map((img: string, i: number) => ({ id: `gal-${i}`, src: img, alt: `${product.name} ${i + 1}` })) || [])]} productName={product.name} selectedImageUrl={selectedVariation?.image_url} />
-            )}
+          {/* GALERIE HYBRIDE */}
+          <div className="space-y-6 lg:sticky lg:top-24">
+            <ProductGallery 
+              images={[
+                { id: 'main', src: product.image_url || '', alt: product.name }, 
+                ...(product.gallery_images?.map((img: string, i: number) => ({ id: `gal-${i}`, src: img, alt: `${product.name} ${i + 1}` })) || [])
+              ]} 
+              productName={product.name} 
+              selectedImageUrl={selectedVariation?.image_url}
+              videoUrl={product.video_url} 
+            />
+            
             <div className="flex flex-col items-center gap-4 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
                <ShareButtons url={typeof window !== 'undefined' ? window.location.href : ''} title={product.name} />
             </div>
@@ -199,7 +203,6 @@ export default function ProductPage() {
           <div className="space-y-8">
             <div className="space-y-4">
               <div className="space-y-2">
-                {/* TITRE ET WISHLIST CŒUR */}
                 <div className="flex items-center gap-4">
                   <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-[1.1] uppercase tracking-tighter">
                     {decodeHtmlEntities(product.name)}
@@ -237,7 +240,6 @@ export default function ProductPage() {
               </Card>
             )}
 
-            {/* VARIANTES */}
             {product.has_variations && (
               <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl space-y-6">
                 <Label className="text-sm font-black uppercase tracking-widest text-gray-400 text-[10px]">Personnalisez votre pépite</Label>
@@ -245,7 +247,6 @@ export default function ProductPage() {
               </div>
             )}
 
-            {/* QUANTITÉ & ACHAT */}
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex items-center border-2 border-gray-100 rounded-2xl bg-white h-16 px-3 shadow-inner">
@@ -259,12 +260,33 @@ export default function ProductPage() {
               </div>
             </div>
 
-            {/* DESCRIPTION ACCORDÉON */}
+            {/* ACCORDÉON DESCRIPTION & INFOS */}
             <Accordion type="single" collapsible className="w-full space-y-2">
               <AccordionItem value="description" className="border-none bg-white rounded-2xl px-6 shadow-sm">
                 <AccordionTrigger className="font-black text-gray-900 uppercase text-[10px] tracking-[0.2em] py-5">L&apos;histoire & Secrets</AccordionTrigger>
                 <AccordionContent className="pb-8 font-medium leading-relaxed text-gray-600">
-                  <div dangerouslySetInnerHTML={{ __html: product.description }} className="prose prose-amber prose-sm" />
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: product.description }} 
+                    className="prose prose-amber prose-sm max-w-none 
+                      prose-h2:text-gray-900 prose-h2:text-2xl prose-h2:font-black prose-h2:mt-8 prose-h2:mb-4
+                      prose-a:text-[#b8933d] prose-a:font-bold hover:prose-a:underline" 
+                  />
+                  
+                  {/* POINT 6 : AFFICHAGE DES TAGS SEO */}
+                  {product.tags && product.tags.length > 0 && (
+                    <div className="mt-8 pt-6 border-t border-gray-100">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2">
+                        <Tag className="h-3 w-3" /> Mots-clés de la pépite
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {product.tags.map((tag: string, i: number) => (
+                          <Badge key={i} variant="secondary" className="bg-gray-100 text-gray-600 hover:bg-[#D4AF37] hover:text-white transition-colors cursor-default rounded-lg px-3 py-1 text-[10px] font-bold uppercase tracking-tighter">
+                            #{tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="shipping" className="border-none bg-white rounded-2xl px-6 shadow-sm">
@@ -273,7 +295,6 @@ export default function ProductPage() {
               </AccordionItem>
             </Accordion>
 
-            {/* AVIS CLIENTS */}
             <div className="pt-10 border-t-2 border-gray-50 space-y-8" id="avis">
                 <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] flex items-center justify-between text-[10px]">
                   <span>Avis des collectionneurs ({(reviews || []).length})</span>
@@ -295,10 +316,43 @@ export default function ProductPage() {
                 )}
             </div>
 
-            {/* DIAMANT CACHÉ */}
             <HiddenDiamond productId={product.id} position="description" selectedPosition="description" />
           </div>
         </div>
+
+        {/* SUGGESTIONS D'ANDRÉ */}
+        {relatedProducts.length > 0 && (
+          <section className="mt-24 border-t pt-16">
+             <div className="flex items-center justify-between mb-8">
+               <div>
+                 <h2 className="text-2xl font-black uppercase tracking-tight text-gray-900">Les suggestions d&apos;André</h2>
+                 <p className="text-sm text-[#b8933d] font-bold">D&apos;autres pépites qui pourraient vous faire craquer</p>
+               </div>
+               <Button variant="ghost" asChild className="text-[#b8933d] font-bold">
+                 <Link href="/shop">Voir tout le catalogue <ArrowRight className="ml-2 h-4 w-4" /></Link>
+               </Button>
+             </div>
+
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+               {relatedProducts.map((rel) => (
+                 <Link key={rel.id} href={`/product/${rel.slug}`} className="group space-y-3">
+                   <div className="aspect-[4/5] rounded-2xl overflow-hidden bg-gray-100 relative shadow-sm transition-all group-hover:shadow-xl group-hover:-translate-y-1">
+                     <img 
+                       src={rel.image_url} 
+                       alt={rel.name} 
+                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                     />
+                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
+                   </div>
+                   <div className="space-y-1 px-1">
+                     <h3 className="font-bold text-gray-900 line-clamp-1 text-sm group-hover:text-[#b8933d] transition-colors">{rel.name}</h3>
+                     <p className="text-[#b8933d] font-black text-base">{(rel.sale_price || rel.regular_price).toFixed(2)} €</p>
+                   </div>
+                 </Link>
+               ))}
+             </div>
+          </section>
+        )}
       </main>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
