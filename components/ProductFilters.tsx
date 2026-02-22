@@ -52,7 +52,7 @@ export function ProductFilters({
   const [attributes, setAttributes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // --- FLAGS DE CONFIGURATION (Restaurés selon Master Rule) ---
+  // --- FLAGS DE CONFIGURATION ---
   const ENABLE_CLOTHING_FILTERS = false; 
   const ENABLE_COLOR_FILTERS = false;
 
@@ -115,7 +115,6 @@ export function ProductFilters({
     <div className="animate-pulse space-y-4 pt-4">
       <div className="h-4 bg-gray-100 rounded w-1/2"></div>
       <div className="h-20 bg-gray-100 rounded w-full"></div>
-      <div className="h-20 bg-gray-100 rounded w-full"></div>
     </div>
   );
 
@@ -139,7 +138,7 @@ export function ProductFilters({
 
       <Separator className="opacity-50" />
 
-      {/* 1. MA TAILLE (MASQUÉE) */}
+      {/* SECTION MA TAILLE (DÉSACTIVÉE) */}
       {ENABLE_CLOTHING_FILTERS && profile?.user_size && (
         <div className="space-y-3">
           <div className="flex items-center space-x-3 bg-amber-50/50 p-4 rounded-2xl border border-amber-100/50">
@@ -153,59 +152,20 @@ export function ProductFilters({
         </div>
       )}
 
-      {/* 2. TAILLES (MASQUÉE) */}
-      {ENABLE_CLOTHING_FILTERS && sizeGroup && (
-        <div className="space-y-4">
-          <h3 className="font-black text-[10px] uppercase tracking-widest text-gray-400">{sizeGroup.name}</h3>
-          <div className="grid grid-cols-4 gap-2">
-            {sizeGroup.terms.map((opt: FilterOption) => {
-              const isActive = (activeFilters.sizes || []).includes(opt.name);
-              const isAvailable = availableTerms.has(opt.name);
-              return (
-                <button key={opt.id} disabled={!isAvailable} type="button" onClick={() => toggleFilter('sizes', opt.name)} className={cn("h-10 rounded-xl text-[11px] font-black transition-all border-2 uppercase", isActive ? "bg-[#D4AF37] border-[#D4AF37] text-white shadow-md scale-105" : isAvailable ? "bg-white border-gray-100 text-gray-700 hover:border-[#D4AF37]" : "bg-gray-50 border-gray-50 text-gray-300 cursor-not-allowed opacity-40")}>
-                  {opt.name}
-                </button>
-              );
-            })}
-          </div>
-          <Separator className="mt-6 opacity-30" />
-        </div>
-      )}
-
-      {/* 3. COULEURS (MASQUÉE) */}
-      {ENABLE_COLOR_FILTERS && colorGroup && (
-        <div className="space-y-4">
-          <h3 className="font-black text-[10px] uppercase tracking-widest text-gray-400">{colorGroup.name}</h3>
-          <div className="flex flex-wrap gap-3">
-            {colorGroup.terms.map((opt: FilterOption) => {
-              const isActive = (activeFilters.colors || []).includes(opt.name);
-              const isAvailable = availableTerms.has(opt.name);
-              const colorCode = opt.color_code || FALLBACK_COLORS[opt.name.toLowerCase()] || '#CCCCCC';
-              return (
-                <button key={opt.id} disabled={!isAvailable} type="button" onClick={() => toggleFilter('colors', opt.name)} title={opt.name} className={cn("w-9 h-9 rounded-full border-2 transition-all flex items-center justify-center", isActive ? "border-[#D4AF37] scale-110 shadow-lg" : "border-transparent", !isAvailable && "opacity-20 grayscale cursor-not-allowed")}>
-                  <div className="w-7 h-7 rounded-full border border-black/5 shadow-inner" style={{ backgroundColor: colorCode }} />
-                </button>
-              );
-            })}
-          </div>
-          <Separator className="mt-6 opacity-30" />
-        </div>
-      )}
-
-      {/* 4. AUTRES ATTRIBUTS DYNAMIQUES */}
+      {/* AUTRES ATTRIBUTS DYNAMIQUES (Filtrage par ID) */}
       {otherGroups.map((group) => {
         const visibleTerms = group.terms.filter((opt: any) => availableTerms.has(opt.name));
         if (visibleTerms.length === 0) return null;
 
         return (
-          <div key={group.id} className="space-y-4">
+          <div key={group.id} className="space-y-4 animate-in fade-in duration-500">
             <h3 className="font-black text-[10px] uppercase tracking-widest text-gray-400">{group.name}</h3>
             <div className="space-y-3">
-              {visibleTerms.map((opt: any) => {
-                const isActive = activeFilters[group.name]?.includes(opt.name);
+              {visibleTerms.map((opt: FilterOption) => {
+                const isActive = activeFilters[group.id]?.includes(opt.name);
                 return (
                   <div key={opt.id} className="flex items-center space-x-3 group cursor-pointer">
-                    <Checkbox id={`${group.slug}-${opt.id}`} checked={isActive || false} onCheckedChange={() => toggleFilter(group.name, opt.name)} className="data-[state=checked]:bg-[#D4AF37] border-[#D4AF37] rounded-md h-5 w-5" />
+                    <Checkbox id={`${group.slug}-${opt.id}`} checked={isActive || false} onCheckedChange={() => toggleFilter(group.id, opt.name)} className="data-[state=checked]:bg-[#D4AF37] border-[#D4AF37] rounded-md h-5 w-5" />
                     <Label htmlFor={`${group.slug}-${opt.id}`} className={cn("text-sm font-bold cursor-pointer transition-colors uppercase tracking-tight", isActive ? "text-[#D4AF37]" : "text-gray-600 hover:text-gray-900")}>
                       {opt.name}
                     </Label>
@@ -218,7 +178,7 @@ export function ProductFilters({
         );
       })}
 
-      {/* 5. EXPÉRIENCE KAVERN */}
+      {/* EXPÉRIENCE KAVERN */}
       <div className="space-y-5 pt-2">
         <h3 className="font-black text-[10px] uppercase tracking-widest text-[#b8933d]">Expérience Kavern</h3>
         <div className="space-y-4">

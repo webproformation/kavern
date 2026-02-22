@@ -57,6 +57,8 @@ export default function CategoryPage() {
   
   const [priceRange, setPriceRange] = useState([0, 2000]);
   const [maxPrice, setMaxPrice] = useState(2000);
+  
+  // État initial des filtres
   const [activeFilters, setActiveFilters] = useState<FilterState>({
     mySize: false, sizes: [], colors: [], comfort: [], coupe: [], live: false, nouveautes: false
   });
@@ -87,7 +89,7 @@ export default function CategoryPage() {
           setProducts([]);
         }
       } catch (error) {
-        console.error('Erreur lors du chargement des produits:', error);
+        console.error('Erreur chargement produits:', error);
       } finally {
         setLoading(false);
       }
@@ -95,33 +97,34 @@ export default function CategoryPage() {
     fetchCategoryData();
   }, [slug]);
 
-  // --- LOGIQUE DE FILTRAGE TOLÉRANTE ---
+  // --- LOGIQUE DE FILTRAGE PAR ID (UUID) ---
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
-      // 1. Prix
+      // 1. Filtre Prix
       const price = p.sale_price || p.regular_price || 0;
       if (price < priceRange[0] || price > priceRange[1]) return false;
 
-      // 2. Live
+      // 2. Filtre Live
       if (activeFilters.live && !p.video_url) return false;
 
-      // 3. Attributs Dynamiques
+      // 3. Attributs Dynamiques (Utilisation des UUID du JSON)
       const pAttrs = p.attributes || {};
       
-      for (const [key, selectedValues] of Object.entries(activeFilters)) {
-        if (['live', 'nouveautes', 'mySize', 'sizes', 'colors', 'comfort', 'coupe'].includes(key)) continue;
-        const values = selectedValues as string[];
-        if (!Array.isArray(values) || values.length === 0) continue;
-
-        // On cherche l'attribut dans le produit de manière flexible (Nom ou Slug)
-        const productData = Object.entries(pAttrs).find(([attrName]) => 
-          attrName.toLowerCase() === key.toLowerCase()
-        )?.[1];
+      // On ne filtre que sur les clés qui ont des valeurs sélectionnées
+      for (const [filterKey, selectedValues] of Object.entries(activeFilters)) {
+        // On ignore les filtres globaux
+        if (['live', 'nouveautes', 'mySize', 'sizes', 'colors', 'comfort', 'coupe'].includes(filterKey)) continue;
         
-        if (!productData) return false;
+        const values = selectedValues as string[];
+        if (values.length === 0) continue;
+
+        // On cherche la clé (UUID) directement dans les attributs du produit
+        const productData = pAttrs[filterKey];
+        
+        if (!productData) return false; // Le produit n'a pas cet ID d'attribut
 
         const attrArray = Array.isArray(productData) ? productData : [productData];
-        const hasMatch = values.some(val => attrArray.map(a => String(a).toLowerCase()).includes(String(val).toLowerCase()));
+        const hasMatch = values.some(val => attrArray.includes(val));
         
         if (!hasMatch) return false;
       }

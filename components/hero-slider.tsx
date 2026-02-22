@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
@@ -24,18 +25,7 @@ export function HeroSlider() {
 
   useEffect(() => {
     const fetchSlides = async () => {
-      const cacheKey = 'home_slides_active';
-      const cached = sessionStorage.getItem(cacheKey);
-
-      if (cached) {
-        const cachedData = JSON.parse(cached);
-        if (Date.now() - cachedData.timestamp < 300000) {
-          setSlides(cachedData.data);
-          setLoading(false);
-          return;
-        }
-      }
-
+      // Lecture directe depuis Supabase, sans aucun cache local
       const { data, error } = await supabase
         .from('home_slides')
         .select('*')
@@ -44,10 +34,6 @@ export function HeroSlider() {
 
       if (!error && data && data.length > 0) {
         setSlides(data);
-        sessionStorage.setItem(cacheKey, JSON.stringify({
-          data,
-          timestamp: Date.now()
-        }));
       }
       setLoading(false);
     };
@@ -125,17 +111,18 @@ export function HeroSlider() {
                     {slide.subtitle}
                   </p>
                 )}
-                {slide.button_text && slide.button_url && (
-                  <a
+                {/* Utilisation de Link et priorité à link_url */}
+                {slide.button_text && (slide.link_url || slide.button_url) && (
+                  <Link
                     key={`button-${slide.id}-${currentSlide}`}
-                    href={slide.button_url}
+                    href={(slide.link_url || slide.button_url) as string}
                     className={`inline-block px-6 py-3 bg-[#D4AF37] text-white font-semibold rounded-md hover:bg-[#b8933d] transition-all duration-300 drop-shadow-lg ${
                       index === currentSlide ? 'animate-fade-in' : 'opacity-0'
                     }`}
                     style={{ animationDelay: '0.3s' }}
                   >
                     {slide.button_text}
-                  </a>
+                  </Link>
                 )}
               </div>
             </div>

@@ -112,7 +112,7 @@ function ActualitesContent() {
 
           const formattedPosts = (data || []).map((post: any) => ({
             ...post,
-            news_post_categories: post.news_post_categories.map((pc: any) => ({
+            news_post_categories: (post.news_post_categories || []).map((pc: any) => ({
               news_categories: Array.isArray(pc.news_categories) ? pc.news_categories[0] : pc.news_categories
             }))
           }));
@@ -146,7 +146,7 @@ function ActualitesContent() {
 
         const formattedPosts = (data || []).map((post: any) => ({
           ...post,
-          news_post_categories: post.news_post_categories.map((pc: any) => ({
+          news_post_categories: (post.news_post_categories || []).map((pc: any) => ({
             news_categories: Array.isArray(pc.news_categories) ? pc.news_categories[0] : pc.news_categories
           }))
         }));
@@ -188,7 +188,7 @@ function ActualitesContent() {
       <div className="container mx-auto px-4">
         <PageHeader
           icon={BookOpen}
-          title={categoryName || 'Le Carnet de Morgane'}
+          title={categoryName || 'Le Carnet de KAVERN'}
           description={
             categoryName
               ? `${posts.length} article${posts.length > 1 ? 's' : ''} dans cette catégorie`
