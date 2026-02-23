@@ -39,8 +39,6 @@ import HierarchicalCategorySelector from "@/components/HierarchicalCategorySelec
 import GeneralAttributesSelector from "@/components/GeneralAttributesSelector";
 import ColorSwatchSelector from "@/components/ColorSwatchSelector";
 import VariationDetailsForm from "@/components/VariationDetailsForm";
-
-// --- IMPORT DU HOOK DE SAUVEGARDE ---
 import { useAutoSave } from "@/hooks/useAutoSave"; 
 
 interface Category {
@@ -65,26 +63,22 @@ export default function NewProductPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
 
-  // --- GÉNÉRATION DE L'ID ANTICIPÉ ---
   const [newProductId] = useState(() => crypto.randomUUID());
 
-  // --- ÉTATS : INFORMATIONS GÉNÉRALES ---
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [sku, setSku] = useState("");
-  const [shortDescription, setShortDescription] = useState(""); // Phrase d'accroche (150 chars)
+  const [shortDescription, setShortDescription] = useState("");
   const [description, setDescription] = useState("");
-  const [andreReview, setAndreReview] = useState(""); // L'avis d'André
-  const [videoUrl, setVideoUrl] = useState(""); // Lien Vidéo
+  const [andreReview, setAndreReview] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
 
-  // --- ÉTATS : FINANCES & LOGISTIQUE ---
   const [purchasePrice, setPurchasePrice] = useState<number>(0);
   const [regularPrice, setRegularPrice] = useState<number>(0);
   const [salePrice, setSalePrice] = useState<number | null>(null);
   const [stockQuantity, setStockQuantity] = useState<number>(0);
   const [virtualWeight, setVirtualWeight] = useState<number>(0);
 
-  // --- ÉTATS : CONFIGURATION & SEO ---
   const [status, setStatus] = useState("draft");
   const [isFeatured, setIsFeatured] = useState(false);
   const [isDiamond, setIsDiamond] = useState(false);
@@ -93,7 +87,6 @@ export default function NewProductPage() {
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
 
-  // --- ÉTATS : MÉDIAS & RELATIONS ---
   const [mainImage, setMainImage] = useState<string>("");
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -101,7 +94,6 @@ export default function NewProductPage() {
   const [relatedProductIds, setRelatedProductIds] = useState<string[]>([]); 
   const [allProducts, setAllProducts] = useState<{id: string, name: string}[]>([]);
 
-  // --- ÉTATS : COULEURS & VARIANTES (LOGIQUE CUMULATIVE) ---
   const [activeFamilyView, setActiveFamilyView] = useState<string>("");
   const [selectedNuances, setSelectedNuances] = useState<string[]>([]);
   const [nuanceIds, setNuanceIds] = useState<Record<string, string>>({});
@@ -109,7 +101,6 @@ export default function NewProductPage() {
   const [sizeRangeEnd, setSizeRangeEnd] = useState<number | null>(null);
   const [variations, setVariations] = useState<Variation[]>([]);
 
-  // --- INTÉGRATION AUTO-SAVE ---
   const currentFormData = {
     newProductId, name, slug, sku, shortDescription, description, andreReview, videoUrl,
     purchasePrice, regularPrice, salePrice, stockQuantity, virtualWeight,
@@ -152,14 +143,12 @@ export default function NewProductPage() {
     }
   );
 
-  // --- LOGIQUE : GÉNÉRATION AUTOMATIQUE DU SLUG ---
   useEffect(() => {
     if (name) {
       setSlug(name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""));
     }
   }, [name]);
 
-  // --- LOGIQUE : CHARGEMENT DES PRODUITS (CROSS-SELLING) ---
   useEffect(() => {
     const fetchProducts = async () => {
       const { data } = await supabase.from("products").select("id, name").order("name");
@@ -168,7 +157,6 @@ export default function NewProductPage() {
     fetchProducts();
   }, []);
 
-  // --- LOGIQUE : CALCUL DE LA MARGE ---
   const margin = useMemo(() => {
     if (regularPrice > 0) {
       return (((regularPrice - purchasePrice) / regularPrice) * 100).toFixed(1);
@@ -176,7 +164,6 @@ export default function NewProductPage() {
     return "0";
   }, [purchasePrice, regularPrice]);
 
-  // --- LOGIQUE : VARIATIONS (SANS ÉCRASEMENT) ---
   useEffect(() => {
     if (hasVariations) {
       setVariations(prev => {
@@ -193,7 +180,6 @@ export default function NewProductPage() {
     }
   }, [selectedNuances, nuanceIds, hasVariations]);
 
-  // --- HANDLERS ---
   const handleFamilySelect = (name: string, id: string) => { setActiveFamilyView(name); };
   const handleNuanceToggle = (name: string, id: string, selected: boolean) => {
     if (selected) {
@@ -360,6 +346,24 @@ export default function NewProductPage() {
           <Card className="shadow-sm border-none bg-white">
             <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="text-lg flex items-center gap-2 text-gray-600"><Settings2 className="h-5 w-5"/> Options</CardTitle></CardHeader>
             <CardContent className="p-6 space-y-5">
+              
+              {/* NOUVEAU SÉLECTEUR DE STATUT */}
+              <div className="flex items-center justify-between p-3 border rounded-xl bg-gray-50">
+                <div className="space-y-0.5">
+                  <Label className="text-gray-900 font-bold">Statut du produit</Label>
+                  <p className="text-[10px] text-gray-500 italic">Visibilité sur la boutique</p>
+                </div>
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger className="w-[130px] bg-white border-gray-200">
+                    <SelectValue placeholder="Sélectionner..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Brouillon</SelectItem>
+                    <SelectItem value="publish">Publié</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex items-center justify-between p-3 border rounded-xl bg-blue-50/30">
                 <div className="space-y-0.5"><Label className="text-blue-900">Variantes ?</Label><p className="text-[10px] text-blue-500 italic">Couleurs & Stocks multiples</p></div>
                 <Switch checked={hasVariations} onCheckedChange={setHasVariations} />
