@@ -4,11 +4,11 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-// CORRECTION : Gem n'est importé qu'une seule fois ici
 import { Sparkles, ChevronLeft, ChevronRight, Gem } from 'lucide-react';
 import { ProductCard } from '@/components/ProductCard';
 import useEmblaCarousel from 'embla-carousel-react';
 import { SectionTitle } from '@/components/ui/SectionTitle';
+import Link from 'next/link';
 
 interface Product {
   id: number;
@@ -54,7 +54,7 @@ export function FeaturedProducts() {
         const { data, error } = await supabase
           .from('products')
           .select('*')
-          .eq('featured', true)
+          .eq('is_featured', true) // CORRECTION ICI : is_featured au lieu de featured
           .eq('status', 'publish')
           .order('created_at', { ascending: false })
           .limit(8);
@@ -136,9 +136,12 @@ export function FeaturedProducts() {
         <div className="mt-12 text-center">
           <Button 
             variant="outline" 
+            asChild
             className="border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-white transition-colors px-8 py-6 text-lg rounded-full"
           >
-            Voir toute la collection
+            <Link href="/shop">
+              Voir toute la collection
+            </Link>
           </Button>
         </div>
       </div>

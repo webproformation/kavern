@@ -32,7 +32,7 @@ import {
   Layers,
   Settings2,
   Loader2,
-  Tag // Ajout de l'icône Tag
+  Tag
 } from "lucide-react";
 import Link from "next/link";
 import RichTextEditor from "@/components/RichTextEditor";
@@ -41,8 +41,6 @@ import HierarchicalCategorySelector from "@/components/HierarchicalCategorySelec
 import GeneralAttributesSelector from "@/components/GeneralAttributesSelector";
 import ColorSwatchSelector from "@/components/ColorSwatchSelector";
 import VariationDetailsForm from "@/components/VariationDetailsForm";
-
-// --- IMPORT DU HOOK DE SAUVEGARDE ---
 import { useAutoSave } from "@/hooks/useAutoSave"; 
 
 interface Variation {
@@ -62,7 +60,7 @@ export default function EditProductPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // --- ÉTATS : INFORMATIONS GÉNÉRALES ---
+  // --- ÉTATS ---
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [sku, setSku] = useState("");
@@ -71,14 +69,12 @@ export default function EditProductPage() {
   const [andreReview, setAndreReview] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
 
-  // --- ÉTATS : FINANCES & LOGISTIQUE ---
   const [purchasePrice, setPurchasePrice] = useState<number>(0);
   const [regularPrice, setRegularPrice] = useState<number>(0);
   const [salePrice, setSalePrice] = useState<number | null>(null);
   const [stockQuantity, setStockQuantity] = useState<number>(0);
   const [virtualWeight, setVirtualWeight] = useState<number>(0);
 
-  // --- ÉTATS : CONFIGURATION & SEO ---
   const [status, setStatus] = useState("draft");
   const [isFeatured, setIsFeatured] = useState(false);
   const [isDiamond, setIsDiamond] = useState(false);
@@ -86,9 +82,8 @@ export default function EditProductPage() {
   const [showSizes, setShowSizes] = useState(false);
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
-  const [tags, setTags] = useState<string[]>([]); // NOUVEL ÉTAT POUR LES TAGS
+  const [tags, setTags] = useState<string[]>([]);
 
-  // --- ÉTATS : MÉDIAS & RELATIONS ---
   const [mainImage, setMainImage] = useState<string>("");
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -96,7 +91,6 @@ export default function EditProductPage() {
   const [relatedProductIds, setRelatedProductIds] = useState<string[]>([]); 
   const [allProducts, setAllProducts] = useState<{id: string, name: string}[]>([]);
 
-  // --- ÉTATS : COULEURS & VARIANTES ---
   const [activeFamilyView, setActiveFamilyView] = useState<string>("");
   const [selectedNuances, setSelectedNuances] = useState<string[]>([]);
   const [nuanceIds, setNuanceIds] = useState<Record<string, string>>({});
@@ -104,22 +98,15 @@ export default function EditProductPage() {
   const [sizeRangeEnd, setSizeRangeEnd] = useState<number | null>(null);
   const [variations, setVariations] = useState<Variation[]>([]);
 
-  // --- CHARGEMENT DES DONNÉES EXISTANTES ---
+  // --- CHARGEMENT ---
   useEffect(() => {
     const fetchInitialData = async () => {
       if (!id) return;
       setLoading(true);
       try {
-        // 1. Charger le produit
-        const { data: prod, error } = await supabase
-          .from("products")
-          .select("*")
-          .eq("id", id)
-          .single();
-
+        const { data: prod, error } = await supabase.from("products").select("*").eq("id", id).single();
         if (error) throw error;
 
-        // Mapper les données vers les états
         setName(prod.name || "");
         setSlug(prod.slug || "");
         setSku(prod.sku || "");
@@ -139,7 +126,7 @@ export default function EditProductPage() {
         setShowSizes(!!prod.size_range_start);
         setSeoTitle(prod.seo_title || "");
         setSeoDescription(prod.seo_description || "");
-        setTags(prod.tags || []); // Charger les tags
+        setTags(prod.tags || []);
         setMainImage(prod.image_url || "");
         setGalleryImages(prod.gallery_images || []);
         setSelectedAttributes(prod.attributes || {});
@@ -147,19 +134,10 @@ export default function EditProductPage() {
         setSizeRangeStart(prod.size_range_start);
         setSizeRangeEnd(prod.size_range_end);
 
-        // 2. Charger les catégories
-        const { data: catMapping } = await supabase
-          .from("product_category_mapping")
-          .select("category_id")
-          .eq("product_id", id);
+        const { data: catMapping } = await supabase.from("product_category_mapping").select("category_id").eq("product_id", id);
         setSelectedCategories(catMapping?.map(c => c.category_id) || []);
 
-        // 3. Charger les variations
-        const { data: varData } = await supabase
-          .from("product_variations")
-          .select("*")
-          .eq("product_id", id);
-        
+        const { data: varData } = await supabase.from("product_variations").select("*").eq("product_id", id);
         if (varData && varData.length > 0) {
           const loadedVariations = varData.map(v => ({
             id: v.id,
@@ -175,21 +153,15 @@ export default function EditProductPage() {
           setSelectedNuances(loadedVariations.map(v => v.colorName));
         }
 
-        // 4. Charger la liste des produits (Cross-selling)
         const { data: prods } = await supabase.from("products").select("id, name").order("name");
         if (prods) setAllProducts(prods);
 
-      } catch (e: any) {
-        toast.error("Erreur de chargement : " + e.message);
-      } finally {
-        setLoading(false);
-      }
+      } catch (e: any) { toast.error("Erreur : " + e.message); } finally { setLoading(false); }
     };
-
     fetchInitialData();
   }, [id]);
 
-  // --- INTÉGRATION AUTO-SAVE ---
+  // --- AUTO-SAVE ---
   const currentFormData = {
     id, name, slug, sku, shortDescription, description, andreReview, videoUrl,
     purchasePrice, regularPrice, salePrice, stockQuantity, virtualWeight,
@@ -197,18 +169,20 @@ export default function EditProductPage() {
     mainImage, galleryImages, selectedCategories, selectedAttributes, relatedProductIds,
     selectedNuances, nuanceIds, sizeRangeStart, sizeRangeEnd, variations
   };
+  useAutoSave(`edit_product_${id}`, currentFormData, () => {});
 
-  const { clearSavedData } = useAutoSave(`edit_product_${id}`, currentFormData, () => {});
-
-  // --- LOGIQUE : CALCUL DE LA MARGE ---
-  const margin = useMemo(() => {
-    if (regularPrice > 0) {
-      return (((regularPrice - purchasePrice) / regularPrice) * 100).toFixed(1);
-    }
-    return "0";
+  // --- CALCUL DE LA MARGE RÉELLE (BASÉ SUR LE HT) ---
+  const marginData = useMemo(() => {
+    const saleHT = regularPrice / 1.2; // Conversion Vente TTC en HT
+    const marginEuro = saleHT - purchasePrice; // Marge nette en euros
+    const marginPercent = saleHT > 0 ? (marginEuro / saleHT) * 100 : 0;
+    
+    return {
+      euro: marginEuro.toFixed(2),
+      percent: marginPercent.toFixed(1)
+    };
   }, [purchasePrice, regularPrice]);
 
-  // --- LOGIQUE : VARIATIONS (SANS ÉCRASEMENT) ---
   useEffect(() => {
     if (hasVariations && !loading) {
       setVariations(prev => {
@@ -225,13 +199,12 @@ export default function EditProductPage() {
     }
   }, [selectedNuances, nuanceIds, hasVariations, loading, regularPrice, salePrice, stockQuantity]);
 
-  // --- HANDLERS ---
-  const handleNuanceToggle = (name: string, id: string, selected: boolean) => {
+  const handleNuanceToggle = (nuanceName: string, nid: string, selected: boolean) => {
     if (selected) {
-      setSelectedNuances(prev => Array.from(new Set([...prev, name])));
-      setNuanceIds(prev => ({ ...prev, [name]: id }));
+      setSelectedNuances(prev => Array.from(new Set([...prev, nuanceName])));
+      setNuanceIds(prev => ({ ...prev, [nuanceName]: nid }));
     } else {
-      setSelectedNuances(prev => prev.filter(n => n !== name));
+      setSelectedNuances(prev => prev.filter(n => n !== nuanceName));
     }
   };
 
@@ -242,7 +215,6 @@ export default function EditProductPage() {
       const finalAttributes = { ...selectedAttributes };
       if (hasVariations) finalAttributes['Couleur'] = selectedNuances;
 
-      // 1. Update Produit
       const { error: pErr } = await supabase.from("products").update({
         name: name.trim(), slug: slug.trim(), sku: sku.trim() || null,
         short_description: shortDescription.substring(0, 150), description, andre_review: andreReview,
@@ -250,7 +222,7 @@ export default function EditProductPage() {
         sale_price: salePrice, stock_quantity: stockQuantity, virtual_weight: virtualWeight,
         status, is_featured: isFeatured, is_diamond: isDiamond, has_variations: hasVariations,
         seo_title: seoTitle || name, seo_description: seoDescription || shortDescription,
-        tags: tags, // SAUVEGARDE DES TAGS
+        tags: tags,
         image_url: mainImage, gallery_images: galleryImages, attributes: finalAttributes,
         related_product_ids: relatedProductIds,
         size_range_start: showSizes ? sizeRangeStart : null,
@@ -260,14 +232,12 @@ export default function EditProductPage() {
 
       if (pErr) throw pErr;
 
-      // 2. Update Catégories (Delete then Insert)
       await supabase.from("product_category_mapping").delete().eq("product_id", id);
       if (selectedCategories.length > 0) {
         const mappings = selectedCategories.map((catId, i) => ({ product_id: id, category_id: catId, is_primary: i === 0, display_order: i }));
         await supabase.from("product_category_mapping").insert(mappings);
       }
 
-      // 3. Update Variations (Delete then Insert)
       await supabase.from("product_variations").delete().eq("product_id", id);
       if (hasVariations && variations.length > 0) {
         const toInsert = variations.map(v => ({
@@ -279,7 +249,6 @@ export default function EditProductPage() {
         await supabase.from("product_variations").insert(toInsert);
       }
 
-      clearSavedData();
       toast.success("La pépite a été mise à jour !");
       router.refresh();
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
@@ -288,13 +257,12 @@ export default function EditProductPage() {
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gray-50">
       <Loader2 className="h-12 w-12 animate-spin text-[#d4af37]" />
-      <p className="text-gray-500 font-medium">Chargement de la pépite d'André...</p>
+      <p className="text-gray-500 font-medium">Chargement...</p>
     </div>
   );
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-24">
-      {/* HEADER FIXE */}
       <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -315,30 +283,27 @@ export default function EditProductPage() {
 
       <div className="max-w-7xl mx-auto px-6 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          
-          {/* 1. L'ÂME DU PRODUIT */}
           <Card className="shadow-sm border-none bg-white">
             <CardHeader className="border-b bg-gray-50/50">
               <div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-[#C6A15B]"/><CardTitle className="text-lg">L&apos;Âme du Produit</CardTitle></div>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2"><Label>Nom de la pépite *</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Bougie Ambre & Soja" /></div>
+                <div className="space-y-2"><Label>Nom de la pépite *</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
                 <div className="space-y-2"><Label>Slug (URL)</Label><Input value={slug} onChange={(e) => setSlug(e.target.value)} className="bg-gray-50 font-mono text-xs" /></div>
               </div>
               <div className="space-y-2">
-                <div className="flex justify-between"><Label>La &quot;Phrase d&apos;Accroche&quot;</Label><span className="text-[10px] text-gray-400">{shortDescription.length}/150</span></div>
-                <Input value={shortDescription} onChange={(e) => setShortDescription(e.target.value.substring(0, 150))} placeholder="Le goût authentique..." className="italic" />
+                <div className="flex justify-between"><Label>Phrase d&apos;Accroche</Label><span className="text-[10px] text-gray-400">{shortDescription.length}/150</span></div>
+                <Input value={shortDescription} onChange={(e) => setShortDescription(e.target.value.substring(0, 150))} className="italic" />
               </div>
-              <div className="space-y-2"><Label>Histoire du produit (Description longue)</Label><RichTextEditor value={description} onChange={setDescription} /></div>
+              <div className="space-y-2"><Label>Histoire (Description longue)</Label><RichTextEditor value={description} onChange={setDescription} /></div>
               <div className="p-5 bg-amber-50 rounded-2xl border border-amber-100 space-y-3">
                 <Label className="text-[#b8933d] font-bold flex items-center gap-2 uppercase tracking-tighter"><Heart className="h-4 w-4 fill-[#b8933d]" /> L&apos;avis d&apos;André</Label>
-                <Textarea value={andreReview} onChange={(e) => setAndreReview(e.target.value)} placeholder="Pourquoi avez-vous craqué pour ce produit ?" rows={4} className="bg-white border-none italic shadow-inner" />
+                <Textarea value={andreReview} onChange={(e) => setAndreReview(e.target.value)} rows={4} className="bg-white border-none italic shadow-inner" />
               </div>
             </CardContent>
           </Card>
 
-          {/* 2. VISUELS & VIDÉO */}
           <Card className="shadow-sm border-none bg-white">
             <CardHeader className="border-b bg-gray-50/50">
               <div className="flex items-center gap-2"><Video className="h-5 w-5 text-gray-800" /><CardTitle className="text-lg">Visuels & Démo</CardTitle></div>
@@ -347,13 +312,12 @@ export default function EditProductPage() {
               <ProductMediaGalleryManager mainImage={mainImage} galleryImages={galleryImages} onMainImageChange={setMainImage} onGalleryImagesChange={setGalleryImages} />
               <Separator />
               <div className="space-y-4">
-                <div className="flex items-center gap-2"><Video className="h-5 w-5 text-red-500" /><Label>Lien Vidéo (Instagram Reel / Live)</Label></div>
-                <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="Lien direct pour remplacer la photo principale..." className="border-red-100 focus:border-red-400" />
+                <div className="flex items-center gap-2"><Video className="h-5 w-5 text-red-500" /><Label>Lien Vidéo</Label></div>
+                <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} className="border-red-100 focus:border-red-400" />
               </div>
             </CardContent>
           </Card>
 
-          {/* 3. LE CROSS-SELLING */}
           <Card className="shadow-sm border-none bg-white">
             <CardHeader className="border-b bg-gray-50/50"><CardTitle className="text-lg flex items-center gap-2"><Layers className="h-5 w-5 text-blue-500" /> Ventes Suggérées</CardTitle></CardHeader>
             <CardContent className="p-6 space-y-4">
@@ -366,26 +330,28 @@ export default function EditProductPage() {
                 ))}
               </div>
               <Select onValueChange={(rid) => rid && !relatedProductIds.includes(rid) && relatedProductIds.length < 3 && setRelatedProductIds([...relatedProductIds, rid])}>
-                <SelectTrigger className="bg-white"><SelectValue placeholder="Ajouter une suggestion d'André..." /></SelectTrigger>
+                <SelectTrigger className="bg-white"><SelectValue placeholder="Ajouter une suggestion..." /></SelectTrigger>
                 <SelectContent>{allProducts.map(p => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
               </Select>
             </CardContent>
           </Card>
         </div>
 
-        {/* COLONNE DROITE */}
         <div className="space-y-8">
           <Card className="shadow-lg border-2 border-[#d4af37]/30 bg-amber-50/20 overflow-hidden">
             <CardHeader className="bg-[#d4af37]/10 flex flex-row items-center justify-between pb-4">
               <CardTitle className="text-lg text-[#b8933d] flex items-center gap-2"><Calculator className="h-5 w-5"/> Marge</CardTitle>
-              <Badge className="bg-[#d4af37] text-white border-none">{margin}%</Badge>
+              <div className="text-right">
+                <Badge className="bg-[#d4af37] text-white border-none block">{marginData.percent}%</Badge>
+                <span className="text-[10px] font-bold text-[#b8933d]">{marginData.euro}€ net (HT)</span>
+              </div>
             </CardHeader>
             <CardContent className="p-6 space-y-4 bg-white/80">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Achat (€)</Label><Input type="number" step="0.01" value={purchasePrice} onChange={(e) => setPurchasePrice(parseFloat(e.target.value) || 0)} className="font-mono" /></div>
-                <div className="space-y-1"><Label className="text-xs font-bold text-[#b8933d] uppercase">Vente (€) *</Label><Input type="number" step="0.01" value={regularPrice} onChange={(e) => setRegularPrice(parseFloat(e.target.value) || 0)} className="font-bold font-mono border-amber-200" /></div>
+                <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Achat HT (€)</Label><Input type="number" step="0.01" value={purchasePrice} onChange={(e) => setPurchasePrice(parseFloat(e.target.value) || 0)} className="font-mono" /></div>
+                <div className="space-y-1"><Label className="text-xs font-bold text-[#b8933d] uppercase">Vente TTC (€) *</Label><Input type="number" step="0.01" value={regularPrice} onChange={(e) => setRegularPrice(parseFloat(e.target.value) || 0)} className="font-bold font-mono border-amber-200" /></div>
               </div>
-              <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Promo (€)</Label><Input type="number" step="0.01" value={salePrice || ""} onChange={(e) => setSalePrice(e.target.value ? parseFloat(e.target.value) : null)} className="text-red-600 font-mono border-red-100" /></div>
+              <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Promo TTC (€)</Label><Input type="number" step="0.01" value={salePrice || ""} onChange={(e) => setSalePrice(e.target.value ? parseFloat(e.target.value) : null)} className="text-red-600 font-mono border-red-100" /></div>
               <Separator />
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Stock</Label><Input type="number" value={stockQuantity} onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)} /></div>
@@ -397,23 +363,15 @@ export default function EditProductPage() {
           <Card className="shadow-sm border-none bg-white">
             <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="text-lg flex items-center gap-2 text-green-600"><Globe className="h-5 w-5" /> SEO & Tags</CardTitle></CardHeader>
             <CardContent className="p-6 space-y-4">
-              <div><Label>Titre Google</Label><Input value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} placeholder={name} /></div>
-              <div><Label>Description Google</Label><Textarea value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} placeholder={shortDescription} rows={3} /></div>
-              
+              <div><Label>Titre Google</Label><Input value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} /></div>
+              <div><Label>Description Google</Label><Textarea value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} rows={3} /></div>
               <Separator className="my-2" />
-              
               <div className="space-y-3">
                 <Label className="flex items-center gap-2 text-[#b8933d] font-bold"><Tag className="h-4 w-4" /> Mots-clés (Tags)</Label>
-                <Input 
-                  placeholder="vintage, doré, été..." 
-                  value={tags.join(", ")}
-                  onChange={(e) => setTags(e.target.value.split(",").map(t => t.trim()).filter(t => t !== ""))}
-                />
+                <Input placeholder="vintage, doré, été..." value={tags.join(", ")} onChange={(e) => setTags(e.target.value.split(",").map(t => t.trim()).filter(t => t !== ""))} />
                 {tags.length > 0 && (
                   <div className="flex flex-wrap gap-2 pt-2">
-                    {tags.map((tag, i) => (
-                      <Badge key={i} variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[10px] font-bold">#{tag}</Badge>
-                    ))}
+                    {tags.map((tag, i) => (<Badge key={i} variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[10px] font-bold">#{tag}</Badge>))}
                   </div>
                 )}
               </div>
@@ -423,27 +381,28 @@ export default function EditProductPage() {
           <Card className="shadow-sm border-none bg-white">
             <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="text-lg flex items-center gap-2 text-gray-600"><Settings2 className="h-5 w-5"/> Options</CardTitle></CardHeader>
             <CardContent className="p-6 space-y-5">
+              <div className="flex items-center justify-between p-3 border rounded-xl bg-gray-50">
+                <div className="space-y-0.5"><Label className="text-gray-900 font-bold">Statut</Label></div>
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger className="w-[130px] bg-white border-gray-200"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Brouillon</SelectItem>
+                    <SelectItem value="publish">Publié</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex items-center justify-between p-3 border rounded-xl bg-blue-50/30">
-                <div className="space-y-0.5"><Label className="text-blue-900">Variantes ?</Label><p className="text-[10px] text-blue-500 italic">Couleurs & Stocks multiples</p></div>
+                <div className="space-y-0.5"><Label className="text-blue-900">Variantes ?</Label></div>
                 <Switch checked={hasVariations} onCheckedChange={setHasVariations} />
               </div>
               <div className="flex items-center justify-between p-3 border rounded-xl bg-purple-50/30 opacity-60">
-                <div className="space-y-0.5"><Label className="text-purple-900">Module Tailles ?</Label><p className="text-[10px] text-purple-500 italic">Désactivé par défaut</p></div>
+                <div className="space-y-0.5"><Label className="text-purple-900">Module Tailles ?</Label></div>
                 <Switch checked={showSizes} onCheckedChange={setShowSizes} />
               </div>
               <div className="space-y-4 pt-2">
                 <div className="flex items-center gap-2"><Checkbox id="f" checked={isFeatured} onCheckedChange={(c) => setIsFeatured(!!c)}/><Label htmlFor="f">⭐ Mettre en Vedette</Label></div>
                 <div className="flex items-center gap-2"><Checkbox id="d" checked={isDiamond} onCheckedChange={(c) => setIsDiamond(!!c)}/><Label htmlFor="d">💎 Produit Diamant</Label></div>
-              </div>
-              <div className="space-y-2 pt-4">
-                <Label>Statut de publication</Label>
-                <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="publish">Publié ✅</SelectItem>
-                    <SelectItem value="draft">Brouillon 📝</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </CardContent>
           </Card>
@@ -453,21 +412,10 @@ export default function EditProductPage() {
       <div className="max-w-7xl mx-auto px-6 mt-8 space-y-8">
         <GeneralAttributesSelector selectedAttributes={selectedAttributes} onAttributesChange={setSelectedAttributes} />
         <HierarchicalCategorySelector selectedCategories={selectedCategories} onCategoriesChange={setSelectedCategories} />
-        
         {hasVariations && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <ColorSwatchSelector 
-              selectedMainColor={activeFamilyView} 
-              selectedSecondaryColors={selectedNuances} 
-              onMainColorSelect={setActiveFamilyView} 
-              onSecondaryColorToggle={handleNuanceToggle} 
-              showSecondaryColors={true} 
-            />
-            <VariationDetailsForm 
-              selectedSecondaryColors={selectedNuances} 
-              secondaryColorIds={nuanceIds} 
-              variations={variations} 
-              onVariationUpdate={(vName, field, val) => {
+            <ColorSwatchSelector selectedMainColor={activeFamilyView} selectedSecondaryColors={selectedNuances} onMainColorSelect={setActiveFamilyView} onSecondaryColorToggle={handleNuanceToggle} showSecondaryColors={true} />
+            <VariationDetailsForm selectedSecondaryColors={selectedNuances} secondaryColorIds={nuanceIds} variations={variations} onVariationUpdate={(vName, field, val) => {
                 setVariations(prev => {
                   const idx = prev.findIndex(v => v.colorName === vName);
                   if (idx === -1) return prev;
@@ -475,11 +423,7 @@ export default function EditProductPage() {
                   newVars[idx] = { ...newVars[idx], [field]: val };
                   return newVars;
                 });
-            }} 
-            defaultRegularPrice={regularPrice} 
-            defaultSalePrice={salePrice} 
-            defaultStock={stockQuantity} 
-            />
+            }} defaultRegularPrice={regularPrice} defaultSalePrice={salePrice} defaultStock={stockQuantity} />
           </div>
         )}
       </div>

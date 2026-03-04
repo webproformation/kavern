@@ -5,9 +5,9 @@ import { useAuth } from '@/context/AuthContext';
 import { PiggyBank, TrendingUp, Sparkles, Zap, Crown } from 'lucide-react';
 
 const TIERS = [
-  { min: 0, max: 5, multiplier: 1, name: 'Débutant' },
-  { min: 5, max: 15, multiplier: 2, name: 'Expert' },
-  { min: 15, max: Infinity, multiplier: 3, name: 'Légende' }
+  { min: 0, max: 5, multiplier: 1, name: 'Esprit curieux' },
+  { min: 5, max: 15, multiplier: 2, name: 'Passionné' },
+  { min: 15, max: Infinity, multiplier: 3, name: 'Collectionneur' }
 ];
 
 export function LoyaltyBanner() {

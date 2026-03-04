@@ -14,7 +14,7 @@ export default function AlloAndrePage() {
           <PageHeader
             icon={PhoneCall}
             title="ALLO ANDRÉ ?"
-            description="Votre service client 100 % humain"
+            description="Plus qu'un site, un accompagnement. Votre service client 100 % humain."
           />
 
           {/* INTRO */}
@@ -120,7 +120,7 @@ export default function AlloAndrePage() {
                     </svg>
                   </div>
                   <CardTitle className="text-base">Sur Facebook</CardTitle>
-                  <a href="https://www.facebook.com/kavern.france" target="_blank" rel="noopener noreferrer" className="block text-blue-600 font-semibold hover:underline">
+                  <a href="https://www.facebook.com/share/1ApxRYbs2v/" target="_blank" rel="noopener noreferrer" className="block text-blue-600 font-semibold hover:underline">
                     Page KAVERN
                   </a>
                 </CardContent>

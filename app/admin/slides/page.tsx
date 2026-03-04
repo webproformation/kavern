@@ -18,7 +18,9 @@ import {
   Loader2, 
   ImageIcon,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  ExternalLink,
+  MousePointer2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -43,153 +45,22 @@ const emptySlide: Slide = {
   button_text: '',
   button_url: '',
   order_position: 0,
-  is_active: true
+  is_active: true,
 };
 
-// --- COMPOSANT FORMULAIRE ISOLÉ (La clé de la stabilité) ---
-// En le mettant ici, on empêche les interférences avec le reste de la page
-const SlideForm = ({ 
-  initialData, 
-  onSave, 
-  onCancel 
-}: { 
-  initialData: Slide, 
-  onSave: (data: Slide) => Promise<void>, 
-  onCancel: () => void 
-}) => {
-  const [formData, setFormData] = useState<Slide>(initialData);
+export default function SlidesAdmin() {
+  const [slides, setSlides] = useState<Slide[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
+  const [editingSlide, setEditingSlide] = useState<Slide | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Mise à jour simple des champs texte
-  const handleChange = (field: keyof Slide, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmit = async () => {
-    if (!formData.image_url) {
-      toast.error("L'image est obligatoire");
-      return;
-    }
-    setSaving(true);
-    await onSave(formData);
-    setSaving(false);
-  };
-
-  return (
-    <Card className="border-2 border-[#C6A15B]/20 mb-8 animate-in fade-in slide-in-from-top-4">
-      <div className="bg-gray-50 border-b px-6 py-4 flex justify-between items-center">
-        <h2 className="font-bold text-lg">
-          {formData.id ? 'Modifier le slide' : 'Nouveau slide'}
-        </h2>
-        <Button variant="ghost" size="sm" onClick={onCancel}>
-          <X className="h-5 w-5" />
-        </Button>
-      </div>
-      
-      <CardContent className="p-6 space-y-6">
-        {/* GALERIE ROBUSTE */}
-        <div className="space-y-3">
-          <Label className="font-semibold">Image de fond</Label>
-          <div className="bg-gray-50 p-2 rounded-lg border">
-            <ProductMediaSelector
-              label={formData.image_url ? "Changer l'image" : "Choisir une image"}
-              currentImageUrl={formData.image_url}
-              onSelect={(url) => handleChange('image_url', url)}
-              bucket="media" // Assurez-vous que ce bucket existe et est public
-            />
-          </div>
-        </div>
-
-        {/* CHAMPS TEXTE */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label>Titre Principal</Label>
-            <Input 
-              value={formData.title || ''} 
-              onChange={(e) => handleChange('title', e.target.value)}
-              placeholder="Ex: NOUVELLE COLLECTION"
-              className="font-bold"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Sous-titre</Label>
-            <Input 
-              value={formData.subtitle || ''} 
-              onChange={(e) => handleChange('subtitle', e.target.value)}
-              placeholder="Ex: Découvrez nos pépites..."
-            />
-          </div>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label>Texte du bouton</Label>
-            <Input 
-              value={formData.button_text || ''} 
-              onChange={(e) => handleChange('button_text', e.target.value)}
-              placeholder="Ex: VOIR TOUT"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Lien du bouton</Label>
-            <Input 
-              value={formData.button_url || ''} 
-              onChange={(e) => handleChange('button_url', e.target.value)}
-              placeholder="Ex: /category/promos"
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-6 bg-gray-50 p-4 rounded-lg">
-          <div className="w-24">
-            <Label>Ordre</Label>
-            <Input 
-              type="number" 
-              value={formData.order_position} 
-              onChange={(e) => handleChange('order_position', parseInt(e.target.value) || 0)}
-            />
-          </div>
-          <div className="flex items-center gap-3 pt-6">
-            <Switch 
-              checked={formData.is_active}
-              onCheckedChange={(checked) => handleChange('is_active', checked)}
-            />
-            <Label>Visible sur le site</Label>
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button variant="outline" onClick={onCancel} disabled={saving}>
-            Annuler
-          </Button>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={saving}
-            className="bg-[#C6A15B] hover:bg-[#B7933F] text-white min-w-[140px]"
-          >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-            Enregistrer
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-// --- PAGE PRINCIPALE ---
-export default function SlidesPage() {
-  const [slides, setSlides] = useState<Slide[]>([]);
-  const [editingSlide, setEditingSlide] = useState<Slide | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [loading, setLoading] = useState(true);
-
   useEffect(() => {
-    loadData();
+    fetchSlides();
   }, []);
 
-  const loadData = async () => {
+  const fetchSlides = async () => {
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from('home_slides')
         .select('*')
@@ -198,141 +69,334 @@ export default function SlidesPage() {
       if (error) throw error;
       setSlides(data || []);
     } catch (error) {
-      console.error('Error loading slides:', error);
-      toast.error('Erreur chargement des slides');
+      console.error('Error fetching slides:', error);
+      toast.error('Erreur lors du chargement des slides');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSave = async (slideData: Slide) => {
+  const handleSave = async () => {
+    if (!editingSlide) return;
+
+    if (!editingSlide.image_url) {
+      toast.error('Une image est requise');
+      return;
+    }
+
+    setSaving(true);
     try {
-      // Préparation propre des données
-      const cleanData = {
-        title: slideData.title || '',
-        subtitle: slideData.subtitle || '',
-        image_url: slideData.image_url,
-        link_url: slideData.link_url || slideData.button_url || '',
-        button_text: slideData.button_text || '',
-        button_url: slideData.button_url || '',
-        order_position: slideData.order_position || 0,
-        is_active: slideData.is_active
+      // Préparation de l'objet complet pour Supabase avec les deux liens
+      const slideData = {
+        title: editingSlide.title,
+        subtitle: editingSlide.subtitle,
+        image_url: editingSlide.image_url,
+        link_url: editingSlide.link_url,     // LIEN IMAGE COMPLÈTE
+        button_text: editingSlide.button_text,
+        button_url: editingSlide.button_url, // LIEN BOUTON
+        order_position: editingSlide.order_position || 0,
+        is_active: editingSlide.is_active,
       };
 
-      if (slideData.id) {
+      if (editingSlide.id) {
         const { error } = await supabase
           .from('home_slides')
-          .update(cleanData)
-          .eq('id', slideData.id);
+          .update(slideData)
+          .eq('id', editingSlide.id);
         if (error) throw error;
-        toast.success('Slide mis à jour');
+        toast.success('Slide mis à jour avec succès');
       } else {
         const { error } = await supabase
           .from('home_slides')
-          .insert(cleanData);
+          .insert([slideData]);
         if (error) throw error;
-        toast.success('Slide créé');
+        toast.success('Slide créé avec succès');
       }
 
       setEditingSlide(null);
       setIsCreating(false);
-      loadData();
-    } catch (error: any) {
-      console.error(error);
-      toast.error(`Erreur: ${error.message}`);
+      fetchSlides();
+    } catch (error) {
+      console.error('Error saving slide:', error);
+      toast.error('Erreur lors de la sauvegarde');
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer ce slide ?')) return;
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce slide ?')) return;
+
     try {
-      const { error } = await supabase.from('home_slides').delete().eq('id', id);
+      const { error } = await supabase
+        .from('home_slides')
+        .delete()
+        .eq('id', id);
+
       if (error) throw error;
       toast.success('Slide supprimé');
-      loadData();
+      fetchSlides();
     } catch (error) {
-      toast.error('Erreur suppression');
+      console.error('Error deleting slide:', error);
+      toast.error('Erreur lors de la suppression');
+    }
+  };
+
+  const moveSlide = async (index: number, direction: 'up' | 'down') => {
+    const newSlides = [...slides];
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    
+    if (newIndex < 0 || newIndex >= slides.length) return;
+
+    const temp = newSlides[index];
+    newSlides[index] = newSlides[newIndex];
+    newSlides[newIndex] = temp;
+
+    const updates = newSlides.map((slide, i) => ({
+      id: slide.id,
+      order_position: i
+    }));
+
+    try {
+      for (const update of updates) {
+        await supabase
+          .from('home_slides')
+          .update({ order_position: update.order_position })
+          .eq('id', update.id);
+      }
+      setSlides(newSlides);
+      toast.success('Ordre mis à jour');
+    } catch (error) {
+      toast.error('Erreur lors du changement d\'ordre');
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#C6A15B]" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#D4AF37]" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 pb-20">
-      <div className="flex justify-between items-center mb-6">
+    <div className="container mx-auto py-10 px-4">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Slides d'accueil</h1>
-          <p className="text-gray-600">Gérez le carrousel principal de votre boutique</p>
+          <h1 className="text-3xl font-bold text-gray-900">Gestion du Slider</h1>
+          <p className="text-gray-500">Configurez les visuels et les liens de la page d'accueil</p>
         </div>
-        {!editingSlide && !isCreating && (
-          <Button 
-            onClick={() => { setEditingSlide(emptySlide); setIsCreating(true); }}
-            className="bg-black hover:bg-gray-800 text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" /> Nouveau Slide
+        {!isCreating && !editingSlide && (
+          <Button onClick={() => setIsCreating(true)} className="bg-[#D4AF37] hover:bg-[#B8933D]">
+            <Plus className="mr-2 h-4 w-4" /> Ajouter un slide
           </Button>
         )}
       </div>
 
-      {/* ZONE D'ÉDITION (Si active) */}
+      {/* Formulaire de création / édition */}
       {(isCreating || editingSlide) && (
-        <SlideForm 
-          initialData={editingSlide || emptySlide}
-          onCancel={() => { setEditingSlide(null); setIsCreating(false); }}
-          onSave={handleSave}
-        />
+        <Card className="mb-8 border-2 border-[#D4AF37]/20">
+          <CardHeader>
+            <CardTitle>{isCreating ? 'Nouveau Slide' : 'Modifier le Slide'}</CardTitle>
+            <CardDescription>Remplissez les informations ci-dessous</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Titre du slide</Label>
+                  <Input 
+                    id="title"
+                    value={isCreating ? emptySlide.title : editingSlide?.title}
+                    onChange={(e) => isCreating 
+                      ? setEditingSlide({ ...emptySlide, title: e.target.value })
+                      : setEditingSlide({ ...editingSlide!, title: e.target.value })
+                    }
+                    placeholder="Titre principal"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="subtitle">Sous-titre</Label>
+                  <Input 
+                    id="subtitle"
+                    value={editingSlide?.subtitle}
+                    onChange={(e) => setEditingSlide({ ...editingSlide!, subtitle: e.target.value })}
+                    placeholder="Petit texte au-dessus du titre"
+                  />
+                </div>
+
+                {/* --- Rétablissement du 2ème lien (Lien sur le slide complet) --- */}
+                <div className="space-y-2">
+                  <Label htmlFor="link_url" className="text-[#D4AF37] font-bold flex items-center gap-2">
+                    <MousePointer2 className="h-4 w-4" /> Lien du Slide complet (Clic sur l'image)
+                  </Label>
+                  <Input 
+                    id="link_url"
+                    value={editingSlide?.link_url}
+                    onChange={(e) => setEditingSlide({ ...editingSlide!, link_url: e.target.value })}
+                    placeholder="/colis-ouvert"
+                    className="border-[#D4AF37]/30"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="button_text">Texte du bouton</Label>
+                    <Input 
+                      id="button_text"
+                      value={editingSlide?.button_text}
+                      onChange={(e) => setEditingSlide({ ...editingSlide!, button_text: e.target.value })}
+                      placeholder="Découvrir"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="button_url">Lien du bouton</Label>
+                    <Input 
+                      id="button_url"
+                      value={editingSlide?.button_url}
+                      onChange={(e) => setEditingSlide({ ...editingSlide!, button_url: e.target.value })}
+                      placeholder="/shop"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2 pt-4">
+                  <Switch 
+                    id="active" 
+                    checked={editingSlide?.is_active}
+                    onCheckedChange={(checked) => setEditingSlide({ ...editingSlide!, is_active: checked })}
+                  />
+                  <Label htmlFor="active">Slide actif</Label>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <Label>Image du slide</Label>
+                {editingSlide?.image_url ? (
+                  <div className="relative aspect-video rounded-lg overflow-hidden border">
+                    <img 
+                      src={editingSlide.image_url} 
+                      alt="Preview" 
+                      className="w-full h-full object-cover"
+                    />
+                    <Button 
+                      variant="destructive" 
+                      size="icon" 
+                      className="absolute top-2 right-2"
+                      onClick={() => setEditingSlide({ ...editingSlide!, image_url: '' })}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <ProductMediaSelector 
+                    onSelect={(url) => setEditingSlide({ ...editingSlide!, image_url: url })}
+                  >
+                    <div className="aspect-video bg-gray-50 rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors">
+                      <ImageIcon className="h-10 w-10 text-gray-400 mb-2" />
+                      <span className="text-sm text-gray-500">Choisir une image</span>
+                    </div>
+                  </ProductMediaSelector>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={() => { setEditingSlide(null); setIsCreating(false); }}
+              >
+                Annuler
+              </Button>
+              <Button 
+                onClick={handleSave} 
+                disabled={saving}
+                className="bg-black hover:bg-gray-800"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enregistrement...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Enregistrer
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {/* LISTE DES SLIDES */}
+      {/* Liste des slides */}
       <div className="grid gap-4">
-        {slides.map((slide) => (
-          <Card key={slide.id} className="group hover:border-blue-300 transition-all">
-            <CardContent className="p-4 flex items-center gap-4">
-              {/* Image Miniature */}
-              <div className="h-20 w-32 bg-gray-100 rounded-md overflow-hidden border shrink-0 relative">
-                {slide.image_url ? (
-                  <img src={slide.image_url} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center">
-                    <ImageIcon className="h-6 w-6 text-gray-300" />
+        {slides.map((slide, index) => (
+          <Card key={slide.id} className="group relative overflow-hidden">
+            <CardContent className="p-4 flex items-center gap-6">
+              {/* Thumbnail */}
+              <div className="relative w-40 aspect-video rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+                <img 
+                  src={slide.image_url} 
+                  alt={slide.title}
+                  className="w-full h-full object-cover"
+                />
+                {!slide.is_active && (
+                  <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
+                    <Badge variant="outline" className="bg-white">Inactif</Badge>
                   </div>
                 )}
-                <div className="absolute top-1 left-1 bg-black/60 text-white text-[10px] px-1.5 rounded">
-                  #{slide.order_position}
-                </div>
               </div>
 
               {/* Infos */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-bold truncate">{slide.title || 'Sans titre'}</h3>
-                  <Badge variant={slide.is_active ? 'default' : 'secondary'}>
-                    {slide.is_active ? 'Actif' : 'Inactif'}
-                  </Badge>
+                  <h3 className="font-bold text-lg truncate">{slide.title}</h3>
+                  <Badge variant="secondary" className="text-[10px] font-bold">Pos. {index + 1}</Badge>
                 </div>
                 <p className="text-sm text-gray-500 truncate">{slide.subtitle}</p>
-                {slide.button_url && (
-                  <p className="text-xs text-blue-600 mt-1 truncate">
-                    Lien: {slide.button_url}
-                  </p>
-                )}
+                <div className="flex flex-wrap gap-x-4 mt-1">
+                  {slide.link_url && (
+                    <p className="text-xs text-[#D4AF37] font-medium flex items-center gap-1">
+                      <MousePointer2 className="h-3 w-3" /> Image: {slide.link_url}
+                    </p>
+                  )}
+                  {slide.button_url && (
+                    <p className="text-xs text-gray-400 font-medium flex items-center gap-1">
+                      <ExternalLink className="h-3 w-3" /> Bouton: {slide.button_url}
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Actions */}
               <div className="flex items-center gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex flex-col gap-1 mr-2">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8"
+                    onClick={() => moveSlide(index, 'up')}
+                    disabled={index === 0}
+                  >
+                    <ArrowUp className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8"
+                    onClick={() => moveSlide(index, 'down')}
+                    disabled={index === slides.length - 1}
+                  >
+                    <ArrowDown className="h-4 w-4" />
+                  </Button>
+                </div>
                 <Button 
                   variant="outline" 
                   size="icon" 
                   onClick={() => { 
                     setEditingSlide(slide); 
                     setIsCreating(false); 
-                    // Scroll automatique vers le haut pour voir le formulaire
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                 >

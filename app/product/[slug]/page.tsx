@@ -118,6 +118,17 @@ export default function ProductPage() {
     }
   }
 
+  // LOGIQUE : NOM DU PRODUIT DYNAMIQUE AVEC LA VARIANTE
+  const displayTitle = useMemo(() => {
+    let name = decodeHtmlEntities(product?.name || "");
+    const color = selectedVariation?.attributes?.Couleur || selectedVariation?.attributes?.couleur;
+    if (color) {
+      return `${name} - ${color}`;
+    }
+    return name;
+  }, [product, selectedVariation]);
+
+  // LOGIQUE : PRIX DYNAMIQUE
   const currentPrice = useMemo(() => {
     if (selectedVariation) return selectedVariation.sale_price || selectedVariation.regular_price;
     return product?.sale_price || product?.regular_price || 0;
@@ -128,11 +139,23 @@ export default function ProductPage() {
     return product?.sale_price ? product?.regular_price : null;
   }, [product, selectedVariation]);
 
+  // LOGIQUE : GESTION DU STOCK INTELLIGENTE
   const isOutOfStock = useMemo(() => {
-    if (product?.has_variations || product?.type === 'variable') {
-       return selectedVariation ? selectedVariation.stock_quantity <= 0 : false;
+    if (!product) return false;
+
+    if (product.has_variations || product.type === 'variable') {
+      // Si une variante est sélectionnée, on regarde son stock propre
+      if (selectedVariation) {
+        return (selectedVariation.stock_quantity ?? 0) <= 0;
+      }
+      // Si aucune variante n'est sélectionnée, on est hors stock uniquement
+      // si TOUTES les variantes sont à 0.
+      const hasStockInAnyVariation = product.product_variations?.some((v: any) => (v.stock_quantity ?? 0) > 0);
+      return !hasStockInAnyVariation;
     }
-    return product?.stock_quantity <= 0;
+
+    // Produit simple : on regarde le stock parent
+    return (product.stock_quantity ?? 0) <= 0;
   }, [product, selectedVariation]);
 
   const handleAddToCart = () => {
@@ -143,14 +166,14 @@ export default function ProductPage() {
     }
     addToCart({
       id: product.id,
-      name: product.name,
+      name: displayTitle, // On envoie le nom avec la variante au panier
       slug: product.slug,
       price: currentPrice.toString(),
       image: { sourceUrl: selectedVariation?.image_url || product.image_url || "" },
       variationId: selectedVariation?.id,
       variationData: selectedVariation?.attributes
     }, quantity);
-    toast.success(`${product.name} ajouté au panier`);
+    toast.success(`${displayTitle} ajouté au panier`);
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#b8933d]"></div></div>;
@@ -208,12 +231,8 @@ export default function ProductPage() {
               
               <div className="flex items-start justify-between gap-4">
                 <h1 className="text-2xl md:text-3xl font-black text-gray-900 leading-tight uppercase tracking-tighter">
-                  {decodeHtmlEntities(product.name)}
+                  {displayTitle}
                 </h1>
-                <WishlistButton 
-                  productId={product.id} 
-                  className="shrink-0 h-10 w-10 md:h-12 md:w-12 bg-white shadow-sm border border-gray-100 rounded-full hover:bg-pink-50 hover:text-pink-500 transition-all duration-300" 
-                />
               </div>
               
               {product.short_description && (
@@ -224,6 +243,7 @@ export default function ProductPage() {
 
               <div className="flex flex-wrap gap-2 pt-2">
                 {product.is_featured && <Badge className="bg-[#D4AF37] text-white px-3 py-1 rounded-full font-black text-[10px] uppercase shadow-md animate-bounce">⭐ La Vedette d&apos;André</Badge>}
+                {product.is_diamond && <Badge className="bg-blue-600 text-white px-3 py-1 rounded-full font-black text-[10px] uppercase shadow-md">💎 Pépite Diamant</Badge>}
               </div>
             </div>
 
@@ -237,7 +257,7 @@ export default function ProductPage() {
               </div>
             </div>
 
-            {/* LE SÉLECTEUR DE VARIANTES ULTRA-SÉCURISÉ */}
+            {/* LE SÉLECTEUR DE VARIANTES */}
             {(product.has_variations || product.type === 'variable' || (product.product_variations && product.product_variations.length > 0)) && (
               <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm space-y-4 animate-in fade-in slide-in-from-bottom-4">
                 <Label className="text-sm font-black uppercase tracking-widest text-gray-400 text-[10px]">Personnalisez votre pépite</Label>
@@ -272,14 +292,22 @@ export default function ProductPage() {
 
               </div>
               
-              <Button 
-                onClick={handleAddToCart} 
-                disabled={isOutOfStock}
-                className="w-full sm:flex-1 h-14 bg-[#b8933d] hover:bg-[#a68231] text-white rounded-xl text-lg font-black shadow-lg shadow-amber-500/20 uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 flex gap-3"
-              >
-                <ShoppingCart className="w-5 h-5" /> 
-                {isOutOfStock ? "Victime de son succès" : "Je craque !"}
-              </Button>
+              <div className="w-full sm:flex-1 flex gap-2">
+                <Button 
+                  onClick={handleAddToCart} 
+                  disabled={isOutOfStock}
+                  className="flex-1 h-14 bg-[#b8933d] hover:bg-[#a68231] text-white rounded-xl text-lg font-black shadow-lg shadow-amber-500/20 uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 flex gap-3"
+                >
+                  <ShoppingCart className="w-5 h-5" /> 
+                  {isOutOfStock ? "Victime de son succès" : "Je craque !"}
+                </Button>
+                
+                <WishlistButton 
+                  productId={product.id} 
+                  variant="icon"
+                  className="shrink-0 h-14 w-14 rounded-xl" 
+                />
+              </div>
             </div>
 
             {/* AVIS D'ANDRÉ */}
@@ -322,9 +350,32 @@ export default function ProductPage() {
                   )}
                 </AccordionContent>
               </AccordionItem>
+              
               <AccordionItem value="shipping" className="border-none bg-white rounded-2xl px-6 shadow-sm">
                 <AccordionTrigger className="font-black text-gray-900 uppercase text-[10px] tracking-[0.2em] py-5">Livraison & Retours</AccordionTrigger>
-                <AccordionContent className="pb-8 text-xs text-gray-500">Expédition rapide KAVERN. Emballage soigné à Nieppe. Livraison Colissimo ou Mondial Relay sous 2 à 4 jours.</AccordionContent>
+                <AccordionContent className="pb-8 text-sm text-gray-700 space-y-6">
+                  
+                  <div className="space-y-4">
+                    <h4 className="font-black text-[#D4AF37] uppercase tracking-widest text-xs">Livraison & Expédition</h4>
+                    <div className="space-y-3">
+                      <p><strong className="text-gray-900">Préparation express :</strong> Chaque commande est emballée avec amour et soin depuis notre atelier, et expédiée sous 24h à 48h.</p>
+                      <p><strong className="text-gray-900">L&apos;astuce &quot;Colis Ouvert&quot; :</strong> Vous avez un coup de cœur aujourd&apos;hui mais vous voulez attendre le prochain Live ? Cochez l&apos;option Colis Ouvert dans votre panier ! Cumulez vos achats pendant 7 jours et ne payez vos frais de port qu&apos;une seule fois à la fin.</p>
+                      <p><strong className="text-gray-900">Cadeau KAVERN :</strong> Dès 69 € d&apos;achats (en une fois ou cumulés dans votre Colis Ouvert), un cadeau exclusif est glissé dans votre malle !</p>
+                    </div>
+                  </div>
+
+                  <div className="h-px w-full bg-gray-100" />
+
+                  <div className="space-y-4">
+                    <h4 className="font-black text-[#D4AF37] uppercase tracking-widest text-xs">Retours & Échanges</h4>
+                    <div className="space-y-3">
+                      <p><strong className="text-gray-900">Vous avez changé d&apos;avis ?</strong> Pas de panique ! Vous disposez de 14 jours après la réception de votre colis pour nous retourner un article qui ne conviendrait pas.</p>
+                      <p><strong className="text-gray-900">Conditions :</strong> L&apos;article doit être neuf, non utilisé et dans son emballage d&apos;origine.</p>
+                      <p><strong className="text-gray-900">Note :</strong> Par mesure d&apos;hygiène et de sécurité, les produits de l&apos;épicerie fine, les cosmétiques ouverts et les créations personnalisées ne sont pas éligibles aux retours.</p>
+                    </div>
+                  </div>
+
+                </AccordionContent>
               </AccordionItem>
             </Accordion>
 

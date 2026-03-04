@@ -376,6 +376,7 @@ public/clear-cache.html
 public/favicon.ico
 public/image.png
 public/kavern-icone.png
+public/kavern-logo.afphoto
 public/kavern-logo.png
 public/la_boutique_d_emorgane_-_logo.png
 public/lbdm-icone copy.png
@@ -82630,363 +82631,6 @@ export default function LoginPage() {
 }
 </file>
 
-<file path="app/category/[slug]/page.tsx">
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { supabase, ProductCategory } from '@/lib/supabase';
-import { ArrowLeft, SlidersHorizontal, Filter, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { ProductCard } from '@/components/ProductCard';
-import { ProductFilters, FilterState } from '@/components/ProductFilters';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/context/AuthContext';
-
-// Composant Sidebar interne pour la réutilisation (Desktop / Mobile)
-const FilterSidebarContent = ({ 
-  priceRange, 
-  setPriceRange, 
-  maxPrice, 
-  slug, 
-  activeFilters, 
-  setActiveFilters,
-  availableTerms 
-}: any) => (
-  <div className="space-y-6">
-    <div>
-      <h3 className="font-semibold text-sm text-gray-900 mb-4 flex items-center gap-2">
-        <span className="bg-[#D4AF37] w-1 h-4 rounded-full"></span> Prix
-      </h3>
-      <div className="px-2">
-        <Slider 
-          value={priceRange} 
-          onValueChange={(value) => setPriceRange(value as [number, number])} 
-          max={maxPrice} 
-          step={1} 
-          className="my-4" 
-        />
-        <div className="flex justify-between text-sm text-gray-600 font-medium">
-          <span>{priceRange[0]}€</span>
-          <span>{priceRange[1]}€</span>
-        </div>
-      </div>
-    </div>
-    <Separator />
-    <ProductFilters 
-      categorySlug={slug === 'tous' ? undefined : slug} 
-      activeFilters={activeFilters}
-      availableTerms={availableTerms} 
-      onFiltersChange={setActiveFilters} 
-    />
-  </div>
-);
-
-export default function CategoryPage() {
-  const params = useParams();
-  const router = useRouter();
-  const { profile } = useAuth();
-  const slug = params.slug as string;
-
-  const [category, setCategory] = useState<ProductCategory | null>(null);
-  const [allProducts, setAllProducts] = useState<any[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  const [availableTerms, setAvailableTerms] = useState<Set<string>>(new Set());
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 200]);
-  const [maxPrice, setMaxPrice] = useState(200);
-  
-  const [activeFilters, setActiveFilters] = useState<FilterState>({
-    mySize: false,
-    sizes: [], colors: [], comfort: [], coupe: [], live: false, nouveautes: false,
-  });
-
-  const [nameToIdsMap, setNameToIdsMap] = useState<Map<string, string[]>>(new Map());
-
-  useEffect(() => { loadCategoryAndProducts(); }, [slug]);
-  
-  useEffect(() => {
-    if (allProducts.length > 0) {
-      const terms = new Set<string>();
-      allProducts.forEach(p => {
-        const values = [
-          ...deepExtractValues(p.attributes),
-          ...(p.product_variations ? deepExtractValues(p.product_variations) : [])
-        ];
-        values.forEach(v => terms.add(v));
-      });
-      setAvailableTerms(terms);
-    }
-  }, [allProducts]);
-
-  useEffect(() => { applyFilters(); }, [priceRange, activeFilters, allProducts, nameToIdsMap]);
-
-  async function loadCategoryAndProducts() {
-    setLoading(true);
-    try {
-      // 1. Charger la map des attributs pour le filtrage
-      const { data: terms } = await supabase.from('product_attribute_terms').select('id, name');
-      const map = new Map<string, string[]>();
-      if (terms) {
-        terms.forEach(t => {
-          const idStr = String(t.id);
-          const nameLower = t.name.toLowerCase();
-          if (!map.has(nameLower)) map.set(nameLower, []);
-          map.get(nameLower)?.push(idStr);
-        });
-      }
-      setNameToIdsMap(map);
-
-      // 2. Préparer la requête produits
-      let productsQuery = supabase.from('products').select('*').eq('status', 'publish').order('created_at', { ascending: false });
-
-      if (slug !== 'tous') {
-        const { data: categoryData } = await supabase.from('categories').select('*').eq('slug', slug).maybeSingle();
-        if (!categoryData) { router.push('/'); return; }
-        setCategory(categoryData);
-        
-        const { data: mappingData } = await supabase.from('product_category_mapping').select('product_id').eq('category_id', categoryData.id);
-        const productIds = mappingData?.map(m => m.product_id) || [];
-        
-        if (productIds.length > 0) productsQuery = productsQuery.in('id', productIds);
-        else { 
-            setAllProducts([]); 
-            setLoading(false); 
-            return; 
-        }
-      }
-
-      const { data: productsData } = await productsQuery;
-
-      if (productsData) {
-        const productIds = productsData.map(p => p.id);
-        const { data: variationsData } = await supabase
-          .from('product_variations')
-          .select('*')
-          .in('product_id', productIds);
-
-        const productsWithVariations = productsData.map(p => ({
-          ...p,
-          product_variations: variationsData?.filter(v => v.product_id === p.id) || []
-        }));
-
-        setAllProducts(productsWithVariations);
-        
-        const prices = productsData.map(p => p.sale_price || p.regular_price || 0).filter(p => p > 0);
-        const max = prices.length > 0 ? Math.ceil(Math.max(...prices)) : 200;
-        setMaxPrice(max);
-        setPriceRange([0, max]);
-      }
-    } catch (error) { 
-        console.error('Error loading category:', error); 
-    } finally { 
-        setLoading(false); 
-    }
-  }
-
-  const deepExtractValues = (obj: any): string[] => {
-    let values: string[] = [];
-    if (!obj) return values;
-    if (Array.isArray(obj)) {
-      obj.forEach(item => values = values.concat(deepExtractValues(item)));
-    } else if (typeof obj === 'object') {
-      Object.values(obj).forEach(val => values = values.concat(deepExtractValues(val)));
-    } else if (typeof obj === 'string' || typeof obj === 'number') {
-      values.push(String(obj).toLowerCase());
-    }
-    return values;
-  };
-
-  function applyFilters() {
-    if (!allProducts) return;
-    let filtered = [...allProducts];
-
-    filtered = filtered.filter(p => {
-      const price = p.sale_price || p.regular_price || 0;
-      return price >= priceRange[0] && price <= priceRange[1];
-    });
-
-    if (activeFilters.mySize && profile?.user_size) {
-      filtered = filtered.filter(p => {
-        const userSize = profile.user_size;
-        if (p.product_variations && p.product_variations.length > 0) {
-          return p.product_variations.some((v: any) => 
-            (v.size_min !== null && v.size_max !== null && userSize >= v.size_min && userSize <= v.size_max)
-          );
-        }
-        const values = deepExtractValues(p.attributes);
-        return values.includes(String(userSize));
-      });
-    }
-
-    const productHasAttribute = (product: any, targetNames: string[]) => {
-      const targets = new Set<string>();
-      targetNames.forEach(name => {
-        const lowerName = name.toLowerCase();
-        targets.add(lowerName);
-        const ids = nameToIdsMap.get(lowerName);
-        if (ids) ids.forEach(id => targets.add(id));
-      });
-
-      const allProductValues = new Set([
-        ...deepExtractValues(product.attributes),
-        ...(product.product_variations ? deepExtractValues(product.product_variations) : [])
-      ]);
-
-      for (const target of targets) {
-        if (allProductValues.has(target)) return true;
-      }
-      return false;
-    };
-
-    if (activeFilters.sizes.length > 0) filtered = filtered.filter(p => productHasAttribute(p, activeFilters.sizes));
-    if (activeFilters.colors.length > 0) filtered = filtered.filter(p => productHasAttribute(p, activeFilters.colors));
-    if (activeFilters.comfort.length > 0) filtered = filtered.filter(p => productHasAttribute(p, activeFilters.comfort));
-    if (activeFilters.coupe.length > 0) filtered = filtered.filter(p => productHasAttribute(p, activeFilters.coupe));
-    if (activeFilters.live) filtered = filtered.filter(p => productHasAttribute(p, ["Vu dans le dernier Live !", "Live"]));
-    if (activeFilters.nouveautes) filtered = filtered.filter(p => productHasAttribute(p, ["Nouveautés", "Nouveau"]));
-
-    setFilteredProducts(filtered);
-  }
-
-  if (loading) return (
-    <div className="min-h-screen bg-white flex items-center justify-center">
-      <div className="text-gray-600 font-medium">Chargement des pépites...</div>
-    </div>
-  );
-
-  const displayProducts = filteredProducts;
-  const categoryName = slug === 'tous' ? 'Tous les Produits' : category?.name || '';
-
-  return (
-    <div className="min-h-screen bg-gray-50/30">
-      <main className="container mx-auto px-4 py-8">
-        <Link href="/" className="inline-flex items-center text-gray-600 hover:text-[#D4AF37] mb-6 transition-all text-sm font-medium">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Retour à l'accueil
-        </Link>
-
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar Filtres (uniquement si la catégorie contient des produits au départ) */}
-          {allProducts.length > 0 && (
-            <aside className="hidden lg:block w-64 flex-shrink-0">
-              <div className="sticky top-24 bg-white rounded-xl shadow-sm border border-gray-100 p-5 overflow-y-auto max-h-[calc(100vh-8rem)]">
-                <div className="flex items-center gap-2 mb-6 text-[#D4AF37] font-bold text-lg">
-                  <Filter className="w-5 h-5" /> Filtres
-                </div>
-                <FilterSidebarContent 
-                  priceRange={priceRange} 
-                  setPriceRange={setPriceRange} 
-                  maxPrice={maxPrice} 
-                  slug={slug} 
-                  activeFilters={activeFilters} 
-                  setActiveFilters={setActiveFilters}
-                  availableTerms={availableTerms}
-                />
-              </div>
-            </aside>
-          )}
-
-          <div className="flex-1">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">{categoryName}</h1>
-                {category?.description && <p className="text-gray-500 mt-1 text-sm">{category.description}</p>}
-              </div>
-
-              {/* Bouton Mobile Filtres (uniquement si la catégorie contient des produits) */}
-              {allProducts.length > 0 && (
-                <div className="flex items-center gap-3 lg:hidden">
-                  <Sheet>
-                    <SheetTrigger asChild>
-                      <Button variant="outline" className="rounded-xl border-gray-300 hover:border-[#D4AF37] hover:text-[#D4AF37]">
-                        <SlidersHorizontal className="h-4 w-4 mr-2" /> Filtres
-                      </Button>
-                    </SheetTrigger>
-                    <SheetContent side="left" className="w-full sm:max-w-md overflow-y-auto">
-                      <SheetHeader className="mb-6 text-left">
-                        <SheetTitle className="text-2xl font-bold text-[#D4AF37]">Filtres</SheetTitle>
-                      </SheetHeader>
-                      <FilterSidebarContent 
-                        priceRange={priceRange} 
-                        setPriceRange={setPriceRange} 
-                        maxPrice={maxPrice} 
-                        slug={slug} 
-                        activeFilters={activeFilters} 
-                        setActiveFilters={setActiveFilters}
-                        availableTerms={availableTerms}
-                      />
-                    </SheetContent>
-                  </Sheet>
-                </div>
-              )}
-            </div>
-
-            {allProducts.length > 0 && (
-              <div className="mb-6">
-                <Badge variant="secondary" className="px-3 py-1 bg-white border border-gray-200 text-gray-600">
-                  {displayProducts.length} résultat{displayProducts.length > 1 ? 's' : ''}
-                </Badge>
-              </div>
-            )}
-
-            {/* CAS 1 : LA CATÉGORIE EST VIDE EN BASE DE DONNÉES */}
-            {allProducts.length === 0 ? (
-              <div className="text-center py-24 bg-white rounded-3xl border border-dashed border-gray-200 shadow-sm px-6">
-                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                   <Sparkles className="h-10 w-10 text-[#D4AF37] animate-pulse" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3 italic">C'est pour bientôt...</h3>
-                <p className="text-gray-500 max-w-md mx-auto text-lg leading-relaxed">
-                  Cette catégorie est en cours de préparation. <br /> 
-                  <span className="font-semibold text-gray-800">« ça arrive très prochainement »</span> dans la Kavern !
-                </p>
-                <div className="mt-10">
-                   <Button asChild className="bg-black hover:bg-gray-800 text-white px-8 h-12 rounded-full">
-                      <Link href="/">Découvrir d'autres pépites</Link>
-                   </Button>
-                </div>
-              </div>
-            ) 
-            /* CAS 2 : LES FILTRES APPLIQUÉS NE DONNENT RIEN */
-            : displayProducts.length === 0 ? (
-              <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200">
-                <div className="text-4xl mb-4">🧐</div>
-                <p className="text-xl text-gray-900 font-medium mb-2">Aucun produit ne correspond à vos critères</p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => { 
-                    setPriceRange([0, maxPrice]); 
-                    setActiveFilters({
-                      mySize: false, sizes: [], colors: [], comfort: [], coupe: [], live: false, nouveautes: false
-                    });
-                  }} 
-                  className="text-[#D4AF37] border-[#D4AF37] hover:bg-[#FFF9F0]"
-                >
-                  Réinitialiser les filtres
-                </Button>
-              </div>
-            ) 
-            /* CAS 3 : AFFICHAGE DES PRODUITS */
-            : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 animate-in fade-in duration-500">
-                {displayProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} showAddToCart={true} />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </main>
-    </div>
-  );
-}
-</file>
-
 <file path="app/contact/page.tsx">
 'use client';
 
@@ -83468,463 +83112,6 @@ export default function LeDroitALErreurPage() {
       </div>
     </div>
   );
-}
-</file>
-
-<file path="app/livre-dor/page.tsx">
-'use client'
-
-import { useState } from 'react'
-import { useGuestbook, useAmbassador, useHearts, canUserReview, submitGuestbookEntry } from '@/hooks/use-guestbook'
-import { useAuth } from '@/context/AuthContext'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Badge } from '@/components/ui/badge'
-import { Gem, Heart, Loader2, Crown, Upload, CheckCircle2, BookHeart, Sparkles, Shirt, Box, Wand2 } from 'lucide-react'
-import { toast } from 'sonner'
-import Image from 'next/image'
-import PageHeader from '@/components/PageHeader'
-
-export default function LivreDorPage() {
-  const { entries, loading, refetch } = useGuestbook(50, 'approved')
-  const { currentAmbassador, loading: ambassadorLoading } = useAmbassador()
-  const { user } = useAuth()
-  const [showForm, setShowForm] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [formData, setFormData] = useState({
-    order_number: '',
-    rating: 5,
-    message: '',
-    customer_name: '',
-    customer_photo_url: '',
-    gdpr_consent: false
-  })
-
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    if (!file.type.startsWith('image/')) {
-      toast.error('Veuillez sélectionner une image')
-      return
-    }
-
-    setUploading(true)
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const response = await fetch('/api/storage/upload', {
-        method: 'POST',
-        body: formData
-      })
-
-      if (!response.ok) throw new Error('Upload failed')
-
-      const { url } = await response.json()
-      setFormData(prev => ({ ...prev, customer_photo_url: url }))
-      toast.success('Photo uploadée avec succès')
-    } catch (error) {
-      console.error('Upload error:', error)
-      toast.error('Erreur lors de l\'upload de la photo')
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!user) {
-      toast.error('Vous devez être connecté(e) pour signer le Livre d\'Or')
-      return
-    }
-
-    if (!formData.gdpr_consent) {
-      toast.error('Veuillez accepter les conditions de publication')
-      return
-    }
-
-    setSubmitting(true)
-    try {
-      const canReview = await canUserReview(user.id, formData.order_number)
-      if (!canReview) {
-        toast.error('Vous avez déjà signé le Livre d\'Or pour cette commande')
-        return
-      }
-
-      await submitGuestbookEntry({
-        order_number: formData.order_number,
-        rating: formData.rating,
-        message: formData.message,
-        customer_name: formData.customer_name,
-        customer_photo_url: formData.customer_photo_url
-      })
-
-      toast.success('Merci pour votre mot doux ! Il sera publié après validation (48-72h)', {
-        description: 'Bonus fidélité ajouté à votre cagnotte !'
-      })
-
-      setFormData({
-        order_number: '',
-        rating: 5,
-        message: '',
-        customer_name: '',
-        customer_photo_url: '',
-        gdpr_consent: false
-      })
-      setShowForm(false)
-      refetch()
-    } catch (error) {
-      console.error('Submit error:', error)
-      toast.error('Erreur lors de l\'envoi')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const renderPepites = (rating: number, interactive = false, onClick?: (r: number) => void) => {
-    return (
-      <div className="flex gap-1">
-        {[1, 2, 3, 4, 5].map((pepite) => (
-          <button
-            key={pepite}
-            type={interactive ? "button" : undefined}
-            onClick={() => interactive && onClick && onClick(pepite)}
-            disabled={!interactive}
-            className={interactive ? "focus:outline-none cursor-pointer" : undefined}
-          >
-            <Gem
-              className={`h-5 w-5 ${
-                pepite <= rating ? 'fill-[#C6A15B] text-[#C6A15B]' : 'text-gray-300'
-              } ${interactive ? 'hover:text-[#C6A15B]/50' : ''}`}
-            />
-          </button>
-        ))}
-      </div>
-    )
-  }
-
-  return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="max-w-6xl mx-auto">
-        <PageHeader
-          icon={BookHeart}
-          title="Livre d'Or"
-          description="Bienvenue dans la galerie de la famille Kavern !"
-        />
-
-        {/* SECTION INTRODUCTION PERSONNALISÉE */}
-        <div className="bg-white rounded-3xl p-8 mb-12 shadow-sm border border-gray-100">
-          <div className="prose prose-lg max-w-4xl mx-auto text-gray-700 space-y-6">
-            <div className="text-center space-y-4">
-              <h2 className="text-2xl font-bold text-gray-900">Ici, ce n'est pas nous qui parlons, c'est VOUS.</h2>
-              <p className="text-lg">
-                Vous avez déniché une veste vintage incroyable ? Votre bougie &quot;Dimanche Matin&quot; trône fièrement sur votre table basse ? 
-                Ou vous avez rempli vos placards grâce au rayon Garde-Manger ?
-              </p>
-              <p className="font-semibold text-[#C6A15B] text-xl">Montrez-nous tout !</p>
-              <p>
-                On adore voir nos pépites vivre leur deuxième vie chez vous. Vos photos sont nos plus belles récompenses et elles inspirent les autres visiteurs.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
-              <div className="flex items-center gap-3 bg-amber-50 p-4 rounded-xl border border-amber-100">
-                <Sparkles className="h-6 w-6 text-amber-600 shrink-0" />
-                <span className="text-sm font-medium"><strong>L&apos;Atelier en Action :</strong> Vos bougies allumées en situation cocooning.</span>
-              </div>
-              <div className="flex items-center gap-3 bg-blue-50 p-4 rounded-xl border border-blue-100">
-                <Shirt className="h-6 w-6 text-blue-600 shrink-0" />
-                <span className="text-sm font-medium"><strong>Le Look du Jour :</strong> Comment vous portez vos trouvailles Friperie.</span>
-              </div>
-              <div className="flex items-center gap-3 bg-purple-50 p-4 rounded-xl border border-purple-100">
-                <Box className="h-6 w-6 text-purple-600 shrink-0" />
-                <span className="text-sm font-medium"><strong>L&apos;Unboxing :</strong> La joie de l&apos;ouverture du colis (et la montagne de goodies !).</span>
-              </div>
-              <div className="flex items-center gap-3 bg-green-50 p-4 rounded-xl border border-green-100">
-                <Wand2 className="h-6 w-6 text-green-600 shrink-0" />
-                <span className="text-sm font-medium"><strong>Avant / Après :</strong> Pour les produits ménagers (ex: &quot;Merci la Pierre d&apos;Argent !&quot;).</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="text-center mt-10">
-            <Button
-              onClick={() => setShowForm(!showForm)}
-              size="lg"
-              className="bg-[#C6A15B] hover:bg-[#B59149] text-white px-10"
-            >
-              <Gem className="mr-2 h-5 w-5" />
-              Signer le Livre d&apos;Or
-            </Button>
-          </div>
-        </div>
-
-        {/* SECTION AMBASSADRICE (Keep if active) */}
-        {!ambassadorLoading && currentAmbassador && currentAmbassador.entry && (
-          <Card className="mb-12 border-4 border-[#C6A15B] shadow-xl">
-            <CardContent className="p-8">
-              <div className="flex items-center gap-4 mb-6">
-                <Crown className="h-12 w-12 text-[#C6A15B] fill-[#C6A15B]" />
-                <div>
-                  <h2 className="text-2xl font-bold">Ambassadrice de la Semaine</h2>
-                  <p className="text-gray-600">Cette semaine, on met à l&apos;honneur...</p>
-                </div>
-              </div>
-              <div className="grid md:grid-cols-2 gap-8">
-                {currentAmbassador.entry.customer_photo_url && (
-                  <div className="relative h-96 rounded-xl overflow-hidden shadow-inner">
-                    <Image
-                      src={currentAmbassador.entry.customer_photo_url}
-                      alt={currentAmbassador.entry.customer_name}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                )}
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <h3 className="text-2xl font-bold">{currentAmbassador.entry.customer_name}</h3>
-                    <Crown className="h-6 w-6 text-[#C6A15B] fill-[#C6A15B]" />
-                  </div>
-                  {renderPepites(currentAmbassador.entry.rating)}
-                  <p className="text-gray-700 mt-4 text-lg italic leading-relaxed">&quot;{currentAmbassador.entry.message}&quot;</p>
-                  <div className="flex items-center gap-4 mt-6">
-                    <Heart className="h-6 w-6 text-pink-500 fill-pink-500" />
-                    <span className="font-bold text-xl">{currentAmbassador.hearts_count} cœurs</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* FORMULAIRE DE SIGNATURE */}
-        {showForm && (
-          <Card className="mb-12 animate-in fade-in slide-in-from-top-4">
-            <CardContent className="p-8">
-              {!user ? (
-                 <div className="text-center py-4">
-                   <p className="text-gray-600 mb-4">Connectez-vous pour signer le Livre d&apos;Or et participer à la galerie !</p>
-                   <Button asChild variant="outline">
-                     <Link href="/auth/login">Se connecter</Link>
-                   </Button>
-                 </div>
-              ) : (
-                <>
-                  <h2 className="text-2xl font-bold mb-6">Laissez votre mot doux</h2>
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div>
-                        <Label htmlFor="customer_name">Votre prénom</Label>
-                        <Input
-                          id="customer_name"
-                          value={formData.customer_name}
-                          onChange={(e) => setFormData(prev => ({ ...prev, customer_name: e.target.value }))}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="order_number">Numéro de commande</Label>
-                        <Input
-                          id="order_number"
-                          value={formData.order_number}
-                          onChange={(e) => setFormData(prev => ({ ...prev, order_number: e.target.value }))}
-                          placeholder="#12345"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label>Note en Pépites</Label>
-                      <div className="mt-2">
-                        {renderPepites(formData.rating, true, (rating) => setFormData(prev => ({ ...prev, rating })))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="message">Votre message (max 500 caractères)</Label>
-                      <Textarea
-                        id="message"
-                        value={formData.message}
-                        onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value.slice(0, 500) }))}
-                        placeholder="Partagez votre expérience..."
-                        rows={5}
-                        required
-                      />
-                      <p className="text-sm text-gray-500 mt-1">{formData.message.length}/500 caractères</p>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="photo">Votre photo</Label>
-                      <div className="mt-2">
-                        {formData.customer_photo_url ? (
-                          <div className="relative w-40 h-40 rounded-lg overflow-hidden border">
-                            <Image src={formData.customer_photo_url} alt="Preview" fill className="object-cover" />
-                            <button
-                              type="button"
-                              onClick={() => setFormData(prev => ({ ...prev, customer_photo_url: '' }))}
-                              className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50">
-                            <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                            <Label htmlFor="photo-upload" className="cursor-pointer text-[#C6A15B] hover:underline font-semibold">
-                              {uploading ? 'Upload en cours...' : 'Cliquez pour ajouter une photo de vos pépites'}
-                            </Label>
-                            <Input
-                              id="photo-upload"
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={handlePhotoUpload}
-                              disabled={uploading}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2">
-                      <Checkbox
-                        id="gdpr"
-                        checked={formData.gdpr_consent}
-                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, gdpr_consent: checked as boolean }))}
-                      />
-                      <Label htmlFor="gdpr" className="text-sm cursor-pointer leading-snug text-gray-600">
-                        J&apos;accepte que mon message et ma photo soient publiés sur le Livre d&apos;Or de la boutique.
-                      </Label>
-                    </div>
-
-                    <Button type="submit" disabled={submitting} className="w-full bg-[#C6A15B] hover:bg-[#B59149]" size="lg">
-                      {submitting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Envoi en cours...
-                        </>
-                      ) : (
-                        <>
-                          <Gem className="mr-2 h-5 w-5" />
-                          Publier mon mot doux
-                        </>
-                      )}
-                    </Button>
-                  </form>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* LISTE DES MESSAGES */}
-        <div className="space-y-6">
-          <h2 className="text-3xl font-bold text-gray-900">Nos Mots Doux</h2>
-
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-[#C6A15B]" />
-            </div>
-          ) : entries.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center text-gray-500">
-                Soyez la première à signer le Livre d&apos;Or !
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {entries.map((entry) => (
-                <GuestbookCard key={entry.id} entry={entry} />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function GuestbookCard({ entry }: { entry: any }) {
-  const { hasHearted, heartsCount, toggleHeart, loading } = useHearts(entry.id)
-  const { user } = useAuth()
-
-  return (
-    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 border-gray-100 flex flex-col h-full">
-      {entry.customer_photo_url && (
-        <div className="relative h-64 w-full overflow-hidden">
-          <Image
-            src={entry.customer_photo_url}
-            alt={entry.customer_name}
-            fill
-            className="object-cover transition-transform duration-500 hover:scale-110"
-          />
-        </div>
-      )}
-      <CardContent className="p-6 flex flex-col flex-1">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <h3 className="font-bold text-lg">{entry.customer_name}</h3>
-            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px] h-5">
-              <CheckCircle2 className="h-3 w-3 mr-1" />
-              Achat Vérifié
-            </Badge>
-            {entry.is_ambassador && (
-              <Crown className="h-5 w-5 text-[#C6A15B] fill-[#C6A15B]" />
-            )}
-          </div>
-        </div>
-
-        <div className="flex gap-1 mb-3">
-          {[1, 2, 3, 4, 5].map((pepite) => (
-            <Gem
-              key={pepite}
-              className={`h-4 w-4 ${
-                pepite <= entry.rating ? 'fill-[#C6A15B] text-[#C6A15B]' : 'text-gray-300'
-              }`}
-            />
-          ))}
-        </div>
-
-        <p className="text-gray-700 text-sm mb-4 leading-relaxed line-clamp-4 flex-1 italic">&quot;{entry.message}&quot;</p>
-
-        {entry.admin_response && (
-          <div className="bg-[#C6A15B]/5 rounded-lg p-3 mb-4 border-l-4 border-[#C6A15B]">
-            <p className="text-xs font-semibold text-[#C6A15B] mb-1">Réponse d&apos;André</p>
-            <p className="text-sm text-gray-700">{entry.admin_response}</p>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between pt-4 border-t mt-auto">
-          <span className="text-[10px] text-gray-400 uppercase tracking-wider">
-            {new Date(entry.created_at).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
-          </span>
-          {user && (
-            <button
-              onClick={toggleHeart}
-              disabled={loading}
-              className="flex items-center gap-2 hover:scale-110 transition-transform p-1"
-            >
-              <Heart
-                className={`h-5 w-5 ${
-                  hasHearted ? 'fill-pink-500 text-pink-500' : 'text-gray-300'
-                }`}
-              />
-              <span className="text-sm font-bold text-gray-600">{heartsCount}</span>
-            </button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  )
 }
 </file>
 
@@ -86066,160 +85253,6 @@ export function ProductGallery({
 }
 </file>
 
-<file path="components/ProductVariationSelector.tsx">
-"use client";
-
-import { useEffect, useState } from "react";
-import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
-import { Check } from "lucide-react";
-
-interface Attribute {
-  name: string;
-  options: string[];
-  colorCodes?: string[]; 
-}
-
-interface Variation {
-  id: string;
-  attributes: { name: string; option: string }[];
-  stock_status: string;
-  stock_quantity?: number;
-}
-
-interface ProductVariationSelectorProps {
-  attributes: Attribute[];
-  variations: Variation[];
-  onVariationChange: (variation: any) => void;
-  initialSelectedAttributes?: Record<string, string>;
-}
-
-export function ProductVariationSelector({
-  attributes = [], // Protection : valeur par défaut si undefined
-  variations = [], // Protection : valeur par défaut si undefined
-  onVariationChange,
-  initialSelectedAttributes,
-}: ProductVariationSelectorProps) {
-  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>(
-    initialSelectedAttributes || {}
-  );
-
-  // Met à jour la sélection si les props initiales changent
-  useEffect(() => {
-    if (initialSelectedAttributes) {
-      setSelectedAttributes(initialSelectedAttributes);
-    }
-  }, [initialSelectedAttributes]);
-
-  const handleSelect = (attributeName: string, option: string) => {
-    const newAttributes = { ...selectedAttributes, [attributeName]: option };
-    setSelectedAttributes(newAttributes);
-
-    // Trouver la variation correspondante à la nouvelle combinaison
-    const matchingVariation = (variations || []).find((variation) =>
-      variation.attributes.every(
-        (attr) => newAttributes[attr.name] === attr.option
-      )
-    );
-
-    if (matchingVariation) {
-      onVariationChange(matchingVariation);
-    } else {
-      // Si la combinaison n'existe pas (ex: Taille L en Rose n'existe pas)
-      onVariationChange(null);
-    }
-  };
-
-  // Vérifie si une option est disponible (en stock dans au moins une combinaison)
-  const isOptionAvailable = (attributeName: string, option: string) => {
-    return (variations || []).some((v) =>
-      v.attributes.some((a) => a.name === attributeName && a.option === option)
-    );
-  };
-
-  // Si attributes n'est pas encore chargé, on affiche un état neutre ou rien
-  if (!attributes || attributes.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="space-y-6">
-      {attributes.map((attr) => {
-        // Détection : est-ce un attribut de type "Couleur" ?
-        const isColorAttribute = attr.name.toLowerCase().includes("couleur") || attr.name.toLowerCase().includes("color");
-
-        return (
-          <div key={attr.name} className="space-y-3">
-            <div className="flex justify-between items-center">
-              <Label className="text-sm font-bold text-gray-900 uppercase tracking-tight">
-                {attr.name} : <span className="font-normal text-gray-700 ml-2">{selectedAttributes[attr.name] || "Sélectionnez..."}</span>
-              </Label>
-            </div>
-            
-            <div className="flex flex-wrap gap-3">
-              {attr.options.map((option, index) => {
-                const isSelected = selectedAttributes[attr.name] === option;
-                const isAvailable = isOptionAvailable(attr.name, option);
-                // Récupération du code couleur s'il existe à cet index
-                const colorCode = isColorAttribute && attr.colorCodes ? attr.colorCodes[index] : null;
-
-                // --- RENDU PASTILLE COULEUR ---
-                if (isColorAttribute && colorCode) {
-                  return (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => handleSelect(attr.name, option)}
-                      disabled={!isAvailable}
-                      title={option}
-                      className={cn(
-                        "w-10 h-10 rounded-full border-2 transition-all duration-200 relative flex items-center justify-center outline-none",
-                        isSelected
-                          ? "border-[#b8933d] scale-110 ring-2 ring-[#b8933d] ring-offset-2" 
-                          : "border-gray-200 hover:border-[#b8933d] hover:scale-105",
-                        !isAvailable && "opacity-20 cursor-not-allowed grayscale"
-                      )}
-                      style={{ backgroundColor: colorCode }}
-                    >
-                      {isSelected && (
-                        <span className="text-white drop-shadow-md">
-                            <Check className="w-5 h-5" />
-                        </span>
-                      )}
-                      <span className="sr-only">{option}</span>
-                    </button>
-                  );
-                }
-
-                // --- RENDU BOUTON TEXTE STANDARD (Pour les Tailles, etc.) ---
-                return (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => handleSelect(attr.name, option)}
-                    disabled={!isAvailable}
-                    className={cn(
-                      "px-4 py-2 text-sm font-black border-2 rounded-xl transition-all duration-200 min-w-[3.5rem] uppercase tracking-tighter",
-                      isSelected
-                        ? "border-[#b8933d] bg-[#b8933d] text-white shadow-lg" 
-                        : isAvailable 
-                          ? "border-gray-100 bg-white text-gray-700 hover:border-[#b8933d] hover:text-[#b8933d]"
-                          : "opacity-30 cursor-not-allowed bg-gray-50 text-gray-400"
-                    )}
-                  >
-                    {option}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-</file>
-
 <file path="components/ui/select.tsx">
 'use client';
 
@@ -86784,619 +85817,6 @@ export default function AdminLayout({
 }
 </file>
 
-<file path="app/admin/products/new/page.tsx">
-"use client";
-
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { 
-  Save, 
-  ArrowLeft, 
-  RefreshCw, 
-  Weight, 
-  Calculator, 
-  Globe, 
-  Video, 
-  Heart, 
-  Package, 
-  Sparkles,
-  Plus,
-  Trash2,
-  AlertCircle,
-  ImageIcon,
-  Layers,
-  Settings2
-} from "lucide-react";
-import Link from "next/link";
-import RichTextEditor from "@/components/RichTextEditor";
-import ProductMediaGalleryManager from "@/components/ProductMediaGalleryManager";
-import HierarchicalCategorySelector from "@/components/HierarchicalCategorySelector";
-import GeneralAttributesSelector from "@/components/GeneralAttributesSelector";
-import ColorSwatchSelector from "@/components/ColorSwatchSelector";
-import VariationDetailsForm from "@/components/VariationDetailsForm";
-
-// --- IMPORT DU HOOK DE SAUVEGARDE ---
-import { useAutoSave } from "@/hooks/useAutoSave"; 
-
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  parent_id: string | null;
-  display_order: number | null;
-}
-
-interface Variation {
-  colorName: string;
-  colorId: string;
-  sku: string;
-  regular_price: number | null;
-  sale_price: number | null;
-  stock_quantity: number | null;
-  image_url: string | null;
-}
-
-export default function NewProductPage() {
-  const router = useRouter();
-  const [saving, setSaving] = useState(false);
-
-  // --- GÉNÉRATION DE L'ID ANTICIPÉ ---
-  const [newProductId] = useState(() => crypto.randomUUID());
-
-  // --- ÉTATS : INFORMATIONS GÉNÉRALES ---
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [sku, setSku] = useState("");
-  const [shortDescription, setShortDescription] = useState(""); // Phrase d'accroche (150 chars)
-  const [description, setDescription] = useState("");
-  const [andreReview, setAndreReview] = useState(""); // L'avis d'André
-  const [videoUrl, setVideoUrl] = useState(""); // Lien Vidéo
-
-  // --- ÉTATS : FINANCES & LOGISTIQUE ---
-  const [purchasePrice, setPurchasePrice] = useState<number>(0);
-  const [regularPrice, setRegularPrice] = useState<number>(0);
-  const [salePrice, setSalePrice] = useState<number | null>(null);
-  const [stockQuantity, setStockQuantity] = useState<number>(0);
-  const [virtualWeight, setVirtualWeight] = useState<number>(0);
-
-  // --- ÉTATS : CONFIGURATION & SEO ---
-  const [status, setStatus] = useState("draft");
-  const [isFeatured, setIsFeatured] = useState(false);
-  const [isDiamond, setIsDiamond] = useState(false);
-  const [hasVariations, setHasVariations] = useState(false);
-  const [showSizes, setShowSizes] = useState(false);
-  const [seoTitle, setSeoTitle] = useState("");
-  const [seoDescription, setSeoDescription] = useState("");
-
-  // --- ÉTATS : MÉDIAS & RELATIONS ---
-  const [mainImage, setMainImage] = useState<string>("");
-  const [galleryImages, setGalleryImages] = useState<string[]>([]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string[]>>({});
-  const [relatedProductIds, setRelatedProductIds] = useState<string[]>([]); 
-  const [allProducts, setAllProducts] = useState<{id: string, name: string}[]>([]);
-
-  // --- ÉTATS : COULEURS & VARIANTES (LOGIQUE CUMULATIVE) ---
-  const [activeFamilyView, setActiveFamilyView] = useState<string>("");
-  const [selectedNuances, setSelectedNuances] = useState<string[]>([]);
-  const [nuanceIds, setNuanceIds] = useState<Record<string, string>>({});
-  const [sizeRangeStart, setSizeRangeStart] = useState<number | null>(null);
-  const [sizeRangeEnd, setSizeRangeEnd] = useState<number | null>(null);
-  const [variations, setVariations] = useState<Variation[]>([]);
-
-  // --- INTÉGRATION AUTO-SAVE ---
-  const currentFormData = {
-    newProductId, name, slug, sku, shortDescription, description, andreReview, videoUrl,
-    purchasePrice, regularPrice, salePrice, stockQuantity, virtualWeight,
-    status, isFeatured, isDiamond, hasVariations, showSizes, seoTitle, seoDescription,
-    mainImage, galleryImages, selectedCategories, selectedAttributes, relatedProductIds,
-    selectedNuances, nuanceIds, sizeRangeStart, sizeRangeEnd, variations
-  };
-
-  const { clearSavedData } = useAutoSave(
-    `new_product_creation`,
-    currentFormData,
-    (savedData: any) => {
-        if (savedData.name !== undefined) setName(savedData.name);
-        if (savedData.slug !== undefined) setSlug(savedData.slug);
-        if (savedData.sku !== undefined) setSku(savedData.sku);
-        if (savedData.shortDescription !== undefined) setShortDescription(savedData.shortDescription);
-        if (savedData.description !== undefined) setDescription(savedData.description);
-        if (savedData.andreReview !== undefined) setAndreReview(savedData.andreReview);
-        if (savedData.videoUrl !== undefined) setVideoUrl(savedData.videoUrl);
-        if (savedData.purchasePrice !== undefined) setPurchasePrice(savedData.purchasePrice);
-        if (savedData.regularPrice !== undefined) setRegularPrice(savedData.regularPrice);
-        if (savedData.salePrice !== undefined) setSalePrice(savedData.salePrice);
-        if (savedData.stockQuantity !== undefined) setStockQuantity(savedData.stockQuantity);
-        if (savedData.virtualWeight !== undefined) setVirtualWeight(savedData.virtualWeight);
-        if (savedData.status !== undefined) setStatus(savedData.status);
-        if (savedData.isFeatured !== undefined) setIsFeatured(savedData.isFeatured);
-        if (savedData.isDiamond !== undefined) setIsDiamond(savedData.isDiamond);
-        if (savedData.hasVariations !== undefined) setHasVariations(savedData.hasVariations);
-        if (savedData.showSizes !== undefined) setShowSizes(savedData.showSizes);
-        if (savedData.seoTitle !== undefined) setSeoTitle(savedData.seoTitle);
-        if (savedData.seoDescription !== undefined) setSeoDescription(savedData.seoDescription);
-        if (savedData.mainImage !== undefined) setMainImage(savedData.mainImage);
-        if (savedData.galleryImages !== undefined) setGalleryImages(savedData.galleryImages);
-        if (savedData.selectedCategories !== undefined) setSelectedCategories(savedData.selectedCategories);
-        if (savedData.selectedAttributes !== undefined) setSelectedAttributes(savedData.selectedAttributes);
-        if (savedData.relatedProductIds !== undefined) setRelatedProductIds(savedData.relatedProductIds);
-        if (savedData.selectedNuances !== undefined) setSelectedNuances(savedData.selectedNuances);
-        if (savedData.nuanceIds !== undefined) setNuanceIds(savedData.nuanceIds);
-        if (savedData.variations !== undefined) setVariations(savedData.variations);
-    }
-  );
-
-  // --- LOGIQUE : GÉNÉRATION AUTOMATIQUE DU SLUG ---
-  useEffect(() => {
-    if (name) {
-      setSlug(name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""));
-    }
-  }, [name]);
-
-  // --- LOGIQUE : CHARGEMENT DES PRODUITS (CROSS-SELLING) ---
-  useEffect(() => {
-    const fetchProducts = async () => {
-      const { data } = await supabase.from("products").select("id, name").order("name");
-      if (data) setAllProducts(data);
-    };
-    fetchProducts();
-  }, []);
-
-  // --- LOGIQUE : CALCUL DE LA MARGE ---
-  const margin = useMemo(() => {
-    if (regularPrice > 0) {
-      return (((regularPrice - purchasePrice) / regularPrice) * 100).toFixed(1);
-    }
-    return "0";
-  }, [purchasePrice, regularPrice]);
-
-  // --- LOGIQUE : VARIATIONS (SANS ÉCRASEMENT) ---
-  useEffect(() => {
-    if (hasVariations) {
-      setVariations(prev => {
-        const kept = prev.filter(v => selectedNuances.includes(v.colorName));
-        const added = selectedNuances
-          .filter(name => !kept.some(v => v.colorName === name))
-          .map(colorName => ({
-            colorName, colorId: nuanceIds[colorName] || "", sku: "",
-            regular_price: regularPrice || null, sale_price: salePrice,
-            stock_quantity: stockQuantity || null, image_url: null,
-          }));
-        return [...kept, ...added];
-      });
-    }
-  }, [selectedNuances, nuanceIds, hasVariations]);
-
-  // --- HANDLERS ---
-  const handleFamilySelect = (name: string, id: string) => { setActiveFamilyView(name); };
-  const handleNuanceToggle = (name: string, id: string, selected: boolean) => {
-    if (selected) {
-      setSelectedNuances(prev => Array.from(new Set([...prev, name])));
-      setNuanceIds(prev => ({ ...prev, [name]: id }));
-    } else {
-      setSelectedNuances(prev => prev.filter(n => n !== name));
-    }
-  };
-
-  const handleSave = async () => {
-    if (!name || !slug) { toast.error("Le nom et le slug sont requis"); return; }
-    setSaving(true);
-    try {
-      const finalAttributes = { ...selectedAttributes };
-      if (hasVariations) finalAttributes['Couleur'] = selectedNuances;
-
-      const { data: newProd, error: pErr } = await supabase.from("products").insert({
-        id: newProductId, name: name.trim(), slug: slug.trim(), sku: sku.trim() || null,
-        short_description: shortDescription.substring(0, 150), description, andre_review: andreReview,
-        video_url: videoUrl, purchase_price: purchasePrice, regular_price: regularPrice,
-        sale_price: salePrice, stock_quantity: stockQuantity, virtual_weight: virtualWeight,
-        status, is_featured: isFeatured, is_diamond: isDiamond, has_variations: hasVariations,
-        seo_title: seoTitle || name, seo_description: seoDescription || shortDescription,
-        image_url: mainImage, gallery_images: galleryImages, attributes: finalAttributes,
-        related_product_ids: relatedProductIds,
-        size_range_start: showSizes ? sizeRangeStart : null,
-        size_range_end: showSizes ? sizeRangeEnd : null
-      }).select().single();
-
-      if (pErr) throw pErr;
-
-      if (selectedCategories.length > 0) {
-        const mappings = selectedCategories.map((id, i) => ({ product_id: newProductId, category_id: id, is_primary: i === 0, display_order: i }));
-        await supabase.from("product_category_mapping").insert(mappings);
-      }
-
-      if (hasVariations && variations.length > 0) {
-        const toInsert = variations.map(v => ({
-          product_id: newProductId, sku: v.sku, attributes: { "Couleur": v.colorName },
-          regular_price: v.regular_price || regularPrice, sale_price: v.sale_price || salePrice,
-          stock_quantity: v.stock_quantity || stockQuantity, image_url: v.image_url || mainImage,
-          stock_status: (v.stock_quantity || 0) > 0 ? "instock" : "outofstock", is_active: true,
-        }));
-        await supabase.from("product_variations").insert(toInsert);
-      }
-
-      clearSavedData();
-      toast.success("Nouvelle pépite créée !");
-      router.push("/admin/products");
-    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50/50 pb-24">
-      {/* HEADER FIXE */}
-      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/admin/products"><Button variant="ghost" size="icon" className="rounded-full"><ArrowLeft className="h-5 w-5"/></Button></Link>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">Nouveau Produit</h1>
-              <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1 w-fit mt-1"><RefreshCw className="w-2.5 h-2.5" /> Auto-save actif</span>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <Link href="/admin/products"><Button variant="outline">Annuler</Button></Link>
-            <Button onClick={handleSave} disabled={saving} className="bg-[#d4af37] hover:bg-[#c19b2f] text-white px-8 shadow-lg shadow-amber-200">
-              {saving ? "Création..." : <><Save className="w-4 h-4 mr-2" /> Créer la pépite</>}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          
-          {/* 1. L'ÂME DU PRODUIT */}
-          <Card className="shadow-sm border-none bg-white">
-            <CardHeader className="border-b bg-gray-50/50">
-              <div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-[#C6A15B]"/><CardTitle className="text-lg">L&apos;Âme du Produit</CardTitle></div>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2"><Label>Nom de la pépite *</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Bougie Ambre & Soja" /></div>
-                <div className="space-y-2"><Label>Slug (URL)</Label><Input value={slug} onChange={(e) => setSlug(e.target.value)} className="bg-gray-50 font-mono text-xs" /></div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between"><Label>La &quot;Phrase d&apos;Accroche&quot;</Label><span className="text-[10px] text-gray-400">{shortDescription.length}/150</span></div>
-                <Input value={shortDescription} onChange={(e) => setShortDescription(e.target.value.substring(0, 150))} placeholder="Le goût authentique..." className="italic" />
-              </div>
-              <div className="space-y-2"><Label>Histoire du produit (Description longue)</Label><RichTextEditor value={description} onChange={setDescription} /></div>
-              <div className="p-5 bg-amber-50 rounded-2xl border border-amber-100 space-y-3">
-                <Label className="text-[#b8933d] font-bold flex items-center gap-2 uppercase tracking-tighter"><Heart className="h-4 w-4 fill-[#b8933d]" /> L&apos;avis d&apos;André</Label>
-                <Textarea value={andreReview} onChange={(e) => setAndreReview(e.target.value)} placeholder="Pourquoi avez-vous craqué pour ce produit ?" rows={4} className="bg-white border-none italic shadow-inner" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 2. VISUELS & VIDÉO */}
-          <Card className="shadow-sm border-none bg-white">
-            <CardHeader className="border-b bg-gray-50/50">
-              <div className="flex items-center gap-2"><Video className="h-5 w-5 text-gray-800" /><CardTitle className="text-lg">Visuels & Démo</CardTitle></div>
-            </CardHeader>
-            <CardContent className="p-6 space-y-8">
-              <ProductMediaGalleryManager mainImage={mainImage} galleryImages={galleryImages} onMainImageChange={setMainImage} onGalleryImagesChange={setGalleryImages} />
-              <Separator />
-              <div className="space-y-4">
-                <div className="flex items-center gap-2"><Video className="h-5 w-5 text-red-500" /><Label>Lien Vidéo (Instagram Reel / Live)</Label></div>
-                <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="Lien direct pour remplacer la photo principale..." className="border-red-100 focus:border-red-400" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 3. LE CROSS-SELLING */}
-          <Card className="shadow-sm border-none bg-white">
-            <CardHeader className="border-b bg-gray-50/50"><CardTitle className="text-lg flex items-center gap-2"><Layers className="h-5 w-5 text-blue-500" /> Ventes Suggérées</CardTitle></CardHeader>
-            <CardContent className="p-6 space-y-4">
-              <div className="flex flex-wrap gap-2">
-                {relatedProductIds.map(id => (
-                  <Badge key={id} variant="secondary" className="px-3 py-1 gap-2 bg-blue-50 text-blue-700 border-blue-100">
-                    {allProducts.find(p => p.id === id)?.name}
-                    <Trash2 className="h-3 w-3 cursor-pointer hover:text-red-500" onClick={() => setRelatedProductIds(relatedProductIds.filter(v => v !== id))} />
-                  </Badge>
-                ))}
-              </div>
-              <Select onValueChange={(id) => id && !relatedProductIds.includes(id) && relatedProductIds.length < 3 && setRelatedProductIds([...relatedProductIds, id])}>
-                <SelectTrigger className="bg-white"><SelectValue placeholder="Ajouter une suggestion d'André..." /></SelectTrigger>
-                <SelectContent>{allProducts.map(p => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* COLONNE DROITE */}
-        <div className="space-y-8">
-          <Card className="shadow-lg border-2 border-[#d4af37]/30 bg-amber-50/20 overflow-hidden">
-            <CardHeader className="bg-[#d4af37]/10 flex flex-row items-center justify-between pb-4">
-              <CardTitle className="text-lg text-[#b8933d] flex items-center gap-2"><Calculator className="h-5 w-5"/> Marge</CardTitle>
-              <Badge className="bg-[#d4af37] text-white border-none">{margin}%</Badge>
-            </CardHeader>
-            <CardContent className="p-6 space-y-4 bg-white/80">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Achat (€)</Label><Input type="number" step="0.01" value={purchasePrice} onChange={(e) => setPurchasePrice(parseFloat(e.target.value) || 0)} className="font-mono" /></div>
-                <div className="space-y-1"><Label className="text-xs font-bold text-[#b8933d] uppercase">Vente (€) *</Label><Input type="number" step="0.01" value={regularPrice} onChange={(e) => setRegularPrice(parseFloat(e.target.value) || 0)} className="font-bold font-mono border-amber-200" /></div>
-              </div>
-              <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Promo (€)</Label><Input type="number" step="0.01" value={salePrice || ""} onChange={(e) => setSalePrice(e.target.value ? parseFloat(e.target.value) : null)} className="text-red-600 font-mono border-red-100" /></div>
-              <Separator />
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Stock</Label><Input type="number" value={stockQuantity} onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)} /></div>
-                <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Poids (g)</Label><Input type="number" value={virtualWeight} onChange={(e) => setVirtualWeight(parseInt(e.target.value) || 0)} /></div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm border-none bg-white">
-            <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="text-lg flex items-center gap-2"><Globe className="h-5 w-5 text-green-600" /> SEO</CardTitle></CardHeader>
-            <CardContent className="p-6 space-y-4">
-              <div><Label>Titre Google</Label><Input value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} placeholder={name} /></div>
-              <div><Label>Description Google</Label><Textarea value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} placeholder={shortDescription} rows={3} /></div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm border-none bg-white">
-            <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="text-lg flex items-center gap-2 text-gray-600"><Settings2 className="h-5 w-5"/> Options</CardTitle></CardHeader>
-            <CardContent className="p-6 space-y-5">
-              <div className="flex items-center justify-between p-3 border rounded-xl bg-blue-50/30">
-                <div className="space-y-0.5"><Label className="text-blue-900">Variantes ?</Label><p className="text-[10px] text-blue-500 italic">Couleurs & Stocks multiples</p></div>
-                <Switch checked={hasVariations} onCheckedChange={setHasVariations} />
-              </div>
-              <div className="flex items-center justify-between p-3 border rounded-xl bg-purple-50/30 opacity-60">
-                <div className="space-y-0.5"><Label className="text-purple-900">Module Tailles ?</Label><p className="text-[10px] text-purple-500 italic">Désactivé par défaut</p></div>
-                <Switch checked={showSizes} onCheckedChange={setShowSizes} />
-              </div>
-              <div className="space-y-4 pt-2">
-                <div className="flex items-center gap-2"><Checkbox id="f" checked={isFeatured} onCheckedChange={(c) => setIsFeatured(!!c)}/><Label htmlFor="f">⭐ Mettre en Vedette</Label></div>
-                <div className="flex items-center gap-2"><Checkbox id="d" checked={isDiamond} onCheckedChange={(c) => setIsDiamond(!!c)}/><Label htmlFor="d">💎 Produit Diamant</Label></div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 mt-8 space-y-8">
-        <GeneralAttributesSelector selectedAttributes={selectedAttributes} onAttributesChange={setSelectedAttributes} />
-        <HierarchicalCategorySelector selectedCategories={selectedCategories} onCategoriesChange={setSelectedCategories} />
-        
-        {hasVariations && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <ColorSwatchSelector selectedMainColor={activeFamilyView} selectedSecondaryColors={selectedNuances} onMainColorSelect={setActiveFamilyView} onSecondaryColorToggle={handleNuanceToggle} showSecondaryColors={true} />
-            <VariationDetailsForm selectedSecondaryColors={selectedNuances} secondaryColorIds={nuanceIds} variations={variations} onVariationUpdate={(name, field, val) => {
-                setVariations(prev => {
-                  const idx = prev.findIndex(v => v.colorName === name);
-                  const newVars = [...prev];
-                  newVars[idx] = { ...newVars[idx], [field]: val };
-                  return newVars;
-                });
-            }} defaultRegularPrice={regularPrice} defaultSalePrice={salePrice} defaultStock={stockQuantity} />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="app/categorie/[slug]/page.tsx">
-'use client';
-
-import { useEffect, useState, useMemo } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
-import { ArrowLeft, SlidersHorizontal, Filter, Sparkles, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { ProductCard } from '@/components/ProductCard';
-import { ProductFilters, FilterState } from '@/components/ProductFilters';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-
-// --- COMPOSANT SIDEBAR DE FILTRES ---
-const FilterSidebarContent = ({ 
-  priceRange, setPriceRange, maxPrice, activeFilters, setActiveFilters, availableTerms, categorySlug 
-}: any) => (
-  <div className="space-y-6">
-    <div>
-      <h3 className="font-bold text-sm text-gray-900 mb-4 flex items-center gap-2 uppercase tracking-tight">
-        <span className="bg-[#D4AF37] w-1 h-4 rounded-full"></span> Prix maximum
-      </h3>
-      <div className="px-2">
-        <Slider
-          defaultValue={[0, maxPrice]}
-          max={maxPrice}
-          step={1}
-          value={priceRange}
-          onValueChange={setPriceRange}
-          className="mt-6"
-        />
-        <div className="flex items-center justify-between mt-4">
-          <span className="text-xs font-black text-gray-900">{priceRange[0]}€</span>
-          <span className="text-xs font-black text-gray-900">{priceRange[1]}€</span>
-        </div>
-      </div>
-    </div>
-
-    <Separator />
-
-    <ProductFilters 
-      categorySlug={categorySlug}
-      activeFilters={activeFilters} 
-      onFiltersChange={setActiveFilters}
-      availableTerms={availableTerms}
-    />
-  </div>
-);
-
-export default function CategoryPage() {
-  const { slug } = useParams();
-  const [category, setCategory] = useState<any>(null);
-  const [products, setProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  const [priceRange, setPriceRange] = useState([0, 2000]);
-  const [maxPrice, setMaxPrice] = useState(2000);
-  
-  // État initial des filtres
-  const [activeFilters, setActiveFilters] = useState<FilterState>({
-    mySize: false, sizes: [], colors: [], comfort: [], coupe: [], live: false, nouveautes: false
-  });
-
-  useEffect(() => {
-    async function fetchCategoryData() {
-      if (!slug) return;
-      setLoading(true);
-      try {
-        const { data: cat, error: catErr } = await supabase.from('categories').select('*').eq('slug', slug).single();
-        if (catErr || !cat) throw catErr;
-        setCategory(cat);
-
-        const { data: mappingData } = await supabase.from('product_category_mapping').select('product_id').eq('category_id', cat.id);
-        const productIds = (mappingData || []).map(m => m.product_id);
-
-        if (productIds.length > 0) {
-          const { data: prods, error: prodErr } = await supabase.from('products').select('*').in('id', productIds).eq('status', 'publish');
-          if (prodErr) throw prodErr;
-
-          if (prods) {
-            setProducts(prods);
-            const highest = Math.max(...prods.map(p => p.sale_price || p.regular_price || 0));
-            setMaxPrice(highest > 0 ? highest : 500);
-            setPriceRange([0, highest > 0 ? highest : 500]);
-          }
-        } else {
-          setProducts([]);
-        }
-      } catch (error) {
-        console.error('Erreur chargement produits:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchCategoryData();
-  }, [slug]);
-
-  // --- LOGIQUE DE FILTRAGE PAR ID (UUID) ---
-  const filteredProducts = useMemo(() => {
-    return products.filter(p => {
-      // 1. Filtre Prix
-      const price = p.sale_price || p.regular_price || 0;
-      if (price < priceRange[0] || price > priceRange[1]) return false;
-
-      // 2. Filtre Live
-      if (activeFilters.live && !p.video_url) return false;
-
-      // 3. Attributs Dynamiques (Utilisation des UUID du JSON)
-      const pAttrs = p.attributes || {};
-      
-      // On ne filtre que sur les clés qui ont des valeurs sélectionnées
-      for (const [filterKey, selectedValues] of Object.entries(activeFilters)) {
-        // On ignore les filtres globaux
-        if (['live', 'nouveautes', 'mySize', 'sizes', 'colors', 'comfort', 'coupe'].includes(filterKey)) continue;
-        
-        const values = selectedValues as string[];
-        if (values.length === 0) continue;
-
-        // On cherche la clé (UUID) directement dans les attributs du produit
-        const productData = pAttrs[filterKey];
-        
-        if (!productData) return false; // Le produit n'a pas cet ID d'attribut
-
-        const attrArray = Array.isArray(productData) ? productData : [productData];
-        const hasMatch = values.some(val => attrArray.includes(val));
-        
-        if (!hasMatch) return false;
-      }
-
-      return true;
-    });
-  }, [products, priceRange, activeFilters]);
-
-  const availableTerms = useMemo(() => {
-    const terms = new Set<string>();
-    products.forEach(p => {
-      const a = p.attributes || {};
-      Object.values(a).forEach((val: any) => {
-        if (Array.isArray(val)) val.forEach(v => terms.add(String(v)));
-        else if (val) terms.add(String(val));
-      });
-    });
-    return terms;
-  }, [products]);
-
-  if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#FDFCFB]">
-      <Loader2 className="h-10 w-10 animate-spin text-[#D4AF37]" />
-      <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Chargement de la collection...</p>
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-[#FDFCFB] pb-20">
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 py-12 md:py-16">
-          <Link href="/" className="inline-flex items-center gap-2 text-[10px] font-black text-gray-400 hover:text-[#D4AF37] mb-6 uppercase tracking-[0.2em] transition-all">
-            <ArrowLeft className="h-3 w-3" /> Retour Accueil
-          </Link>
-          <div className="space-y-4">
-            <Badge className="bg-amber-50 text-[#D4AF37] border-amber-100 px-4 py-1 font-black text-[10px] uppercase tracking-widest">
-              {filteredProducts.length} pépites disponibles
-            </Badge>
-            <h1 className="text-3xl md:text-5xl font-black text-gray-900 uppercase tracking-tight">
-              {category?.name}
-            </h1>
-            <p className="text-gray-500 max-w-2xl text-base md:text-lg font-medium leading-relaxed">
-              {category?.description}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 mt-10">
-        <div className="flex flex-col lg:grid lg:grid-cols-4 gap-12">
-          <aside className="hidden lg:block space-y-8 bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm h-fit sticky top-28">
-            <FilterSidebarContent 
-              categorySlug={slug} priceRange={priceRange} setPriceRange={setPriceRange} maxPrice={maxPrice}
-              activeFilters={activeFilters} setActiveFilters={setActiveFilters} availableTerms={availableTerms}
-            />
-          </aside>
-
-          <div className="lg:col-span-3 space-y-8">
-            {filteredProducts.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 animate-in fade-in duration-700">
-                {filteredProducts.map((p) => (
-                  <ProductCard key={p.id} product={p} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-32 bg-white rounded-[2.5rem] border-2 border-dashed border-gray-100">
-                <Sparkles className="h-12 w-12 text-gray-200 mx-auto mb-6" />
-                <h3 className="text-xl font-black text-gray-900 uppercase">Aucune pépite ne correspond</h3>
-                <p className="text-gray-400 mt-2 mb-10 text-sm font-medium">Réinitialisez les filtres pour voir les produits.</p>
-                <Button onClick={() => setActiveFilters({ mySize: false, sizes: [], colors: [], comfort: [], coupe: [], live: false, nouveautes: false })} className="bg-black text-white rounded-2xl h-12 px-10 font-black uppercase text-[10px] tracking-widest hover:bg-[#D4AF37] transition-all">
-                  EFFACER TOUT
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-</file>
-
 <file path="app/globals.css">
 @tailwind base;
 @tailwind components;
@@ -87594,6 +86014,531 @@ export default function CategoryPage() {
 }
 </file>
 
+<file path="app/livre-dor/page.tsx">
+'use client'
+
+import { useState } from 'react'
+import { useGuestbook, useAmbassador, useHearts, canUserReview, submitGuestbookEntry } from '@/hooks/use-guestbook'
+import { useAuth } from '@/context/AuthContext'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
+import { Gem, Heart, Loader2, Crown, Upload, CheckCircle2, BookHeart, Sparkles, Coins, Camera, MessageSquare, Info } from 'lucide-react'
+import { toast } from 'sonner'
+import Image from 'next/image'
+import PageHeader from '@/components/PageHeader'
+import Link from 'next/link'
+
+export default function LivreDorPage() {
+  const { entries, loading, refetch } = useGuestbook(50, 'approved')
+  const { currentAmbassador, loading: ambassadorLoading } = useAmbassador()
+  const { user } = useAuth()
+  const [showForm, setShowForm] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [formData, setFormData] = useState({
+    order_number: '',
+    rating: 5,
+    message: '',
+    customer_name: '',
+    customer_photo_url: '',
+    gdpr_consent: false
+  })
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Veuillez sélectionner une image')
+      return
+    }
+
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/storage/upload', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) throw new Error('Upload failed')
+
+      const { url } = await response.json()
+      setFormData(prev => ({ ...prev, customer_photo_url: url }))
+      toast.success('Photo uploadée avec succès')
+    } catch (error) {
+      console.error('Upload error:', error)
+      toast.error('Erreur lors de l\'upload de la photo')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!user) {
+      toast.error('Vous devez être connecté(e) pour signer le Livre d\'Or')
+      return
+    }
+
+    if (!formData.gdpr_consent) {
+      toast.error('Veuillez accepter les conditions de publication')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const canReview = await canUserReview(user.id, formData.order_number)
+      if (!canReview) {
+        toast.error('Vous avez déjà signé le Livre d\'Or pour cette commande')
+        return
+      }
+
+      await submitGuestbookEntry({
+        order_number: formData.order_number,
+        rating: formData.rating,
+        message: formData.message,
+        customer_name: formData.customer_name,
+        customer_photo_url: formData.customer_photo_url
+      })
+
+      toast.success('Merci pour votre mot doux !', {
+        description: "Il sera publié après validation par André. Votre cagnotte de 0,20 € s'activera à ce moment-là !"
+      })
+
+      setFormData({
+        order_number: '',
+        rating: 5,
+        message: '',
+        customer_name: '',
+        customer_photo_url: '',
+        gdpr_consent: false
+      })
+      setShowForm(false)
+      refetch()
+    } catch (error) {
+      console.error('Submit error:', error)
+      toast.error('Erreur lors de l\'envoi')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const renderPepites = (rating: number, interactive = false, onClick?: (r: number) => void) => {
+    return (
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((pepite) => (
+          <button
+            key={pepite}
+            type={interactive ? "button" : undefined}
+            onClick={() => interactive && onClick && onClick(pepite)}
+            disabled={!interactive}
+            className={interactive ? "focus:outline-none cursor-pointer" : undefined}
+          >
+            <Gem
+              className={`h-5 w-5 ${
+                pepite <= rating ? 'fill-[#C6A15B] text-[#C6A15B]' : 'text-gray-300'
+              } ${interactive ? 'hover:text-[#C6A15B]/50' : ''}`}
+            />
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-12">
+      <div className="max-w-6xl mx-auto">
+        <PageHeader
+          icon={BookHeart}
+          title="Le Livre d'Or de la KAVERN"
+          description="Vos trouvailles, vos mots !"
+        />
+
+        {/* SECTION INTRODUCTION PERSONNALISÉE (Mise à jour) */}
+        <div className="bg-white rounded-3xl p-8 md:p-12 mb-12 shadow-sm border border-gray-100">
+          <div className="max-w-4xl mx-auto space-y-10">
+            
+            {/* Intro texte */}
+            <div className="text-center space-y-5">
+              <p className="text-xl md:text-2xl font-medium text-gray-800 leading-relaxed">
+                La KAVERN, c'est bien plus qu'une simple boutique en ligne, c'est <strong className="text-[#C6A15B]">notre communauté</strong>.
+              </p>
+              <p className="text-gray-600 text-lg leading-relaxed">
+                Vous venez de recevoir votre fameux "Colis Ouvert" ? Vous avez allumé votre première bougie artisanale, accroché vos nouveaux rideaux cocooning ou dévoré une de nos terrines ? <strong className="text-gray-900 font-bold">C'est ici que l'on se raconte tout !</strong>
+              </p>
+              <p className="text-gray-600 leading-relaxed">
+                Votre satisfaction est ma plus belle récompense, et vos retours aident les nouvelles venues à sauter le pas pour nous rejoindre en Live.
+              </p>
+            </div>
+
+            {/* BOX RÉCOMPENSE 0.20€ */}
+            <div className="bg-gradient-to-br from-amber-50 to-white p-6 md:p-8 rounded-3xl border-2 border-amber-100 shadow-sm relative overflow-hidden">
+              <Sparkles className="absolute -top-4 -right-4 h-24 w-24 text-amber-500/10 rotate-12" />
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 relative z-10 text-center sm:text-left">
+                <div className="bg-white p-4 rounded-full shadow-md shrink-0 border border-amber-50">
+                  <Coins className="h-8 w-8 text-amber-500" />
+                </div>
+                <div className="space-y-3">
+                  <h3 className="text-xl md:text-2xl font-black text-amber-900">Votre avis vaut de l'or : 0,20 € offerts !</h3>
+                  <p className="text-amber-800 leading-relaxed">
+                    Parce que votre temps est précieux et que vos petits mots m'aident à faire grandir le Concept Store, j'ai décidé de vous récompenser. 
+                    Pour <strong className="font-bold text-amber-950">chaque avis laissé sur ce Livre d'Or</strong>, vous recevez <strong className="font-black text-amber-600 bg-amber-100/80 px-2 py-1 rounded-md">0,20 € cagnottés</strong> directement sur votre compte client !
+                  </p>
+                  <p className="text-sm text-amber-700 italic font-medium">
+                    (Une petite somme qui se cumule vite et que vous pourrez déduire lors de l'expédition de votre prochaine malle aux trésors).
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* OPTIONS DE PUBLICATION */}
+            <div className="space-y-6 pt-4">
+              <h3 className="text-2xl font-bold text-center text-gray-900">Avec ou sans photo ? C'est vous qui décidez !</h3>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100 flex flex-col items-center md:items-start text-center md:text-left gap-4">
+                  <div className="bg-blue-100 p-3 rounded-full text-blue-600">
+                    <MessageSquare className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-lg text-blue-900 mb-2">Le petit mot rapide</h4>
+                    <p className="text-blue-800/80 leading-relaxed">Laissez simplement un petit texte pour nous dire ce que vous avez pensé de votre commande, de l'emballage ou de l'ambiance de nos Lives.</p>
+                  </div>
+                </div>
+
+                <div className="bg-pink-50/50 p-6 rounded-2xl border border-pink-200 flex flex-col items-center md:items-start text-center md:text-left gap-4 relative overflow-hidden shadow-sm">
+                  <div className="absolute top-4 right-4 bg-pink-500 text-white text-[10px] font-black uppercase tracking-widest py-1 px-3 rounded-full shadow-sm">
+                    Ce qu'on préfère !
+                  </div>
+                  <div className="bg-pink-100 p-3 rounded-full text-pink-600">
+                    <Camera className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-lg text-pink-900 mb-2">La version Paparazzi</h4>
+                    <p className="text-pink-800/80 leading-relaxed">Prenez une belle photo de votre colis à l'ouverture, ou de votre produit mis en situation chez vous (votre plaid sur le canapé, votre bougie sur la table basse...). C'est tellement inspirant pour les autres !</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* CALL TO ACTION */}
+            <div className="text-center space-y-8 pt-8 border-t border-gray-100">
+              <div>
+                <h3 className="text-3xl font-black text-gray-900 uppercase tracking-tight">À vos claviers !</h3>
+                <p className="text-gray-600 mt-2 text-lg">C'est à vous de jouer. Racontez-nous votre expérience KAVERN juste en dessous !</p>
+              </div>
+
+              <Button
+                onClick={() => setShowForm(!showForm)}
+                size="lg"
+                className="bg-[#C6A15B] hover:bg-[#B59149] text-white px-8 md:px-12 h-16 rounded-full shadow-xl shadow-amber-500/20 text-lg font-bold hover:scale-105 transition-all duration-300"
+              >
+                <Coins className="mr-3 h-6 w-6" />
+                Laisser un avis et cagnotter 0,20 €
+              </Button>
+
+              <div className="flex items-start gap-3 bg-gray-50 p-5 rounded-2xl text-left max-w-2xl mx-auto border border-gray-200">
+                <Info className="h-5 w-5 text-gray-400 shrink-0 mt-0.5" />
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  <strong className="text-gray-900">Note :</strong> Pour préserver la bienveillance de notre communauté, tous les petits mots sont lus et validés par André avant d'être publiés. Votre cagnotte de 0,20 € s'activera dès la publication de votre avis !
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* SECTION AMBASSADRICE */}
+        {!ambassadorLoading && currentAmbassador && currentAmbassador.entry && (
+          <Card className="mb-12 border-4 border-[#C6A15B] shadow-xl">
+            <CardContent className="p-8">
+              <div className="flex items-center gap-4 mb-6">
+                <Crown className="h-12 w-12 text-[#C6A15B] fill-[#C6A15B]" />
+                <div>
+                  <h2 className="text-2xl font-bold">Ambassadrice de la Semaine</h2>
+                  <p className="text-gray-600">Cette semaine, on met à l&apos;honneur...</p>
+                </div>
+              </div>
+              <div className="grid md:grid-cols-2 gap-8">
+                {currentAmbassador.entry.customer_photo_url && (
+                  <div className="relative h-96 rounded-xl overflow-hidden shadow-inner">
+                    <Image
+                      src={currentAmbassador.entry.customer_photo_url}
+                      alt={currentAmbassador.entry.customer_name}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                )}
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <h3 className="text-2xl font-bold">{currentAmbassador.entry.customer_name}</h3>
+                    <Crown className="h-6 w-6 text-[#C6A15B] fill-[#C6A15B]" />
+                  </div>
+                  {renderPepites(currentAmbassador.entry.rating)}
+                  <p className="text-gray-700 mt-4 text-lg italic leading-relaxed">&quot;{currentAmbassador.entry.message}&quot;</p>
+                  <div className="flex items-center gap-4 mt-6">
+                    <Heart className="h-6 w-6 text-pink-500 fill-pink-500" />
+                    <span className="font-bold text-xl">{currentAmbassador.hearts_count} cœurs</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* FORMULAIRE DE SIGNATURE */}
+        {showForm && (
+          <Card className="mb-12 animate-in fade-in slide-in-from-top-4 border-2 border-[#C6A15B]/20">
+            <CardContent className="p-8">
+              {!user ? (
+                 <div className="text-center py-8">
+                   <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Coins className="h-8 w-8 text-[#C6A15B]" />
+                   </div>
+                   <h3 className="text-xl font-bold text-gray-900 mb-2">Connectez-vous pour récupérer vos 0,20 €</h3>
+                   <p className="text-gray-600 mb-6">Nous avons besoin de savoir à qui envoyer la récompense !</p>
+                   <Button asChild variant="outline" className="border-[#C6A15B] text-[#C6A15B] hover:bg-amber-50">
+                     <Link href="/auth/login">Se connecter ou créer un compte</Link>
+                   </Button>
+                 </div>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                    <MessageSquare className="h-6 w-6 text-[#C6A15B]" />
+                    Laissez votre mot doux
+                  </h2>
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor="customer_name">Votre prénom</Label>
+                        <Input
+                          id="customer_name"
+                          value={formData.customer_name}
+                          onChange={(e) => setFormData(prev => ({ ...prev, customer_name: e.target.value }))}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="order_number">Numéro de commande (optionnel)</Label>
+                        <Input
+                          id="order_number"
+                          value={formData.order_number}
+                          onChange={(e) => setFormData(prev => ({ ...prev, order_number: e.target.value }))}
+                          placeholder="#12345"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label>Note en Pépites</Label>
+                      <div className="mt-2">
+                        {renderPepites(formData.rating, true, (rating) => setFormData(prev => ({ ...prev, rating })))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="message">Votre message (max 500 caractères)</Label>
+                      <Textarea
+                        id="message"
+                        value={formData.message}
+                        onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value.slice(0, 500) }))}
+                        placeholder="Racontez-nous votre ouverture de colis, ce que vous pensez de la qualité..."
+                        rows={5}
+                        required
+                        className="resize-none"
+                      />
+                      <p className="text-sm text-gray-500 mt-1 text-right">{formData.message.length}/500 caractères</p>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="photo">Ajouter une photo (Recommandé !)</Label>
+                      <div className="mt-2">
+                        {formData.customer_photo_url ? (
+                          <div className="relative w-40 h-40 rounded-xl overflow-hidden border-2 border-[#C6A15B] shadow-sm">
+                            <Image src={formData.customer_photo_url} alt="Preview" fill className="object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => setFormData(prev => ({ ...prev, customer_photo_url: '' }))}
+                              className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-lg transition-colors"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="border-2 border-dashed border-gray-300 hover:border-[#C6A15B] transition-colors rounded-xl p-8 text-center bg-gray-50 group cursor-pointer relative">
+                            <Input
+                              id="photo-upload"
+                              type="file"
+                              accept="image/*"
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              onChange={handlePhotoUpload}
+                              disabled={uploading}
+                            />
+                            <Upload className="h-10 w-10 mx-auto mb-3 text-gray-400 group-hover:text-[#C6A15B] transition-colors" />
+                            <p className="text-[#C6A15B] font-semibold">
+                              {uploading ? 'Upload en cours...' : 'Cliquez ici pour ajouter votre plus belle photo'}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-2">Format image uniquement (JPG, PNG)</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3 bg-gray-50 p-4 rounded-xl">
+                      <Checkbox
+                        id="gdpr"
+                        checked={formData.gdpr_consent}
+                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, gdpr_consent: checked as boolean }))}
+                        className="mt-1"
+                      />
+                      <Label htmlFor="gdpr" className="text-sm cursor-pointer leading-relaxed text-gray-700">
+                        J&apos;accepte que mon message et ma photo soient publiés sur le Livre d&apos;Or de la boutique. J'ai compris que ma cagnotte de 0,20 € sera créditée après validation par André.
+                      </Label>
+                    </div>
+
+                    <Button type="submit" disabled={submitting} className="w-full bg-[#C6A15B] hover:bg-[#B59149] h-14 text-lg font-bold shadow-lg" size="lg">
+                      {submitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          Envoi en cours...
+                        </>
+                      ) : (
+                        <>
+                          Envoyer et gagner 0,20 €
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* LISTE DES MESSAGES */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-3 mb-8">
+            <h2 className="text-3xl font-black text-gray-900">Les Mots Doux de la KAVERN</h2>
+            <Badge className="bg-[#C6A15B] text-white hover:bg-[#C6A15B]">{entries.length}</Badge>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-[#C6A15B]" />
+            </div>
+          ) : entries.length === 0 ? (
+            <Card className="border-dashed border-2">
+              <CardContent className="py-16 text-center">
+                <MessageSquare className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                <p className="text-xl font-bold text-gray-900 mb-2">Le Livre d'Or est encore vierge !</p>
+                <p className="text-gray-500">Soyez la première personne à partager votre expérience et cagnottez 0,20 €.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {entries.map((entry) => (
+                <GuestbookCard key={entry.id} entry={entry} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function GuestbookCard({ entry }: { entry: any }) {
+  const { hasHearted, heartsCount, toggleHeart, loading } = useHearts(entry.id)
+  const { user } = useAuth()
+
+  return (
+    <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 border-gray-100 flex flex-col h-full rounded-2xl group">
+      {entry.customer_photo_url && (
+        <div className="relative h-64 w-full overflow-hidden bg-gray-50">
+          <Image
+            src={entry.customer_photo_url}
+            alt={entry.customer_name}
+            fill
+            className="object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+        </div>
+      )}
+      <CardContent className="p-6 flex flex-col flex-1 bg-white">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-lg text-gray-900">{entry.customer_name}</h3>
+            {entry.order_number && (
+               <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px] h-5 px-1.5">
+                 <CheckCircle2 className="h-3 w-3 mr-1" />
+                 Achat Vérifié
+               </Badge>
+            )}
+            {entry.is_ambassador && (
+              <Crown className="h-5 w-5 text-[#C6A15B] fill-[#C6A15B]" title="Ambassadrice" />
+            )}
+          </div>
+        </div>
+
+        <div className="flex gap-1 mb-4">
+          {[1, 2, 3, 4, 5].map((pepite) => (
+            <Gem
+              key={pepite}
+              className={`h-4 w-4 ${
+                pepite <= entry.rating ? 'fill-[#C6A15B] text-[#C6A15B]' : 'text-gray-200'
+              }`}
+            />
+          ))}
+        </div>
+
+        <p className="text-gray-700 text-sm mb-6 leading-relaxed flex-1 italic relative">
+          <span className="text-4xl absolute -top-4 -left-2 text-gray-100 font-serif">"</span>
+          <span className="relative z-10">{entry.message}</span>
+          <span className="text-4xl absolute -bottom-4 -right-2 text-gray-100 font-serif">"</span>
+        </p>
+
+        {entry.admin_response && (
+          <div className="bg-[#C6A15B]/5 rounded-xl p-4 mb-5 border-l-4 border-[#C6A15B]">
+            <p className="text-[11px] font-black text-[#C6A15B] mb-1.5 uppercase tracking-widest">Réponse d'André</p>
+            <p className="text-sm text-gray-700 leading-relaxed">{entry.admin_response}</p>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
+          <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">
+            {new Date(entry.created_at).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+          </span>
+          {user && (
+            <button
+              onClick={toggleHeart}
+              disabled={loading}
+              className="flex items-center gap-1.5 hover:bg-pink-50 p-2 rounded-full transition-colors"
+            >
+              <Heart
+                className={`h-5 w-5 transition-transform ${
+                  hasHearted ? 'fill-pink-500 text-pink-500 scale-110' : 'text-gray-400 hover:text-pink-400'
+                }`}
+              />
+              <span className={hasHearted ? "text-sm font-bold text-pink-600" : "text-sm font-medium text-gray-500"}>
+                {heartsCount}
+              </span>
+            </button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+</file>
+
 <file path="app/qui-sommes-nous/page.tsx">
 'use client';
 
@@ -87768,6 +86713,299 @@ export default function QuiSommesNousPage() {
 }
 </file>
 
+<file path="components/ProductVariationSelector.tsx">
+"use client";
+
+import { useState, useMemo, useEffect } from "react";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import { Check } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+
+export function ProductVariationSelector({
+  attributes,
+  variations,
+  onVariationSelect,
+}: any) {
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+  const [dbColors, setDbColors] = useState<Record<string, string>>({});
+
+  const getCleanKey = (k: string) => {
+    if (!k) return "";
+    return String(k).toLowerCase().replace(/^(attribute_pa_|attribute_|pa_)/, '').trim();
+  };
+
+  // 1. RÉCUPÉRATION GLOBALE DES COULEURS DEPUIS TA BASE DE DONNÉES
+  // On charge tout une seule fois pour éviter les bugs de casse (majuscules/minuscules)
+  useEffect(() => {
+    async function loadDbColors() {
+      try {
+        const { data, error } = await supabase
+          .from("product_attribute_terms")
+          .select("name, color_code");
+
+        if (data) {
+          const map: Record<string, string> = {};
+          data.forEach(term => {
+            if (term.name && term.color_code && term.color_code.trim() !== "") {
+              // On uniformise totalement le texte pour la correspondance
+              map[term.name.toLowerCase().trim()] = term.color_code;
+            }
+          });
+          setDbColors(map);
+        }
+      } catch (err) {
+        console.error("Erreur de chargement des couleurs :", err);
+      }
+    }
+    loadDbColors();
+  }, []);
+
+  // 2. DICTIONNAIRE DE SECOURS (Si la BDD est lente ou hors-ligne)
+  const fallbackMap: Record<string, string> = {
+    "noir": "#111111", "blanc": "#ffffff", "rouge": "#ef4444", 
+    "bleu": "#3b82f6", "vert": "#22c55e", "jaune": "#eab308", 
+    "or": "#d4af37", "doré": "#d4af37", "argent": "#c0c0c0", "argenté": "#c0c0c0",
+    "rose": "#ec4899", "beige": "#f5f5dc", "marron": "#8b4513", "camel": "#C19A6B", 
+    "gris": "#9ca3af", "anthracite": "#334155", "violet": "#8b5cf6", "orange": "#f97316", 
+    "turquoise": "#40e0d0", "marine": "#1e3a8a", "bordeaux": "#800020", "saumon": "#fa8072",
+    "améthyste": "#9333ea", "lapis lazuli": "#1e40af", "onyx": "#111111", "oeil de tigre": "#b45309", 
+    "quartz rose": "#fbcfe8", "aventurine": "#22c55e", "amazonite": "#4ade80", "citrine": "#fef08a", 
+    "obsidienne": "#111111", "jaspe": "#b91c1c", "pierre de lune": "#f8fafc", "howlite": "#f1f5f9", 
+    "labradorite": "#475569", "hématite": "#334155", "agate": "#d97706", "jade": "#16a34a",
+    "malachite": "#15803d", "transparent": "transparent",
+    "multicolore": "conic-gradient(red, yellow, green, blue, magenta, red)"
+  };
+
+  // 3. DÉCODAGE ET NETTOYAGE DES ATTRIBUTS DU PRODUIT
+  const normalizedAttributes = useMemo(() => {
+    let raw = attributes;
+    if (typeof raw === 'string') {
+      try { raw = JSON.parse(raw); } catch(e) {}
+    }
+    if (!raw) return [];
+    
+    let parsedAttrs: any[] = [];
+    if (Array.isArray(raw)) {
+      parsedAttrs = raw;
+    } else if (typeof raw === 'object') {
+      parsedAttrs = Object.entries(raw).map(([k, v]) => ({
+        name: k,
+        options: Array.isArray(v) ? v : [v]
+      }));
+    }
+
+    const variationAxes = new Set<string>();
+    (variations || []).forEach((v: any) => {
+      let vAttrs = v.attributes;
+      if (typeof vAttrs === 'string') { try { vAttrs = JSON.parse(vAttrs); } catch(e) {} }
+      if (Array.isArray(vAttrs)) {
+        vAttrs.forEach((a: any) => { if (a.name) variationAxes.add(getCleanKey(a.name)); });
+      } else if (vAttrs && typeof vAttrs === 'object') {
+        Object.keys(vAttrs).forEach(k => variationAxes.add(getCleanKey(k)));
+      }
+    });
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const whitelist = ['couleur', 'color', 'pierre', 'taille', 'size', 'pointure', 'dimension', 'modèle', 'modele', 'type', 'variante', 'variant', 'poids', 'format', 'choix'];
+
+    return parsedAttrs.map((attr: any) => {
+      const cleanName = getCleanKey(attr.name);
+      
+      let keep = false;
+      if (variationAxes.has(cleanName)) keep = true;
+      if (whitelist.some(w => cleanName.includes(w))) keep = true;
+      
+      if (uuidRegex.test(attr.name)) keep = false;
+      if (['instant créatif', 'trouvaille du monde', 'nouveauté', 'matière', 'collection', 'prix'].some(w => cleanName.includes(w))) keep = false;
+
+      if (!keep) return null;
+
+      const cleanOptions = (attr.options || []).map((o: any) => {
+        if (typeof o === 'object' && o !== null) return String(o.name || o.value || '');
+        return String(o);
+      }).filter((o: string) => o && !uuidRegex.test(o));
+
+      if (cleanOptions.length === 0) return null;
+
+      let displayName = attr.name.replace(/^(attribute_pa_|attribute_|pa_)/i, '');
+      displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+
+      return {
+        name: attr.name,
+        displayName,
+        cleanName,
+        options: cleanOptions
+      };
+    }).filter(Boolean);
+
+  }, [attributes, variations]);
+
+  // Initialisation du premier choix
+  useEffect(() => {
+    if (normalizedAttributes.length > 0 && Object.keys(selectedOptions).length === 0) {
+      const initial: Record<string, string> = {};
+      normalizedAttributes.forEach((attr: any) => {
+        initial[attr.name] = attr.options[0];
+      });
+      setSelectedOptions(initial);
+      triggerMatch(initial);
+    }
+  }, [normalizedAttributes]);
+
+  const triggerMatch = (currentSelection: Record<string, string>) => {
+    const matched = variations?.find((v: any) => {
+      let vAttrs: Record<string, any> = {};
+      let rawV = v.attributes;
+      if (typeof rawV === 'string') { try { rawV = JSON.parse(rawV); } catch(e) {} }
+      if (Array.isArray(rawV)) {
+        rawV.forEach((a: any) => { if (a.name) vAttrs[a.name] = a.option || a.value; });
+      } else if (rawV && typeof rawV === 'object') {
+        vAttrs = rawV;
+      }
+
+      return Object.entries(currentSelection).every(([selKey, selVal]) => {
+        const cleanSelKey = getCleanKey(selKey);
+        for (const [vKey, vVal] of Object.entries(vAttrs)) {
+          if (getCleanKey(vKey) === cleanSelKey && String(vVal).toLowerCase().trim() === String(selVal).toLowerCase().trim()) {
+            return true;
+          }
+        }
+        return false;
+      });
+    });
+
+    if (onVariationSelect) onVariationSelect(matched || null);
+  };
+
+  const handleSelect = (attrName: string, option: string) => {
+    const newSelected = { ...selectedOptions, [attrName]: option };
+    setSelectedOptions(newSelected);
+    triggerMatch(newSelected);
+  };
+
+  if (!normalizedAttributes || normalizedAttributes.length === 0) return null;
+
+  return (
+    <div className="space-y-6">
+      {normalizedAttributes.map((attr: any) => {
+        
+        // C'est une couleur si c'est indiqué dans le nom, ou si l'une des options a une correspondance en BDD ou dans le dico.
+        const isColor = attr.cleanName.includes("couleur") || 
+                        attr.cleanName.includes("color") || 
+                        attr.cleanName.includes("pierre") || 
+                        attr.options.some((opt: string) => dbColors[String(opt).toLowerCase().trim()] || Object.keys(fallbackMap).some(k => String(opt).toLowerCase().trim().includes(k)));
+
+        return (
+          <div key={attr.name} className="space-y-3">
+            <div className="flex justify-between items-center">
+              <Label className="text-sm font-bold text-gray-900 uppercase tracking-wider">
+                {attr.displayName}
+              </Label>
+              {selectedOptions[attr.name] && (
+                <span className="text-xs text-[#b8933d] font-medium">
+                  {selectedOptions[attr.name]}
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              {attr.options.map((option: string, idx: number) => {
+                const isSelected = selectedOptions[attr.name] === String(option);
+
+                // Vérifie le stock
+                const isAvailable = variations?.some((v: any) => {
+                  let vAttrs: Record<string, any> = {};
+                  let rawV = v.attributes;
+                  if (typeof rawV === 'string') { try { rawV = JSON.parse(rawV); } catch(e) {} }
+                  if (Array.isArray(rawV)) {
+                    rawV.forEach((a: any) => { if (a.name) vAttrs[a.name] = a.option || a.value; });
+                  } else if (rawV && typeof rawV === 'object') {
+                    vAttrs = rawV;
+                  }
+                  for (const [vKey, vVal] of Object.entries(vAttrs)) {
+                    if (getCleanKey(vKey) === attr.cleanName && String(vVal).toLowerCase().trim() === String(option).toLowerCase().trim()) {
+                      return true;
+                    }
+                  }
+                  return false;
+                });
+
+                // --- RENDU SPÉCIAL POUR LES COULEURS ET PIERRES ---
+                if (isColor) {
+                  const cleanOptionName = String(option).toLowerCase().trim();
+                  
+                  // 1. On cherche d'abord la vraie couleur depuis Supabase
+                  let colorCode = dbColors[cleanOptionName];
+                  
+                  // 2. Si ça échoue, on cherche dans le dico de secours
+                  if (!colorCode) {
+                    if (fallbackMap[cleanOptionName]) {
+                      colorCode = fallbackMap[cleanOptionName];
+                    } else {
+                      const foundKey = Object.keys(fallbackMap).sort((a,b) => b.length - a.length).find(k => cleanOptionName.includes(k));
+                      colorCode = foundKey ? fallbackMap[foundKey] : "#e5e7eb";
+                    }
+                  }
+                  
+                  const bgStyle = colorCode.includes("gradient") 
+                    ? { backgroundImage: colorCode } 
+                    : { backgroundColor: colorCode };
+
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => handleSelect(attr.name, option)}
+                      title={option}
+                      className={cn(
+                        "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ring-1 ring-gray-200",
+                        isSelected
+                          ? "ring-2 ring-offset-2 ring-[#b8933d] scale-110 shadow-lg"
+                          : isAvailable 
+                            ? "hover:scale-105 hover:shadow-md opacity-90 hover:opacity-100"
+                            : "opacity-30 grayscale cursor-not-allowed"
+                      )}
+                      style={bgStyle}
+                    >
+                      {isSelected && (
+                        <span className={['#ffffff', '#f5f5dc', 'transparent'].includes(colorCode.toLowerCase()) ? "text-gray-900 drop-shadow-md" : "text-white drop-shadow-md"}>
+                          <Check className="w-5 h-5" />
+                        </span>
+                      )}
+                      <span className="sr-only">{option}</span>
+                    </button>
+                  );
+                }
+
+                // --- RENDU TEXTE STANDARD (Pour les Tailles, Modèles, etc.) ---
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => handleSelect(attr.name, option)}
+                    className={cn(
+                      "px-4 py-2 text-sm font-black border-2 rounded-xl transition-all duration-200 min-w-[3.5rem] uppercase tracking-tighter",
+                      isSelected
+                        ? "border-[#b8933d] bg-[#b8933d] text-white shadow-lg" 
+                        : isAvailable
+                          ? "border-gray-100 bg-white text-gray-700 hover:border-[#b8933d] hover:text-[#b8933d]"
+                          : "opacity-30 border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed"
+                    )}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+</file>
+
 <file path="lib/supabase.ts">
 import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js';
 
@@ -87885,6 +87123,413 @@ export type OpenPackage = {
   created_at: string;
   updated_at: string;
 };
+</file>
+
+<file path="app/admin/products/new/page.tsx">
+"use client";
+
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { 
+  Save, 
+  ArrowLeft, 
+  RefreshCw, 
+  Weight, 
+  Calculator, 
+  Globe, 
+  Video, 
+  Heart, 
+  Package, 
+  Sparkles,
+  Plus,
+  Trash2,
+  AlertCircle,
+  ImageIcon,
+  Layers,
+  Settings2
+} from "lucide-react";
+import Link from "next/link";
+import RichTextEditor from "@/components/RichTextEditor";
+import ProductMediaGalleryManager from "@/components/ProductMediaGalleryManager";
+import HierarchicalCategorySelector from "@/components/HierarchicalCategorySelector";
+import GeneralAttributesSelector from "@/components/GeneralAttributesSelector";
+import ColorSwatchSelector from "@/components/ColorSwatchSelector";
+import VariationDetailsForm from "@/components/VariationDetailsForm";
+import { useAutoSave } from "@/hooks/useAutoSave"; 
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  parent_id: string | null;
+  display_order: number | null;
+}
+
+interface Variation {
+  colorName: string;
+  colorId: string;
+  sku: string;
+  regular_price: number | null;
+  sale_price: number | null;
+  stock_quantity: number | null;
+  image_url: string | null;
+}
+
+export default function NewProductPage() {
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
+
+  const [newProductId] = useState(() => crypto.randomUUID());
+
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [sku, setSku] = useState("");
+  const [shortDescription, setShortDescription] = useState("");
+  const [description, setDescription] = useState("");
+  const [andreReview, setAndreReview] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
+
+  const [purchasePrice, setPurchasePrice] = useState<number>(0);
+  const [regularPrice, setRegularPrice] = useState<number>(0);
+  const [salePrice, setSalePrice] = useState<number | null>(null);
+  const [stockQuantity, setStockQuantity] = useState<number>(0);
+  const [virtualWeight, setVirtualWeight] = useState<number>(0);
+
+  const [status, setStatus] = useState("draft");
+  const [isFeatured, setIsFeatured] = useState(false);
+  const [isDiamond, setIsDiamond] = useState(false);
+  const [hasVariations, setHasVariations] = useState(false);
+  const [showSizes, setShowSizes] = useState(false);
+  const [seoTitle, setSeoTitle] = useState("");
+  const [seoDescription, setSeoDescription] = useState("");
+
+  const [mainImage, setMainImage] = useState<string>("");
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string[]>>({});
+  const [relatedProductIds, setRelatedProductIds] = useState<string[]>([]); 
+  const [allProducts, setAllProducts] = useState<{id: string, name: string}[]>([]);
+
+  const [activeFamilyView, setActiveFamilyView] = useState<string>("");
+  const [selectedNuances, setSelectedNuances] = useState<string[]>([]);
+  const [nuanceIds, setNuanceIds] = useState<Record<string, string>>({});
+  const [sizeRangeStart, setSizeRangeStart] = useState<number | null>(null);
+  const [sizeRangeEnd, setSizeRangeEnd] = useState<number | null>(null);
+  const [variations, setVariations] = useState<Variation[]>([]);
+
+  const currentFormData = {
+    newProductId, name, slug, sku, shortDescription, description, andreReview, videoUrl,
+    purchasePrice, regularPrice, salePrice, stockQuantity, virtualWeight,
+    status, isFeatured, isDiamond, hasVariations, showSizes, seoTitle, seoDescription,
+    mainImage, galleryImages, selectedCategories, selectedAttributes, relatedProductIds,
+    selectedNuances, nuanceIds, sizeRangeStart, sizeRangeEnd, variations
+  };
+
+  const { clearSavedData } = useAutoSave(
+    `new_product_creation`,
+    currentFormData,
+    (savedData: any) => {
+        if (savedData.name !== undefined) setName(savedData.name);
+        if (savedData.slug !== undefined) setSlug(savedData.slug);
+        if (savedData.sku !== undefined) setSku(savedData.sku);
+        if (savedData.shortDescription !== undefined) setShortDescription(savedData.shortDescription);
+        if (savedData.description !== undefined) setDescription(savedData.description);
+        if (savedData.andreReview !== undefined) setAndreReview(savedData.andreReview);
+        if (savedData.videoUrl !== undefined) setVideoUrl(savedData.videoUrl);
+        if (savedData.purchasePrice !== undefined) setPurchasePrice(savedData.purchasePrice);
+        if (savedData.regularPrice !== undefined) setRegularPrice(savedData.regularPrice);
+        if (savedData.salePrice !== undefined) setSalePrice(savedData.salePrice);
+        if (savedData.stockQuantity !== undefined) setStockQuantity(savedData.stockQuantity);
+        if (savedData.virtualWeight !== undefined) setVirtualWeight(savedData.virtualWeight);
+        if (savedData.status !== undefined) setStatus(savedData.status);
+        if (savedData.isFeatured !== undefined) setIsFeatured(savedData.isFeatured);
+        if (savedData.isDiamond !== undefined) setIsDiamond(savedData.isDiamond);
+        if (savedData.hasVariations !== undefined) setHasVariations(savedData.hasVariations);
+        if (savedData.showSizes !== undefined) setShowSizes(savedData.showSizes);
+        if (savedData.seoTitle !== undefined) setSeoTitle(savedData.seoTitle);
+        if (savedData.seoDescription !== undefined) setSeoDescription(savedData.seoDescription);
+        if (savedData.mainImage !== undefined) setMainImage(savedData.mainImage);
+        if (savedData.galleryImages !== undefined) setGalleryImages(savedData.galleryImages);
+        if (savedData.selectedCategories !== undefined) setSelectedCategories(savedData.selectedCategories);
+        if (savedData.selectedAttributes !== undefined) setSelectedAttributes(savedData.selectedAttributes);
+        if (savedData.relatedProductIds !== undefined) setRelatedProductIds(savedData.relatedProductIds);
+        if (savedData.selectedNuances !== undefined) setSelectedNuances(savedData.selectedNuances);
+        if (savedData.nuanceIds !== undefined) setNuanceIds(savedData.nuanceIds);
+        if (savedData.variations !== undefined) setVariations(savedData.variations);
+    }
+  );
+
+  useEffect(() => {
+    if (name) {
+      setSlug(name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""));
+    }
+  }, [name]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const { data } = await supabase.from("products").select("id, name").order("name");
+      if (data) setAllProducts(data);
+    };
+    fetchProducts();
+  }, []);
+
+  const margin = useMemo(() => {
+    if (regularPrice > 0) {
+      return (((regularPrice - purchasePrice) / regularPrice) * 100).toFixed(1);
+    }
+    return "0";
+  }, [purchasePrice, regularPrice]);
+
+  useEffect(() => {
+    if (hasVariations) {
+      setVariations(prev => {
+        const kept = prev.filter(v => selectedNuances.includes(v.colorName));
+        const added = selectedNuances
+          .filter(name => !kept.some(v => v.colorName === name))
+          .map(colorName => ({
+            colorName, colorId: nuanceIds[colorName] || "", sku: "",
+            regular_price: regularPrice || null, sale_price: salePrice,
+            stock_quantity: stockQuantity || null, image_url: null,
+          }));
+        return [...kept, ...added];
+      });
+    }
+  }, [selectedNuances, nuanceIds, hasVariations]);
+
+  const handleFamilySelect = (name: string, id: string) => { setActiveFamilyView(name); };
+  const handleNuanceToggle = (name: string, id: string, selected: boolean) => {
+    if (selected) {
+      setSelectedNuances(prev => Array.from(new Set([...prev, name])));
+      setNuanceIds(prev => ({ ...prev, [name]: id }));
+    } else {
+      setSelectedNuances(prev => prev.filter(n => n !== name));
+    }
+  };
+
+  const handleSave = async () => {
+    if (!name || !slug) { toast.error("Le nom et le slug sont requis"); return; }
+    setSaving(true);
+    try {
+      const finalAttributes = { ...selectedAttributes };
+      if (hasVariations) finalAttributes['Couleur'] = selectedNuances;
+
+      const { data: newProd, error: pErr } = await supabase.from("products").insert({
+        id: newProductId, name: name.trim(), slug: slug.trim(), sku: sku.trim() || null,
+        short_description: shortDescription.substring(0, 150), description, andre_review: andreReview,
+        video_url: videoUrl, purchase_price: purchasePrice, regular_price: regularPrice,
+        sale_price: salePrice, stock_quantity: stockQuantity, virtual_weight: virtualWeight,
+        status, is_featured: isFeatured, is_diamond: isDiamond, has_variations: hasVariations,
+        seo_title: seoTitle || name, seo_description: seoDescription || shortDescription,
+        image_url: mainImage, gallery_images: galleryImages, attributes: finalAttributes,
+        related_product_ids: relatedProductIds,
+        size_range_start: showSizes ? sizeRangeStart : null,
+        size_range_end: showSizes ? sizeRangeEnd : null
+      }).select().single();
+
+      if (pErr) throw pErr;
+
+      if (selectedCategories.length > 0) {
+        const mappings = selectedCategories.map((id, i) => ({ product_id: newProductId, category_id: id, is_primary: i === 0, display_order: i }));
+        await supabase.from("product_category_mapping").insert(mappings);
+      }
+
+      if (hasVariations && variations.length > 0) {
+        const toInsert = variations.map(v => ({
+          product_id: newProductId, sku: v.sku, attributes: { "Couleur": v.colorName },
+          regular_price: v.regular_price || regularPrice, sale_price: v.sale_price || salePrice,
+          stock_quantity: v.stock_quantity || stockQuantity, image_url: v.image_url || mainImage,
+          stock_status: (v.stock_quantity || 0) > 0 ? "instock" : "outofstock", is_active: true,
+        }));
+        await supabase.from("product_variations").insert(toInsert);
+      }
+
+      clearSavedData();
+      toast.success("Nouvelle pépite créée !");
+      router.push("/admin/products");
+    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50/50 pb-24">
+      {/* HEADER FIXE */}
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/admin/products"><Button variant="ghost" size="icon" className="rounded-full"><ArrowLeft className="h-5 w-5"/></Button></Link>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">Nouveau Produit</h1>
+              <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1 w-fit mt-1"><RefreshCw className="w-2.5 h-2.5" /> Auto-save actif</span>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Link href="/admin/products"><Button variant="outline">Annuler</Button></Link>
+            <Button onClick={handleSave} disabled={saving} className="bg-[#d4af37] hover:bg-[#c19b2f] text-white px-8 shadow-lg shadow-amber-200">
+              {saving ? "Création..." : <><Save className="w-4 h-4 mr-2" /> Créer la pépite</>}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+          
+          {/* 1. L'ÂME DU PRODUIT */}
+          <Card className="shadow-sm border-none bg-white">
+            <CardHeader className="border-b bg-gray-50/50">
+              <div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-[#C6A15B]"/><CardTitle className="text-lg">L&apos;Âme du Produit</CardTitle></div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2"><Label>Nom de la pépite *</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Bougie Ambre & Soja" /></div>
+                <div className="space-y-2"><Label>Slug (URL)</Label><Input value={slug} onChange={(e) => setSlug(e.target.value)} className="bg-gray-50 font-mono text-xs" /></div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between"><Label>La &quot;Phrase d&apos;Accroche&quot;</Label><span className="text-[10px] text-gray-400">{shortDescription.length}/150</span></div>
+                <Input value={shortDescription} onChange={(e) => setShortDescription(e.target.value.substring(0, 150))} placeholder="Le goût authentique..." className="italic" />
+              </div>
+              <div className="space-y-2"><Label>Histoire du produit (Description longue)</Label><RichTextEditor value={description} onChange={setDescription} /></div>
+              <div className="p-5 bg-amber-50 rounded-2xl border border-amber-100 space-y-3">
+                <Label className="text-[#b8933d] font-bold flex items-center gap-2 uppercase tracking-tighter"><Heart className="h-4 w-4 fill-[#b8933d]" /> L&apos;avis d&apos;André</Label>
+                <Textarea value={andreReview} onChange={(e) => setAndreReview(e.target.value)} placeholder="Pourquoi avez-vous craqué pour ce produit ?" rows={4} className="bg-white border-none italic shadow-inner" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 2. VISUELS & VIDÉO */}
+          <Card className="shadow-sm border-none bg-white">
+            <CardHeader className="border-b bg-gray-50/50">
+              <div className="flex items-center gap-2"><Video className="h-5 w-5 text-gray-800" /><CardTitle className="text-lg">Visuels & Démo</CardTitle></div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-8">
+              <ProductMediaGalleryManager mainImage={mainImage} galleryImages={galleryImages} onMainImageChange={setMainImage} onGalleryImagesChange={setGalleryImages} />
+              <Separator />
+              <div className="space-y-4">
+                <div className="flex items-center gap-2"><Video className="h-5 w-5 text-red-500" /><Label>Lien Vidéo (Instagram Reel / Live)</Label></div>
+                <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="Lien direct pour remplacer la photo principale..." className="border-red-100 focus:border-red-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 3. LE CROSS-SELLING */}
+          <Card className="shadow-sm border-none bg-white">
+            <CardHeader className="border-b bg-gray-50/50"><CardTitle className="text-lg flex items-center gap-2"><Layers className="h-5 w-5 text-blue-500" /> Ventes Suggérées</CardTitle></CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {relatedProductIds.map(id => (
+                  <Badge key={id} variant="secondary" className="px-3 py-1 gap-2 bg-blue-50 text-blue-700 border-blue-100">
+                    {allProducts.find(p => p.id === id)?.name}
+                    <Trash2 className="h-3 w-3 cursor-pointer hover:text-red-500" onClick={() => setRelatedProductIds(relatedProductIds.filter(v => v !== id))} />
+                  </Badge>
+                ))}
+              </div>
+              <Select onValueChange={(id) => id && !relatedProductIds.includes(id) && relatedProductIds.length < 3 && setRelatedProductIds([...relatedProductIds, id])}>
+                <SelectTrigger className="bg-white"><SelectValue placeholder="Ajouter une suggestion d'André..." /></SelectTrigger>
+                <SelectContent>{allProducts.map(p => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* COLONNE DROITE */}
+        <div className="space-y-8">
+          <Card className="shadow-lg border-2 border-[#d4af37]/30 bg-amber-50/20 overflow-hidden">
+            <CardHeader className="bg-[#d4af37]/10 flex flex-row items-center justify-between pb-4">
+              <CardTitle className="text-lg text-[#b8933d] flex items-center gap-2"><Calculator className="h-5 w-5"/> Marge</CardTitle>
+              <Badge className="bg-[#d4af37] text-white border-none">{margin}%</Badge>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4 bg-white/80">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Achat (€)</Label><Input type="number" step="0.01" value={purchasePrice} onChange={(e) => setPurchasePrice(parseFloat(e.target.value) || 0)} className="font-mono" /></div>
+                <div className="space-y-1"><Label className="text-xs font-bold text-[#b8933d] uppercase">Vente (€) *</Label><Input type="number" step="0.01" value={regularPrice} onChange={(e) => setRegularPrice(parseFloat(e.target.value) || 0)} className="font-bold font-mono border-amber-200" /></div>
+              </div>
+              <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Promo (€)</Label><Input type="number" step="0.01" value={salePrice || ""} onChange={(e) => setSalePrice(e.target.value ? parseFloat(e.target.value) : null)} className="text-red-600 font-mono border-red-100" /></div>
+              <Separator />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Stock</Label><Input type="number" value={stockQuantity} onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)} /></div>
+                <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Poids (g)</Label><Input type="number" value={virtualWeight} onChange={(e) => setVirtualWeight(parseInt(e.target.value) || 0)} /></div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-sm border-none bg-white">
+            <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="text-lg flex items-center gap-2"><Globe className="h-5 w-5 text-green-600" /> SEO</CardTitle></CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div><Label>Titre Google</Label><Input value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} placeholder={name} /></div>
+              <div><Label>Description Google</Label><Textarea value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} placeholder={shortDescription} rows={3} /></div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-sm border-none bg-white">
+            <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="text-lg flex items-center gap-2 text-gray-600"><Settings2 className="h-5 w-5"/> Options</CardTitle></CardHeader>
+            <CardContent className="p-6 space-y-5">
+              
+              {/* NOUVEAU SÉLECTEUR DE STATUT */}
+              <div className="flex items-center justify-between p-3 border rounded-xl bg-gray-50">
+                <div className="space-y-0.5">
+                  <Label className="text-gray-900 font-bold">Statut du produit</Label>
+                  <p className="text-[10px] text-gray-500 italic">Visibilité sur la boutique</p>
+                </div>
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger className="w-[130px] bg-white border-gray-200">
+                    <SelectValue placeholder="Sélectionner..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Brouillon</SelectItem>
+                    <SelectItem value="publish">Publié</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center justify-between p-3 border rounded-xl bg-blue-50/30">
+                <div className="space-y-0.5"><Label className="text-blue-900">Variantes ?</Label><p className="text-[10px] text-blue-500 italic">Couleurs & Stocks multiples</p></div>
+                <Switch checked={hasVariations} onCheckedChange={setHasVariations} />
+              </div>
+              <div className="flex items-center justify-between p-3 border rounded-xl bg-purple-50/30 opacity-60">
+                <div className="space-y-0.5"><Label className="text-purple-900">Module Tailles ?</Label><p className="text-[10px] text-purple-500 italic">Désactivé par défaut</p></div>
+                <Switch checked={showSizes} onCheckedChange={setShowSizes} />
+              </div>
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center gap-2"><Checkbox id="f" checked={isFeatured} onCheckedChange={(c) => setIsFeatured(!!c)}/><Label htmlFor="f">⭐ Mettre en Vedette</Label></div>
+                <div className="flex items-center gap-2"><Checkbox id="d" checked={isDiamond} onCheckedChange={(c) => setIsDiamond(!!c)}/><Label htmlFor="d">💎 Produit Diamant</Label></div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 mt-8 space-y-8">
+        <GeneralAttributesSelector selectedAttributes={selectedAttributes} onAttributesChange={setSelectedAttributes} />
+        <HierarchicalCategorySelector selectedCategories={selectedCategories} onCategoriesChange={setSelectedCategories} />
+        
+        {hasVariations && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <ColorSwatchSelector selectedMainColor={activeFamilyView} selectedSecondaryColors={selectedNuances} onMainColorSelect={setActiveFamilyView} onSecondaryColorToggle={handleNuanceToggle} showSecondaryColors={true} />
+            <VariationDetailsForm selectedSecondaryColors={selectedNuances} secondaryColorIds={nuanceIds} variations={variations} onVariationUpdate={(name, field, val) => {
+                setVariations(prev => {
+                  const idx = prev.findIndex(v => v.colorName === name);
+                  const newVars = [...prev];
+                  newVars[idx] = { ...newVars[idx], [field]: val };
+                  return newVars;
+                });
+            }} defaultRegularPrice={regularPrice} defaultSalePrice={salePrice} defaultStock={stockQuantity} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 </file>
 
 <file path="app/api/games/claim-reward/route.ts">
@@ -88093,6 +87738,586 @@ export async function POST(request: NextRequest) {
     console.error("Game API Error:", e);
     return NextResponse.json({ error: e.message || 'Erreur interne du serveur' }, { status: 500 });
   }
+}
+</file>
+
+<file path="app/categorie/[slug]/page.tsx">
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { supabase, ProductCategory } from '@/lib/supabase';
+import { 
+  SlidersHorizontal, Filter, AlertTriangle, ChevronRight, Home,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { ProductCard } from '@/components/ProductCard';
+import { ProductFilters, FilterState } from '@/components/ProductFilters';
+import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/context/AuthContext';
+
+const LIVE_KEYWORDS = ['live'];
+
+const FilterSidebarContent = ({ priceRange, setPriceRange, maxPrice, slug, activeFilters, setActiveFilters, availableTerms }: any) => (
+  <div className="space-y-6">
+    <div>
+      <h3 className="font-semibold text-sm text-gray-900 mb-4 flex items-center gap-2">
+        <span className="bg-[#D4AF37] w-1 h-4 rounded-full"></span> Prix maximum
+      </h3>
+      <div className="px-2">
+        <Slider value={priceRange} onValueChange={(value) => setPriceRange(value as [number, number])} max={maxPrice} step={1} className="my-4" />
+        <div className="flex justify-between text-sm text-gray-600 font-medium">
+          <span>{priceRange[0]}€</span>
+          <span className="text-[#D4AF37] font-bold">{priceRange[1]}€</span>
+        </div>
+      </div>
+    </div>
+    <Separator />
+    <ProductFilters categorySlug={slug === 'tous' ? undefined : slug} activeFilters={activeFilters} availableTerms={availableTerms} onFiltersChange={setActiveFilters} />
+  </div>
+);
+
+export default function CategoryPage() {
+  const params = useParams();
+  const router = useRouter();
+  const { profile } = useAuth();
+  const slug = params.slug as string;
+
+  const [category, setCategory] = useState<ProductCategory | null>(null);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [availableTerms, setAvailableTerms] = useState<Set<string>>(new Set());
+  const [productTermsMap, setProductTermsMap] = useState<Record<string, Set<string>>>({});
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 200]);
+  const [maxPrice, setMaxPrice] = useState(200);
+  const [activeFilters, setActiveFilters] = useState<FilterState>({
+    mySize: false, sizes: [], colors: [], comfort: [], coupe: [], live: false, nouveautes: false,
+  });
+
+  const extractProductTerms = (p: any, dictionary: Record<string, string>): Set<string> => {
+    const terms = new Set<string>();
+
+    const addValue = (v: any) => {
+      if (v == null || v === '') return;
+      const vStr = String(v).toLowerCase().trim();
+      const resolved = dictionary[vStr] ? dictionary[vStr].toLowerCase().trim() : vStr;
+      terms.add(resolved);
+    };
+
+    const processAttributes = (attrObj: any, source: string) => {
+      if (!attrObj) return;
+      let data: any;
+      try {
+        data = typeof attrObj === 'string' ? JSON.parse(attrObj) : attrObj;
+      } catch {
+        console.warn(`[${p.name}] Échec JSON.parse sur ${source}`);
+        return;
+      }
+      if (!data) return;
+
+      // ══════════════════════════════════════════════════════
+      // 🔍 DEBUG — ouvrez F12 > Console et copiez le résultat
+      // ══════════════════════════════════════════════════════
+      console.group(`📦 [${p.name}] → ${source}`);
+      console.log('Type:', Array.isArray(data) ? `Array(${data.length})` : typeof data);
+      console.log('Contenu:', JSON.stringify(data, null, 2));
+
+      if (Array.isArray(data)) {
+        data.forEach((item: any, i: number) => {
+          if (!item || typeof item !== 'object') return;
+          const keys = Object.keys(item);
+          console.log(`  [${i}] clés: ${keys.join(', ')}`);
+
+          if (Array.isArray(item.options)) {
+            console.log(`      ✅ → options:`, item.options);
+            item.options.forEach(addValue);
+          } else if (item.option != null) {
+            console.log(`      ✅ → option:`, item.option);
+            addValue(item.option);
+          } else if (Array.isArray(item.term_ids)) {
+            console.log(`      ✅ → term_ids:`, item.term_ids);
+            item.term_ids.forEach(addValue);
+          } else if (item.value != null) {
+            console.log(`      ✅ → value:`, item.value);
+            addValue(item.value);
+          } else {
+            console.warn(`      ❌ Format NON GÉRÉ — clés disponibles: ${keys.join(', ')}`);
+          }
+        });
+      } else if (typeof data === 'object') {
+        console.log('  Clés:', Object.keys(data));
+        Object.entries(data).forEach(([k, val]: any) => {
+          Array.isArray(val) ? val.forEach(addValue) : addValue(val);
+        });
+      }
+
+      console.log('  Termes extraits:', [...terms]);
+      console.groupEnd();
+    };
+
+    processAttributes(p.attributes, 'products.attributes');
+    p.product_variations?.forEach((v: any, i: number) =>
+      processAttributes(v.attributes, `variations[${i}].attributes`)
+    );
+
+    return terms;
+  };
+
+  useEffect(() => { loadCategoryAndProducts(); }, [slug]);
+  useEffect(() => { applyFilters(); }, [priceRange, activeFilters, allProducts, productTermsMap]);
+
+  async function loadCategoryAndProducts() {
+    setLoading(true);
+    try {
+      const { data: termsData } = await supabase.from('product_attribute_terms').select('id, name');
+      const dict: Record<string, string> = {};
+      if (termsData) {
+        termsData.forEach(t => { dict[String(t.id).toLowerCase()] = t.name; });
+      }
+      console.log(`📚 Dictionnaire chargé: ${Object.keys(dict).length} termes`);
+
+      let productsQuery = supabase.from('products').select('*').eq('status', 'publish').order('created_at', { ascending: false });
+
+      if (slug !== 'tous') {
+        const { data: categoryData } = await supabase.from('categories').select('*').eq('slug', slug).maybeSingle();
+        if (!categoryData) { router.push('/'); return; }
+        setCategory(categoryData);
+        const { data: mappingData } = await supabase.from('product_category_mapping').select('product_id').eq('category_id', categoryData.id);
+        const productIds = mappingData?.map(m => m.product_id) || [];
+        if (productIds.length > 0) productsQuery = productsQuery.in('id', productIds);
+        else { setAllProducts([]); setLoading(false); return; }
+      }
+
+      const { data: productsData } = await productsQuery;
+
+      if (productsData) {
+        const productIds = productsData.map(p => p.id);
+        const { data: variationsData } = await supabase.from('product_variations').select('*').in('product_id', productIds);
+        const finalProducts = productsData.map(p => ({
+          ...p,
+          product_variations: variationsData?.filter(v => v.product_id === p.id) || []
+        }));
+
+        const globalSet = new Set<string>();
+        const pMap: Record<string, Set<string>> = {};
+        finalProducts.forEach(p => {
+          const terms = extractProductTerms(p, dict);
+          pMap[p.id] = terms;
+          terms.forEach(t => globalSet.add(t));
+        });
+
+        console.log('🌍 availableTerms final:', [...globalSet].sort().join(', '));
+
+        setAllProducts(finalProducts);
+        setProductTermsMap(pMap);
+        setAvailableTerms(globalSet);
+
+        const prices = productsData.map(p => p.sale_price || p.regular_price || 0).filter(p => p > 0);
+        const max = prices.length > 0 ? Math.ceil(Math.max(...prices)) : 200;
+        setMaxPrice(max);
+        setPriceRange([0, max]);
+      }
+    } catch (error) {
+      console.error('Erreur chargement produits:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function applyFilters() {
+    if (!allProducts.length) return;
+    const boolKeys = ['mySize', 'live', 'nouveautes'];
+    const filtered = allProducts.filter(p => {
+      const price = p.sale_price || p.regular_price || 0;
+      const terms = productTermsMap[p.id] || new Set<string>();
+      if (price < priceRange[0] || price > priceRange[1]) return false;
+      for (const [key, selectedValues] of Object.entries(activeFilters)) {
+        if (boolKeys.includes(key)) continue;
+        if (!Array.isArray(selectedValues) || selectedValues.length === 0) continue;
+        const hasMatch = selectedValues.some((val: string) => terms.has(val.toLowerCase().trim()));
+        if (!hasMatch) return false;
+      }
+      if (activeFilters.live) {
+        const hasLive = [...terms].some(t => LIVE_KEYWORDS.some(k => t.includes(k)));
+        if (!hasLive) return false;
+      }
+      return true;
+    });
+    setFilteredProducts(filtered);
+  }
+
+  if (loading) return (
+    <div className="min-h-screen bg-white flex items-center justify-center font-black uppercase text-[#b8933d] animate-pulse">
+      Chargement de la malle...
+    </div>
+  );
+
+  const categoryName = slug === 'tous' ? 'Tous les Produits' : category?.name || '';
+
+  return (
+    <div className="min-h-screen bg-gray-50/30">
+      {profile?.is_admin && (
+        <div className="bg-red-50 border-b border-red-100 py-2 sticky top-0 z-50">
+          <div className="container mx-auto px-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-red-700 font-black text-[10px] uppercase tracking-widest">
+              <AlertTriangle className="h-3 w-3" /> Mode Administrateur
+            </div>
+            <Button asChild size="sm" variant="outline" className="h-7 text-[10px] font-bold border-red-200 hover:bg-red-100">
+              <Link href="/admin/products/new">Ajouter une pépite</Link>
+            </Button>
+          </div>
+        </div>
+      )}
+      <nav className="bg-white border-b py-3 px-4">
+        <div className="container mx-auto flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+          <Link href="/" className="hover:text-[#b8933d] flex items-center gap-1"><Home className="h-3 w-3" /> Accueil</Link>
+          <ChevronRight className="h-3 w-3" />
+          <span className="text-[#b8933d]">{categoryName}</span>
+        </div>
+      </nav>
+      <main className="container mx-auto px-4 py-8">
+        <div className="flex flex-col lg:flex-row gap-8">
+          <aside className="hidden lg:block w-64 flex-shrink-0">
+            <div className="sticky top-24 bg-white rounded-3xl shadow-sm border border-gray-100 p-6 overflow-y-auto max-h-[calc(100vh-8rem)]">
+              <div className="flex items-center gap-2 mb-8 text-[#D4AF37] font-black uppercase text-xs tracking-widest">
+                <Filter className="w-4 h-4" /> Vos Critères
+              </div>
+              <FilterSidebarContent priceRange={priceRange} setPriceRange={setPriceRange} maxPrice={maxPrice} slug={slug} activeFilters={activeFilters} setActiveFilters={setActiveFilters} availableTerms={availableTerms} />
+            </div>
+          </aside>
+          <div className="flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-10">
+              <div className="space-y-1">
+                <h1 className="text-xl md:text-2xl font-black text-gray-900 uppercase tracking-tighter leading-none">{categoryName}</h1>
+                {category?.description && <p className="text-gray-400 font-medium italic text-sm">{category.description}</p>}
+              </div>
+              {allProducts.length > 0 && (
+                <div className="flex items-center gap-3 lg:hidden">
+                  <Sheet>
+                    <SheetTrigger asChild>
+                      <Button variant="outline" className="rounded-2xl border-gray-200 h-12 px-6 font-bold shadow-sm">
+                        <SlidersHorizontal className="h-4 w-4 mr-2" /> Filtres
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="w-full sm:max-w-md overflow-y-auto rounded-r-[2rem]">
+                      <SheetHeader className="mb-8 text-left">
+                        <SheetTitle className="text-2xl font-black text-[#D4AF37] uppercase italic">Affiner</SheetTitle>
+                      </SheetHeader>
+                      <FilterSidebarContent priceRange={priceRange} setPriceRange={setPriceRange} maxPrice={maxPrice} slug={slug} activeFilters={activeFilters} setActiveFilters={setActiveFilters} availableTerms={availableTerms} />
+                    </SheetContent>
+                  </Sheet>
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              {filteredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} showAddToCart={true} />
+              ))}
+            </div>
+            {filteredProducts.length === 0 && !loading && (
+              <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
+                <p className="text-gray-500 font-bold uppercase tracking-widest">Aucun résultat trouvé</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+</file>
+
+<file path="app/category/[slug]/page.tsx">
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { supabase, ProductCategory } from '@/lib/supabase';
+import { 
+  SlidersHorizontal, Filter, AlertTriangle, ChevronRight, Home,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { ProductCard } from '@/components/ProductCard';
+import { ProductFilters, FilterState } from '@/components/ProductFilters';
+import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/context/AuthContext';
+
+const LIVE_KEYWORDS = ['live'];
+
+const FilterSidebarContent = ({ priceRange, setPriceRange, maxPrice, slug, activeFilters, setActiveFilters, availableTerms }: any) => (
+  <div className="space-y-6">
+    <div>
+      <h3 className="font-semibold text-sm text-gray-900 mb-4 flex items-center gap-2">
+        <span className="bg-[#D4AF37] w-1 h-4 rounded-full"></span> Prix maximum
+      </h3>
+      <div className="px-2">
+        <Slider value={priceRange} onValueChange={(value) => setPriceRange(value as [number, number])} max={maxPrice} step={1} className="my-4" />
+        <div className="flex justify-between text-sm text-gray-600 font-medium">
+          <span>{priceRange[0]}€</span>
+          <span className="text-[#D4AF37] font-bold">{priceRange[1]}€</span>
+        </div>
+      </div>
+    </div>
+    <Separator />
+    <ProductFilters categorySlug={slug === 'tous' ? undefined : slug} activeFilters={activeFilters} availableTerms={availableTerms} onFiltersChange={setActiveFilters} />
+  </div>
+);
+
+export default function CategoryPage() {
+  const params = useParams();
+  const router = useRouter();
+  const { profile } = useAuth();
+  const slug = params.slug as string;
+
+  const [category, setCategory] = useState<ProductCategory | null>(null);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [availableTerms, setAvailableTerms] = useState<Set<string>>(new Set());
+  const [productTermsMap, setProductTermsMap] = useState<Record<string, Set<string>>>({});
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 200]);
+  const [maxPrice, setMaxPrice] = useState(200);
+  const [activeFilters, setActiveFilters] = useState<FilterState>({
+    mySize: false, sizes: [], colors: [], comfort: [], coupe: [], live: false, nouveautes: false,
+  });
+
+  const extractProductTerms = (p: any, dictionary: Record<string, string>): Set<string> => {
+    const terms = new Set<string>();
+
+    const addValue = (v: any) => {
+      if (v == null || v === '') return;
+      const vStr = String(v).toLowerCase().trim();
+      const resolved = dictionary[vStr] ? dictionary[vStr].toLowerCase().trim() : vStr;
+      terms.add(resolved);
+    };
+
+    const processAttributes = (attrObj: any, source: string) => {
+      if (!attrObj) return;
+      let data: any;
+      try {
+        data = typeof attrObj === 'string' ? JSON.parse(attrObj) : attrObj;
+      } catch {
+        console.warn(`[${p.name}] Échec JSON.parse sur ${source}`);
+        return;
+      }
+      if (!data) return;
+
+      // ══════════════════════════════════════════════════════
+      // 🔍 DEBUG — ouvrez F12 > Console et copiez le résultat
+      // ══════════════════════════════════════════════════════
+      console.group(`📦 [${p.name}] → ${source}`);
+      console.log('Type:', Array.isArray(data) ? `Array(${data.length})` : typeof data);
+      console.log('Contenu:', JSON.stringify(data, null, 2));
+
+      if (Array.isArray(data)) {
+        data.forEach((item: any, i: number) => {
+          if (!item || typeof item !== 'object') return;
+          const keys = Object.keys(item);
+          console.log(`  [${i}] clés: ${keys.join(', ')}`);
+
+          if (Array.isArray(item.options)) {
+            console.log(`      ✅ → options:`, item.options);
+            item.options.forEach(addValue);
+          } else if (item.option != null) {
+            console.log(`      ✅ → option:`, item.option);
+            addValue(item.option);
+          } else if (Array.isArray(item.term_ids)) {
+            console.log(`      ✅ → term_ids:`, item.term_ids);
+            item.term_ids.forEach(addValue);
+          } else if (item.value != null) {
+            console.log(`      ✅ → value:`, item.value);
+            addValue(item.value);
+          } else {
+            console.warn(`      ❌ Format NON GÉRÉ — clés disponibles: ${keys.join(', ')}`);
+          }
+        });
+      } else if (typeof data === 'object') {
+        console.log('  Clés:', Object.keys(data));
+        Object.entries(data).forEach(([k, val]: any) => {
+          Array.isArray(val) ? val.forEach(addValue) : addValue(val);
+        });
+      }
+
+      console.log('  Termes extraits:', [...terms]);
+      console.groupEnd();
+    };
+
+    processAttributes(p.attributes, 'products.attributes');
+    p.product_variations?.forEach((v: any, i: number) =>
+      processAttributes(v.attributes, `variations[${i}].attributes`)
+    );
+
+    return terms;
+  };
+
+  useEffect(() => { loadCategoryAndProducts(); }, [slug]);
+  useEffect(() => { applyFilters(); }, [priceRange, activeFilters, allProducts, productTermsMap]);
+
+  async function loadCategoryAndProducts() {
+    setLoading(true);
+    try {
+      const { data: termsData } = await supabase.from('product_attribute_terms').select('id, name');
+      const dict: Record<string, string> = {};
+      if (termsData) {
+        termsData.forEach(t => { dict[String(t.id).toLowerCase()] = t.name; });
+      }
+      console.log(`📚 Dictionnaire chargé: ${Object.keys(dict).length} termes`);
+
+      let productsQuery = supabase.from('products').select('*').eq('status', 'publish').order('created_at', { ascending: false });
+
+      if (slug !== 'tous') {
+        const { data: categoryData } = await supabase.from('categories').select('*').eq('slug', slug).maybeSingle();
+        if (!categoryData) { router.push('/'); return; }
+        setCategory(categoryData);
+        const { data: mappingData } = await supabase.from('product_category_mapping').select('product_id').eq('category_id', categoryData.id);
+        const productIds = mappingData?.map(m => m.product_id) || [];
+        if (productIds.length > 0) productsQuery = productsQuery.in('id', productIds);
+        else { setAllProducts([]); setLoading(false); return; }
+      }
+
+      const { data: productsData } = await productsQuery;
+
+      if (productsData) {
+        const productIds = productsData.map(p => p.id);
+        const { data: variationsData } = await supabase.from('product_variations').select('*').in('product_id', productIds);
+        const finalProducts = productsData.map(p => ({
+          ...p,
+          product_variations: variationsData?.filter(v => v.product_id === p.id) || []
+        }));
+
+        const globalSet = new Set<string>();
+        const pMap: Record<string, Set<string>> = {};
+        finalProducts.forEach(p => {
+          const terms = extractProductTerms(p, dict);
+          pMap[p.id] = terms;
+          terms.forEach(t => globalSet.add(t));
+        });
+
+        console.log('🌍 availableTerms final:', [...globalSet].sort().join(', '));
+
+        setAllProducts(finalProducts);
+        setProductTermsMap(pMap);
+        setAvailableTerms(globalSet);
+
+        const prices = productsData.map(p => p.sale_price || p.regular_price || 0).filter(p => p > 0);
+        const max = prices.length > 0 ? Math.ceil(Math.max(...prices)) : 200;
+        setMaxPrice(max);
+        setPriceRange([0, max]);
+      }
+    } catch (error) {
+      console.error('Erreur chargement produits:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function applyFilters() {
+    if (!allProducts.length) return;
+    const boolKeys = ['mySize', 'live', 'nouveautes'];
+    const filtered = allProducts.filter(p => {
+      const price = p.sale_price || p.regular_price || 0;
+      const terms = productTermsMap[p.id] || new Set<string>();
+      if (price < priceRange[0] || price > priceRange[1]) return false;
+      for (const [key, selectedValues] of Object.entries(activeFilters)) {
+        if (boolKeys.includes(key)) continue;
+        if (!Array.isArray(selectedValues) || selectedValues.length === 0) continue;
+        const hasMatch = selectedValues.some((val: string) => terms.has(val.toLowerCase().trim()));
+        if (!hasMatch) return false;
+      }
+      if (activeFilters.live) {
+        const hasLive = [...terms].some(t => LIVE_KEYWORDS.some(k => t.includes(k)));
+        if (!hasLive) return false;
+      }
+      return true;
+    });
+    setFilteredProducts(filtered);
+  }
+
+  if (loading) return (
+    <div className="min-h-screen bg-white flex items-center justify-center font-black uppercase text-[#b8933d] animate-pulse">
+      Chargement de la malle...
+    </div>
+  );
+
+  const categoryName = slug === 'tous' ? 'Tous les Produits' : category?.name || '';
+
+  return (
+    <div className="min-h-screen bg-gray-50/30">
+      {profile?.is_admin && (
+        <div className="bg-red-50 border-b border-red-100 py-2 sticky top-0 z-50">
+          <div className="container mx-auto px-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-red-700 font-black text-[10px] uppercase tracking-widest">
+              <AlertTriangle className="h-3 w-3" /> Mode Administrateur
+            </div>
+            <Button asChild size="sm" variant="outline" className="h-7 text-[10px] font-bold border-red-200 hover:bg-red-100">
+              <Link href="/admin/products/new">Ajouter une pépite</Link>
+            </Button>
+          </div>
+        </div>
+      )}
+      <nav className="bg-white border-b py-3 px-4">
+        <div className="container mx-auto flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+          <Link href="/" className="hover:text-[#b8933d] flex items-center gap-1"><Home className="h-3 w-3" /> Accueil</Link>
+          <ChevronRight className="h-3 w-3" />
+          <span className="text-[#b8933d]">{categoryName}</span>
+        </div>
+      </nav>
+      <main className="container mx-auto px-4 py-8">
+        <div className="flex flex-col lg:flex-row gap-8">
+          <aside className="hidden lg:block w-64 flex-shrink-0">
+            <div className="sticky top-24 bg-white rounded-3xl shadow-sm border border-gray-100 p-6 overflow-y-auto max-h-[calc(100vh-8rem)]">
+              <div className="flex items-center gap-2 mb-8 text-[#D4AF37] font-black uppercase text-xs tracking-widest">
+                <Filter className="w-4 h-4" /> Vos Critères
+              </div>
+              <FilterSidebarContent priceRange={priceRange} setPriceRange={setPriceRange} maxPrice={maxPrice} slug={slug} activeFilters={activeFilters} setActiveFilters={setActiveFilters} availableTerms={availableTerms} />
+            </div>
+          </aside>
+          <div className="flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-10">
+              <div className="space-y-1">
+                <h1 className="text-xl md:text-2xl font-black text-gray-900 uppercase tracking-tighter leading-none">{categoryName}</h1>
+                {category?.description && <p className="text-gray-400 font-medium italic text-sm">{category.description}</p>}
+              </div>
+              {allProducts.length > 0 && (
+                <div className="flex items-center gap-3 lg:hidden">
+                  <Sheet>
+                    <SheetTrigger asChild>
+                      <Button variant="outline" className="rounded-2xl border-gray-200 h-12 px-6 font-bold shadow-sm">
+                        <SlidersHorizontal className="h-4 w-4 mr-2" /> Filtres
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="w-full sm:max-w-md overflow-y-auto rounded-r-[2rem]">
+                      <SheetHeader className="mb-8 text-left">
+                        <SheetTitle className="text-2xl font-black text-[#D4AF37] uppercase italic">Affiner</SheetTitle>
+                      </SheetHeader>
+                      <FilterSidebarContent priceRange={priceRange} setPriceRange={setPriceRange} maxPrice={maxPrice} slug={slug} activeFilters={activeFilters} setActiveFilters={setActiveFilters} availableTerms={availableTerms} />
+                    </SheetContent>
+                  </Sheet>
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              {filteredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} showAddToCart={true} />
+              ))}
+            </div>
+            {filteredProducts.length === 0 && !loading && (
+              <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
+                <p className="text-gray-500 font-bold uppercase tracking-widest">Aucun résultat trouvé</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
 }
 </file>
 
@@ -88622,206 +88847,6 @@ export default function EditProductPage() {
 }
 </file>
 
-<file path="components/ProductFilters.tsx">
-'use client';
-
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/lib/supabase';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { X, Filter } from 'lucide-react';
-import { cn } from '@/lib/utils';
-
-interface FilterOption {
-  id: string;
-  name: string;
-  slug: string;
-  color_code?: string;
-}
-
-export interface FilterState {
-  mySize: boolean;
-  sizes: string[];
-  colors: string[];
-  comfort: string[];
-  coupe: string[];
-  live: boolean;
-  nouveautes: boolean;
-  [key: string]: any; 
-}
-
-interface ProductFiltersProps {
-  categorySlug?: string;
-  activeFilters: FilterState;
-  availableTerms: Set<string>;
-  onFiltersChange: (filters: FilterState) => void;
-}
-
-const FALLBACK_COLORS: Record<string, string> = {
-  'blanc': '#FFFFFF', 'noir': '#000000', 'gris': '#808080', 'beige': '#F5F5DC',
-  'marron': '#8B4513', 'bleu': '#0000FF', 'vert': '#008000', 'jaune': '#FFFF00',
-  'orange': '#FFA500', 'rouge': '#FF0000', 'rose': '#FFC0CB', 'violet': '#800080'
-};
-
-export function ProductFilters({ 
-  categorySlug, 
-  activeFilters, 
-  availableTerms,
-  onFiltersChange 
-}: ProductFiltersProps) {
-  const { profile } = useAuth();
-  const [attributes, setAttributes] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // --- FLAGS DE CONFIGURATION ---
-  const ENABLE_CLOTHING_FILTERS = false; 
-  const ENABLE_COLOR_FILTERS = false;
-
-  useEffect(() => {
-    loadFilterData();
-  }, []);
-
-  async function loadFilterData() {
-    try {
-      const { data: attrs, error } = await supabase
-        .from('product_attributes')
-        .select(`
-          id, name, slug,
-          terms:product_attribute_terms(id, name, slug, color_code)
-        `)
-        .eq('is_visible', true)
-        .order('order_by');
-
-      if (error) throw error;
-      setAttributes(attrs || []);
-    } catch (error) {
-      console.error('Error loading filters:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const toggleFilter = (key: string, value: string | boolean) => {
-    if (typeof onFiltersChange !== 'function') return;
-    
-    const newFilters = { ...activeFilters };
-    if (typeof value === 'boolean') {
-      newFilters[key] = value;
-    } else {
-      const current = Array.isArray(newFilters[key]) ? newFilters[key] : [];
-      if (current.includes(value)) {
-        newFilters[key] = current.filter((v: string) => v !== value);
-      } else {
-        newFilters[key] = [...current, value];
-      }
-    }
-    onFiltersChange(newFilters);
-  };
-
-  const clearFilters = () => {
-    if (typeof onFiltersChange === 'function') {
-      onFiltersChange({
-        mySize: false,
-        sizes: [],
-        colors: [],
-        comfort: [],
-        coupe: [],
-        live: false,
-        nouveautes: false
-      });
-    }
-  };
-
-  if (loading) return (
-    <div className="animate-pulse space-y-4 pt-4">
-      <div className="h-4 bg-gray-100 rounded w-1/2"></div>
-      <div className="h-20 bg-gray-100 rounded w-full"></div>
-    </div>
-  );
-
-  const sizeGroup = attributes.find(a => a.slug === 'tailles' || a.slug === 'taille');
-  const colorGroup = attributes.find(a => a.slug === 'couleurs' || a.slug === 'couleur');
-  const otherGroups = attributes.filter(a => 
-    a.slug !== 'tailles' && a.slug !== 'taille' && 
-    a.slug !== 'couleurs' && a.slug !== 'couleur'
-  );
-
-  return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 font-black uppercase text-[11px] tracking-[0.15em] text-gray-900">
-          <Filter className="h-4 w-4" /> Filtres de recherche
-        </div>
-        <button onClick={clearFilters} className="text-[10px] font-bold text-gray-400 hover:text-[#D4AF37] transition-all uppercase tracking-widest flex items-center gap-1">
-          <X className="h-3 w-3" /> Effacer
-        </button>
-      </div>
-
-      <Separator className="opacity-50" />
-
-      {/* SECTION MA TAILLE (DÉSACTIVÉE) */}
-      {ENABLE_CLOTHING_FILTERS && profile?.user_size && (
-        <div className="space-y-3">
-          <div className="flex items-center space-x-3 bg-amber-50/50 p-4 rounded-2xl border border-amber-100/50">
-            <Checkbox id="filter-mysize" checked={activeFilters.mySize} onCheckedChange={(c) => toggleFilter('mySize', !!c)} className="data-[state=checked]:bg-[#D4AF37] border-[#D4AF37] h-5 w-5" />
-            <div className="grid gap-1">
-              <Label htmlFor="filter-mysize" className="text-sm font-black text-[#b8933d] cursor-pointer uppercase tracking-tight">✨ Ma taille ({profile.user_size})</Label>
-              <p className="text-[9px] text-amber-700 font-medium">Afficher seulement ce qui me va</p>
-            </div>
-          </div>
-          <Separator className="mt-6 opacity-30" />
-        </div>
-      )}
-
-      {/* AUTRES ATTRIBUTS DYNAMIQUES (Filtrage par ID) */}
-      {otherGroups.map((group) => {
-        const visibleTerms = group.terms.filter((opt: any) => availableTerms.has(opt.name));
-        if (visibleTerms.length === 0) return null;
-
-        return (
-          <div key={group.id} className="space-y-4 animate-in fade-in duration-500">
-            <h3 className="font-black text-[10px] uppercase tracking-widest text-gray-400">{group.name}</h3>
-            <div className="space-y-3">
-              {visibleTerms.map((opt: FilterOption) => {
-                const isActive = activeFilters[group.id]?.includes(opt.name);
-                return (
-                  <div key={opt.id} className="flex items-center space-x-3 group cursor-pointer">
-                    <Checkbox id={`${group.slug}-${opt.id}`} checked={isActive || false} onCheckedChange={() => toggleFilter(group.id, opt.name)} className="data-[state=checked]:bg-[#D4AF37] border-[#D4AF37] rounded-md h-5 w-5" />
-                    <Label htmlFor={`${group.slug}-${opt.id}`} className={cn("text-sm font-bold cursor-pointer transition-colors uppercase tracking-tight", isActive ? "text-[#D4AF37]" : "text-gray-600 hover:text-gray-900")}>
-                      {opt.name}
-                    </Label>
-                  </div>
-                );
-              })}
-            </div>
-            <Separator className="opacity-30 mt-6" />
-          </div>
-        );
-      })}
-
-      {/* EXPÉRIENCE KAVERN */}
-      <div className="space-y-5 pt-2">
-        <h3 className="font-black text-[10px] uppercase tracking-widest text-[#b8933d]">Expérience Kavern</h3>
-        <div className="space-y-4">
-          <div className="flex items-center space-x-3 group cursor-pointer">
-            <Checkbox id="filter-live" checked={activeFilters.live} onCheckedChange={(c) => toggleFilter('live', !!c)} className="data-[state=checked]:bg-pink-500 border-pink-500 rounded-md h-5 w-5" />
-            <Label htmlFor="filter-live" className="text-sm font-black text-gray-700 cursor-pointer group-hover:text-pink-600 transition-colors uppercase tracking-tight">🎥 Vu en Live</Label>
-          </div>
-          <div className="flex items-center space-x-3 group cursor-pointer">
-            <Checkbox id="filter-nouveautes" checked={activeFilters.nouveautes} onCheckedChange={(c) => toggleFilter('nouveautes', !!c)} className="data-[state=checked]:bg-[#D4AF37] border-[#D4AF37] rounded-md h-5 w-5" />
-            <Label htmlFor="filter-nouveautes" className="text-sm font-black text-gray-700 cursor-pointer group-hover:text-[#D4AF37] transition-colors uppercase tracking-tight">✨ Nouveautés</Label>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-</file>
-
 <file path="components/site-footer.tsx">
 'use client';
 
@@ -89183,6 +89208,233 @@ export function SiteFooter() {
         </div>
       </section>
     </footer>
+  );
+}
+</file>
+
+<file path="components/ProductFilters.tsx">
+'use client';
+
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { X, Filter, Check, Video } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+export interface FilterState {
+  mySize: boolean;
+  sizes: string[];
+  colors: string[];
+  comfort: string[];
+  coupe: string[];
+  live: boolean;
+  nouveautes: boolean;
+  [key: string]: any;
+}
+
+const FALLBACK_COLORS: Record<string, string> = {
+  'blanc': '#FFFFFF', 'noir': '#111111', 'gris': '#808080', 'beige': '#F5F5DC',
+  'rouge': '#ef4444', 'bleu': '#3b82f6', 'vert': '#22c55e', 'jaune': '#eab308',
+  'rose': '#ec4899', 'marron': '#8b4513', 'or': '#d4af37', 'argent': '#c0c0c0',
+  'multicolore': 'conic-gradient(red, yellow, green, blue, magenta, red)',
+  'ivoire nacré': '#F9F6EE', 'vert malachite': '#0E4B31'
+};
+
+export function ProductFilters({ 
+  activeFilters, 
+  availableTerms,
+  onFiltersChange 
+}: any) {
+  const [attributes, setAttributes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const { data, error } = await supabase
+          .from('product_attributes')
+          .select('id, name, slug, terms:product_attribute_terms(id, name, slug, color_code)')
+          .eq('is_visible', true)
+          .order('order_by');
+        
+        if (error) throw error;
+        setAttributes(data || []);
+      } catch (error) {
+        console.error('Error loading filters:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  const checkHasTerm = (name: string) => {
+    if (!availableTerms || !(availableTerms instanceof Set)) return false;
+    return availableTerms.has(name.toLowerCase().trim());
+  };
+
+  const toggleFilter = (slug: string, value: string) => {
+    const newFilters = { ...activeFilters };
+    const current = Array.isArray(newFilters[slug]) ? newFilters[slug] : [];
+    
+    newFilters[slug] = current.includes(value)
+      ? current.filter((v: string) => v !== value)
+      : [...current, value];
+      
+    onFiltersChange(newFilters);
+  };
+
+  const resetFilters = () => {
+    // On réinitialise l'objet complet pour vider aussi les slugs dynamiques
+    onFiltersChange({
+      mySize: false,
+      sizes: [],
+      colors: [],
+      comfort: [],
+      coupe: [],
+      live: false,
+      nouveautes: false,
+    });
+  };
+
+  if (loading) return (
+    <div className="space-y-6 pt-4 animate-pulse">
+      <div className="h-4 bg-gray-50 rounded-full w-1/2"></div>
+      <div className="h-24 bg-gray-50 rounded-[2rem] w-full"></div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-10">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 font-black uppercase text-[11px] tracking-[0.2em] text-gray-900">
+          <Filter className="h-3.5 w-3.5" /> Filtrer
+        </div>
+        <button
+          onClick={resetFilters}
+          className="text-[9px] font-black text-gray-300 hover:text-[#D4AF37] uppercase tracking-widest flex items-center gap-1"
+        >
+          <X className="h-3 w-3" /> Reset
+        </button>
+      </div>
+
+      <Separator className="opacity-50" />
+
+      {attributes.map((group) => {
+        // Filtre les termes pour n'afficher que ceux présents dans les produits affichés
+        const visibleTerms = group.terms?.filter((opt: any) => checkHasTerm(opt.name)) || [];
+        if (visibleTerms.length === 0) return null;
+
+        const isColor =
+          group.name.toLowerCase().includes('couleur') ||
+          group.name.toLowerCase().includes('pierre');
+
+        return (
+          <div key={group.id} className="space-y-5 animate-in fade-in duration-700">
+            <h3 className="font-black text-[10px] uppercase tracking-[0.3em] text-gray-400">
+              {group.name}
+            </h3>
+
+            <div className={cn(isColor ? 'flex flex-wrap gap-3' : 'space-y-4')}>
+              {visibleTerms.map((opt: any) => {
+                // On utilise le SLUG du groupe (ex: 'couleur') comme clé
+                const isActive = (activeFilters[group.slug] || []).includes(opt.name);
+
+                if (isColor) {
+                  const colorCode =
+                    opt.color_code ||
+                    FALLBACK_COLORS[opt.name.toLowerCase().trim()] ||
+                    '#EEEEEE';
+
+                  return (
+                    <button
+                      key={opt.id}
+                      onClick={() => toggleFilter(group.slug, opt.name)}
+                      title={opt.name}
+                      className={cn(
+                        'w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ring-1 ring-gray-100',
+                        isActive
+                          ? 'ring-2 ring-offset-2 ring-[#b8933d] scale-110 shadow-xl'
+                          : 'hover:scale-105'
+                      )}
+                      style={{
+                        backgroundColor: colorCode.includes('gradient') ? undefined : colorCode,
+                        backgroundImage: colorCode.includes('gradient') ? colorCode : undefined,
+                      }}
+                    >
+                      {isActive && (
+                        <Check
+                          className={cn(
+                            'w-5 h-5',
+                            ['#ffffff', '#f5f5dc', '#f9f6ee'].includes(colorCode.toLowerCase())
+                              ? 'text-gray-900'
+                              : 'text-white'
+                          )}
+                        />
+                      )}
+                    </button>
+                  );
+                }
+
+                return (
+                  <div
+                    key={opt.id}
+                    className="flex items-center space-x-3 group cursor-pointer"
+                    onClick={() => toggleFilter(group.slug, opt.name)}
+                  >
+                    <Checkbox
+                      checked={isActive}
+                      className="data-[state=checked]:bg-[#D4AF37] border-gray-200 h-6 w-6 rounded-xl"
+                    />
+                    <Label
+                      className={cn(
+                        'text-xs font-bold cursor-pointer transition-colors uppercase tracking-tight',
+                        isActive
+                          ? 'text-[#D4AF37]'
+                          : 'text-gray-500 group-hover:text-gray-900'
+                      )}
+                    >
+                      {opt.name}
+                    </Label>
+                  </div>
+                );
+              })}
+            </div>
+
+            <Separator className="opacity-30 pt-4" />
+          </div>
+        );
+      })}
+
+      {/* Univers Kavern — Vu en Live */}
+      <div className="space-y-6 pt-2">
+        <h3 className="font-black text-[10px] uppercase tracking-[0.3em] text-[#b8933d]">
+          Univers Kavern
+        </h3>
+        <div className="space-y-4">
+          <div
+            className={cn(
+              'flex items-center space-x-3 p-4 rounded-2xl border transition-all cursor-pointer',
+              activeFilters.live ? 'bg-pink-50 border-pink-100' : 'bg-white border-gray-50'
+            )}
+            onClick={() => onFiltersChange({ ...activeFilters, live: !activeFilters.live })}
+          >
+            <Checkbox
+              checked={activeFilters.live}
+              className="data-[state=checked]:bg-pink-500 border-pink-200 h-5 w-5 rounded-lg"
+            />
+            <div className="flex items-center gap-2">
+              <Video className="h-4 w-4 text-pink-500" />
+              <Label className="text-[10px] font-black uppercase tracking-widest cursor-pointer">
+                Vu en Live
+              </Label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 </file>
@@ -89965,7 +90217,7 @@ import {
   Star,
   Info,
   ArrowRight,
-  Tag // Ajout de l'icône Tag
+  Tag
 } from "lucide-react";
 import { ProductGallery } from "@/components/ProductGallery";
 import { ProductVariationSelector } from "@/components/ProductVariationSelector";
@@ -90011,7 +90263,6 @@ export default function ProductPage() {
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [reviews, setReviews] = useState<any[]>([]);
-  const [loadingReviews, setLoadingReviews] = useState(true);
 
   useEffect(() => {
     if (slug) loadProduct();
@@ -90021,7 +90272,10 @@ export default function ProductPage() {
     try {
       const { data, error } = await supabase
         .from("products")
-        .select("*")
+        .select(`
+          *,
+          product_variations (*)
+        `)
         .eq("slug", slug)
         .maybeSingle();
 
@@ -90056,8 +90310,6 @@ export default function ProductPage() {
         setReviews(revs || []);
     } catch (err) {
         console.error("Error loading extra data:", err);
-    } finally {
-        setLoadingReviews(false);
     }
   }
 
@@ -90072,14 +90324,16 @@ export default function ProductPage() {
   }, [product, selectedVariation]);
 
   const isOutOfStock = useMemo(() => {
-    if (product?.has_variations) return selectedVariation ? selectedVariation.stock_quantity <= 0 : false;
+    if (product?.has_variations || product?.type === 'variable') {
+       return selectedVariation ? selectedVariation.stock_quantity <= 0 : false;
+    }
     return product?.stock_quantity <= 0;
   }, [product, selectedVariation]);
 
   const handleAddToCart = () => {
     if (!product) return;
-    if (product.has_variations && !selectedVariation) {
-      toast.error("Veuillez sélectionner une option");
+    if ((product.has_variations || product.type === 'variable') && !selectedVariation) {
+      toast.error("Veuillez sélectionner une option (couleur, taille...)");
       return;
     }
     addToCart({
@@ -90125,7 +90379,8 @@ export default function ProductPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-8 lg:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-          {/* GALERIE HYBRIDE */}
+          
+          {/* GALERIE */}
           <div className="space-y-6 lg:sticky lg:top-24">
             <ProductGallery 
               images={[
@@ -90142,69 +90397,99 @@ export default function ProductPage() {
             </div>
           </div>
 
-          {/* DÉTAILS */}
+          {/* DÉTAILS DU PRODUIT */}
           <div className="space-y-8">
             <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-4">
-                  <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-[1.1] uppercase tracking-tighter">
-                    {decodeHtmlEntities(product.name)}
-                  </h1>
-                  <WishlistButton 
-                    productId={product.id} 
-                    className="shrink-0 h-10 w-10 md:h-12 md:w-12 bg-white shadow-sm border border-gray-100 rounded-full hover:bg-pink-50 hover:text-pink-500 transition-all duration-300" 
-                  />
+              
+              <div className="flex items-start justify-between gap-4">
+                <h1 className="text-2xl md:text-3xl font-black text-gray-900 leading-tight uppercase tracking-tighter">
+                  {decodeHtmlEntities(product.name)}
+                </h1>
+                <WishlistButton 
+                  productId={product.id} 
+                  className="shrink-0 h-10 w-10 md:h-12 md:w-12 bg-white shadow-sm border border-gray-100 rounded-full hover:bg-pink-50 hover:text-pink-500 transition-all duration-300" 
+                />
+              </div>
+              
+              {product.short_description && (
+                <p className="text-lg text-[#C6A15B] italic font-semibold leading-relaxed">
+                  &quot;{product.short_description}&quot;
+                </p>
+              )}
+
+              <div className="flex flex-wrap gap-2 pt-2">
+                {product.is_featured && <Badge className="bg-[#D4AF37] text-white px-3 py-1 rounded-full font-black text-[10px] uppercase shadow-md animate-bounce">⭐ La Vedette d&apos;André</Badge>}
+              </div>
+            </div>
+
+            {/* BADGE CAGNOTTE */}
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4 flex items-center gap-4 shadow-sm animate-in fade-in slide-in-from-bottom-2">
+              <div className="bg-amber-100 p-2.5 rounded-full text-amber-600 shrink-0">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="text-sm">
+                Gagnez <strong className="font-black text-amber-700 text-base">2%</strong> sur votre cagnotte de fidélité à chaque achat !
+              </div>
+            </div>
+
+            {/* LE SÉLECTEUR DE VARIANTES ULTRA-SÉCURISÉ */}
+            {(product.has_variations || product.type === 'variable' || (product.product_variations && product.product_variations.length > 0)) && (
+              <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm space-y-4 animate-in fade-in slide-in-from-bottom-4">
+                <Label className="text-sm font-black uppercase tracking-widest text-gray-400 text-[10px]">Personnalisez votre pépite</Label>
+                <ProductVariationSelector 
+                  attributes={product.attributes} 
+                  variations={product.product_variations || []} 
+                  onVariationSelect={setSelectedVariation} 
+                />
+              </div>
+            )}
+
+            {/* BLOC ACHAT */}
+            <div className="bg-white rounded-[2rem] p-6 shadow-xl border border-gray-100 flex flex-col sm:flex-row items-center gap-6 z-40 sticky bottom-4 sm:relative mt-2">
+              <div className="flex items-center justify-between w-full sm:w-auto gap-6">
+                
+                <div className="flex flex-col">
+                  <span className="text-3xl font-black text-[#b8933d] whitespace-nowrap tracking-tighter">
+                    {currentPrice.toFixed(2)} €
+                  </span>
+                  {oldPrice && (
+                    <span className="text-sm text-gray-400 line-through italic">
+                      {oldPrice.toFixed(2)} €
+                    </span>
+                  )}
                 </div>
                 
-                {product.short_description && (
-                  <p className="text-xl text-[#C6A15B] italic font-semibold leading-relaxed">
-                    &quot;{product.short_description}&quot;
-                  </p>
-                )}
-              </div>
-
-              <div className="flex items-center gap-6 py-2">
-                <div className="flex items-baseline gap-3">
-                  <span className="text-5xl font-black text-gray-900 tracking-tighter">{currentPrice.toFixed(2)} €</span>
-                  {oldPrice && <span className="text-2xl text-gray-300 line-through font-light italic">{oldPrice.toFixed(2)} €</span>}
+                <div className="flex items-center border-2 border-gray-100 rounded-2xl bg-white h-14 px-2 shadow-inner">
+                  <Button variant="ghost" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="text-[#b8933d] hover:bg-transparent"><Minus className="h-4 w-4" /></Button>
+                  <Input type="number" value={quantity} onChange={(e) => setQuantity(parseInt(e.target.value) || 1)} className="w-12 border-none text-center font-black text-lg focus-visible:ring-0 p-0" />
+                  <Button variant="ghost" size="icon" onClick={() => setQuantity(quantity + 1)} className="text-[#b8933d] hover:bg-transparent"><Plus className="h-4 w-4" /></Button>
                 </div>
-                {product.is_featured && <Badge className="bg-[#D4AF37] text-white px-4 py-1.5 rounded-full font-black text-[10px] uppercase shadow-md animate-bounce">⭐ La Vedette d&apos;André</Badge>}
+
               </div>
+              
+              <Button 
+                onClick={handleAddToCart} 
+                disabled={isOutOfStock}
+                className="w-full sm:flex-1 h-14 bg-[#b8933d] hover:bg-[#a68231] text-white rounded-xl text-lg font-black shadow-lg shadow-amber-500/20 uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 flex gap-3"
+              >
+                <ShoppingCart className="w-5 h-5" /> 
+                {isOutOfStock ? "Victime de son succès" : "Je craque !"}
+              </Button>
             </div>
 
             {/* AVIS D'ANDRÉ */}
             {product.andre_review && (
-              <Card className="bg-gradient-to-br from-amber-50 to-white border-2 border-amber-100/30 shadow-xl rounded-[2.5rem] overflow-hidden">
-                <CardContent className="p-10 space-y-5 relative">
-                  <MessageCircle className="absolute right-8 top-8 w-16 h-16 text-[#d4af37]/5" />
+              <Card className="bg-gradient-to-br from-amber-50 to-white border-2 border-amber-100/30 shadow-md rounded-[2.5rem] overflow-hidden mt-4">
+                <CardContent className="p-8 space-y-4 relative">
+                  <MessageCircle className="absolute right-6 top-6 w-12 h-12 text-[#d4af37]/5" />
                   <h3 className="text-xs font-black flex items-center gap-2 text-[#b8933d] uppercase tracking-[0.3em]"><Sparkles className="w-4 h-4 fill-[#b8933d]"/> L&apos;avis d&apos;André</h3>
-                  <p className="text-gray-800 leading-[1.8] italic text-xl font-medium">&quot;{product.andre_review}&quot;</p>
+                  <p className="text-gray-800 leading-relaxed italic text-lg font-medium">&quot;{product.andre_review}&quot;</p>
                 </CardContent>
               </Card>
             )}
 
-            {product.has_variations && (
-              <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl space-y-6">
-                <Label className="text-sm font-black uppercase tracking-widest text-gray-400 text-[10px]">Personnalisez votre pépite</Label>
-                <ProductVariationSelector productId={product.id} onVariationSelect={setSelectedVariation} />
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex items-center border-2 border-gray-100 rounded-2xl bg-white h-16 px-3 shadow-inner">
-                  <Button variant="ghost" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="text-[#b8933d]"><Minus className="h-5 w-5" /></Button>
-                  <Input type="number" value={quantity} onChange={(e) => setQuantity(parseInt(e.target.value) || 1)} className="w-16 border-none text-center font-black text-xl focus-visible:ring-0" />
-                  <Button variant="ghost" size="icon" onClick={() => setQuantity(quantity + 1)} className="text-[#b8933d]"><Plus className="h-5 w-5" /></Button>
-                </div>
-                <Button onClick={handleAddToCart} disabled={isOutOfStock} className="flex-1 h-16 rounded-2xl bg-[#b8933d] hover:bg-[#D4AF37] text-white text-lg font-black shadow-2xl transition-all uppercase tracking-widest">
-                  {isOutOfStock ? "Victime de son succès" : "Craquer maintenant"}
-                </Button>
-              </div>
-            </div>
-
-            {/* ACCORDÉON DESCRIPTION & INFOS */}
-            <Accordion type="single" collapsible className="w-full space-y-2">
+            {/* ACCORDÉON (DESCRIPTION & SEO & LIVRAISON) */}
+            <Accordion type="single" collapsible className="w-full space-y-2 mt-4">
               <AccordionItem value="description" className="border-none bg-white rounded-2xl px-6 shadow-sm">
                 <AccordionTrigger className="font-black text-gray-900 uppercase text-[10px] tracking-[0.2em] py-5">L&apos;histoire & Secrets</AccordionTrigger>
                 <AccordionContent className="pb-8 font-medium leading-relaxed text-gray-600">
@@ -90215,7 +90500,7 @@ export default function ProductPage() {
                       prose-a:text-[#b8933d] prose-a:font-bold hover:prose-a:underline" 
                   />
                   
-                  {/* POINT 6 : AFFICHAGE DES TAGS SEO */}
+                  {/* TAGS SEO */}
                   {product.tags && product.tags.length > 0 && (
                     <div className="mt-8 pt-6 border-t border-gray-100">
                       <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2">
@@ -90238,6 +90523,7 @@ export default function ProductPage() {
               </AccordionItem>
             </Accordion>
 
+            {/* AVIS CLIENTS */}
             <div className="pt-10 border-t-2 border-gray-50 space-y-8" id="avis">
                 <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] flex items-center justify-between text-[10px]">
                   <span>Avis des collectionneurs ({(reviews || []).length})</span>
@@ -90280,11 +90566,7 @@ export default function ProductPage() {
                {relatedProducts.map((rel) => (
                  <Link key={rel.id} href={`/product/${rel.slug}`} className="group space-y-3">
                    <div className="aspect-[4/5] rounded-2xl overflow-hidden bg-gray-100 relative shadow-sm transition-all group-hover:shadow-xl group-hover:-translate-y-1">
-                     <img 
-                       src={rel.image_url} 
-                       alt={rel.name} 
-                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                     />
+                     <img src={rel.image_url} alt={rel.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
                    </div>
                    <div className="space-y-1 px-1">

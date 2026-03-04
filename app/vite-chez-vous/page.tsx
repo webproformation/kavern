@@ -110,7 +110,7 @@ export default function ViteChezVousPage() {
                     <span className="font-bold ml-2">Mondial Relay</span>
                   </div>
                   <p className="text-sm text-gray-600">
-                    Livraison en point relais. Idéal pour récupérer votre colis à votre rythme, près de chez vous ou du travail.
+                    Livraison en point relais à partir de <strong>4,90€</strong>. Idéal pour récupérer votre colis à votre rythme, près de chez vous ou du travail.
                   </p>
                 </CardContent>
               </Card>
@@ -128,15 +128,15 @@ export default function ViteChezVousPage() {
                 </CardContent>
               </Card>
 
-              {/* GLS */}
+              {/* DPD & MONDIAL RELAY */}
               <Card className="bg-white hover:shadow-md transition-shadow">
                 <CardContent className="p-6 text-center space-y-4">
                   <div className="w-full h-12 flex items-center justify-center grayscale hover:grayscale-0 transition-all">
                     <Truck className="h-8 w-8 text-[#C6A15B]" />
-                    <span className="font-bold ml-2">GLS</span>
+                    <span className="font-bold ml-2">DPD & Mondial Relay</span>
                   </div>
                   <p className="text-sm text-gray-600">
-                    Livraison à domicile ou en point relais. Parfait pour les gros colis ou pour le confort absolu.
+                    Livraison à domicile. Parfait pour les gros colis ou pour le confort absolu.
                   </p>
                 </CardContent>
               </Card>

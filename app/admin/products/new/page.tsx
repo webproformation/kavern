@@ -30,7 +30,8 @@ import {
   AlertCircle,
   ImageIcon,
   Layers,
-  Settings2
+  Settings2,
+  Tag
 } from "lucide-react";
 import Link from "next/link";
 import RichTextEditor from "@/components/RichTextEditor";
@@ -40,14 +41,6 @@ import GeneralAttributesSelector from "@/components/GeneralAttributesSelector";
 import ColorSwatchSelector from "@/components/ColorSwatchSelector";
 import VariationDetailsForm from "@/components/VariationDetailsForm";
 import { useAutoSave } from "@/hooks/useAutoSave"; 
-
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  parent_id: string | null;
-  display_order: number | null;
-}
 
 interface Variation {
   colorName: string;
@@ -63,8 +56,10 @@ export default function NewProductPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
 
+  // ID temporaire pour le nouveau produit
   const [newProductId] = useState(() => crypto.randomUUID());
 
+  // --- ÉTATS ---
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [sku, setSku] = useState("");
@@ -86,6 +81,7 @@ export default function NewProductPage() {
   const [showSizes, setShowSizes] = useState(false);
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
 
   const [mainImage, setMainImage] = useState<string>("");
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
@@ -101,47 +97,45 @@ export default function NewProductPage() {
   const [sizeRangeEnd, setSizeRangeEnd] = useState<number | null>(null);
   const [variations, setVariations] = useState<Variation[]>([]);
 
+  // --- AUTO-SAVE ---
   const currentFormData = {
     newProductId, name, slug, sku, shortDescription, description, andreReview, videoUrl,
     purchasePrice, regularPrice, salePrice, stockQuantity, virtualWeight,
-    status, isFeatured, isDiamond, hasVariations, showSizes, seoTitle, seoDescription,
+    status, isFeatured, isDiamond, hasVariations, showSizes, seoTitle, seoDescription, tags,
     mainImage, galleryImages, selectedCategories, selectedAttributes, relatedProductIds,
     selectedNuances, nuanceIds, sizeRangeStart, sizeRangeEnd, variations
   };
 
-  const { clearSavedData } = useAutoSave(
-    `new_product_creation`,
-    currentFormData,
-    (savedData: any) => {
-        if (savedData.name !== undefined) setName(savedData.name);
-        if (savedData.slug !== undefined) setSlug(savedData.slug);
-        if (savedData.sku !== undefined) setSku(savedData.sku);
-        if (savedData.shortDescription !== undefined) setShortDescription(savedData.shortDescription);
-        if (savedData.description !== undefined) setDescription(savedData.description);
-        if (savedData.andreReview !== undefined) setAndreReview(savedData.andreReview);
-        if (savedData.videoUrl !== undefined) setVideoUrl(savedData.videoUrl);
-        if (savedData.purchasePrice !== undefined) setPurchasePrice(savedData.purchasePrice);
-        if (savedData.regularPrice !== undefined) setRegularPrice(savedData.regularPrice);
-        if (savedData.salePrice !== undefined) setSalePrice(savedData.salePrice);
-        if (savedData.stockQuantity !== undefined) setStockQuantity(savedData.stockQuantity);
-        if (savedData.virtualWeight !== undefined) setVirtualWeight(savedData.virtualWeight);
-        if (savedData.status !== undefined) setStatus(savedData.status);
-        if (savedData.isFeatured !== undefined) setIsFeatured(savedData.isFeatured);
-        if (savedData.isDiamond !== undefined) setIsDiamond(savedData.isDiamond);
-        if (savedData.hasVariations !== undefined) setHasVariations(savedData.hasVariations);
-        if (savedData.showSizes !== undefined) setShowSizes(savedData.showSizes);
-        if (savedData.seoTitle !== undefined) setSeoTitle(savedData.seoTitle);
-        if (savedData.seoDescription !== undefined) setSeoDescription(savedData.seoDescription);
-        if (savedData.mainImage !== undefined) setMainImage(savedData.mainImage);
-        if (savedData.galleryImages !== undefined) setGalleryImages(savedData.galleryImages);
-        if (savedData.selectedCategories !== undefined) setSelectedCategories(savedData.selectedCategories);
-        if (savedData.selectedAttributes !== undefined) setSelectedAttributes(savedData.selectedAttributes);
-        if (savedData.relatedProductIds !== undefined) setRelatedProductIds(savedData.relatedProductIds);
-        if (savedData.selectedNuances !== undefined) setSelectedNuances(savedData.selectedNuances);
-        if (savedData.nuanceIds !== undefined) setNuanceIds(savedData.nuanceIds);
-        if (savedData.variations !== undefined) setVariations(savedData.variations);
-    }
-  );
+  useAutoSave(`new_product_creation`, currentFormData, (savedData: any) => {
+    if (savedData.name !== undefined) setName(savedData.name);
+    if (savedData.slug !== undefined) setSlug(savedData.slug);
+    if (savedData.sku !== undefined) setSku(savedData.sku);
+    if (savedData.shortDescription !== undefined) setShortDescription(savedData.shortDescription);
+    if (savedData.description !== undefined) setDescription(savedData.description);
+    if (savedData.andreReview !== undefined) setAndreReview(savedData.andreReview);
+    if (savedData.videoUrl !== undefined) setVideoUrl(savedData.videoUrl);
+    if (savedData.purchasePrice !== undefined) setPurchasePrice(savedData.purchasePrice);
+    if (savedData.regularPrice !== undefined) setRegularPrice(savedData.regularPrice);
+    if (savedData.salePrice !== undefined) setSalePrice(savedData.salePrice);
+    if (savedData.stockQuantity !== undefined) setStockQuantity(savedData.stockQuantity);
+    if (savedData.virtualWeight !== undefined) setVirtualWeight(savedData.virtualWeight);
+    if (savedData.status !== undefined) setStatus(savedData.status);
+    if (savedData.isFeatured !== undefined) setIsFeatured(savedData.isFeatured);
+    if (savedData.isDiamond !== undefined) setIsDiamond(savedData.isDiamond);
+    if (savedData.hasVariations !== undefined) setHasVariations(savedData.hasVariations);
+    if (savedData.showSizes !== undefined) setShowSizes(savedData.showSizes);
+    if (savedData.seoTitle !== undefined) setSeoTitle(savedData.seoTitle);
+    if (savedData.seoDescription !== undefined) setSeoDescription(savedData.seoDescription);
+    if (savedData.tags !== undefined) setTags(savedData.tags);
+    if (savedData.mainImage !== undefined) setMainImage(savedData.mainImage);
+    if (savedData.galleryImages !== undefined) setGalleryImages(savedData.galleryImages);
+    if (savedData.selectedCategories !== undefined) setSelectedCategories(savedData.selectedCategories);
+    if (savedData.selectedAttributes !== undefined) setSelectedAttributes(savedData.selectedAttributes);
+    if (savedData.relatedProductIds !== undefined) setRelatedProductIds(savedData.relatedProductIds);
+    if (savedData.selectedNuances !== undefined) setSelectedNuances(savedData.selectedNuances);
+    if (savedData.nuanceIds !== undefined) setNuanceIds(savedData.nuanceIds);
+    if (savedData.variations !== undefined) setVariations(savedData.variations);
+  });
 
   useEffect(() => {
     if (name) {
@@ -157,11 +151,16 @@ export default function NewProductPage() {
     fetchProducts();
   }, []);
 
-  const margin = useMemo(() => {
-    if (regularPrice > 0) {
-      return (((regularPrice - purchasePrice) / regularPrice) * 100).toFixed(1);
-    }
-    return "0";
+  // --- CALCUL DE LA MARGE RÉELLE (BASÉ SUR LE HT) ---
+  const marginData = useMemo(() => {
+    const saleHT = regularPrice / 1.2; // Conversion Vente TTC en HT
+    const marginEuro = saleHT - purchasePrice; // Marge nette en euros
+    const marginPercent = saleHT > 0 ? (marginEuro / saleHT) * 100 : 0;
+    
+    return {
+      euro: marginEuro.toFixed(2),
+      percent: marginPercent.toFixed(1)
+    };
   }, [purchasePrice, regularPrice]);
 
   useEffect(() => {
@@ -178,15 +177,14 @@ export default function NewProductPage() {
         return [...kept, ...added];
       });
     }
-  }, [selectedNuances, nuanceIds, hasVariations]);
+  }, [selectedNuances, nuanceIds, hasVariations, regularPrice, salePrice, stockQuantity]);
 
-  const handleFamilySelect = (name: string, id: string) => { setActiveFamilyView(name); };
-  const handleNuanceToggle = (name: string, id: string, selected: boolean) => {
+  const handleNuanceToggle = (nuanceName: string, id: string, selected: boolean) => {
     if (selected) {
-      setSelectedNuances(prev => Array.from(new Set([...prev, name])));
-      setNuanceIds(prev => ({ ...prev, [name]: id }));
+      setSelectedNuances(prev => Array.from(new Set([...prev, nuanceName])));
+      setNuanceIds(prev => ({ ...prev, [nuanceName]: id }));
     } else {
-      setSelectedNuances(prev => prev.filter(n => n !== name));
+      setSelectedNuances(prev => prev.filter(n => n !== nuanceName));
     }
   };
 
@@ -197,23 +195,24 @@ export default function NewProductPage() {
       const finalAttributes = { ...selectedAttributes };
       if (hasVariations) finalAttributes['Couleur'] = selectedNuances;
 
-      const { data: newProd, error: pErr } = await supabase.from("products").insert({
+      const { error: pErr } = await supabase.from("products").insert({
         id: newProductId, name: name.trim(), slug: slug.trim(), sku: sku.trim() || null,
         short_description: shortDescription.substring(0, 150), description, andre_review: andreReview,
         video_url: videoUrl, purchase_price: purchasePrice, regular_price: regularPrice,
         sale_price: salePrice, stock_quantity: stockQuantity, virtual_weight: virtualWeight,
         status, is_featured: isFeatured, is_diamond: isDiamond, has_variations: hasVariations,
         seo_title: seoTitle || name, seo_description: seoDescription || shortDescription,
+        tags: tags,
         image_url: mainImage, gallery_images: galleryImages, attributes: finalAttributes,
         related_product_ids: relatedProductIds,
         size_range_start: showSizes ? sizeRangeStart : null,
         size_range_end: showSizes ? sizeRangeEnd : null
-      }).select().single();
+      });
 
       if (pErr) throw pErr;
 
       if (selectedCategories.length > 0) {
-        const mappings = selectedCategories.map((id, i) => ({ product_id: newProductId, category_id: id, is_primary: i === 0, display_order: i }));
+        const mappings = selectedCategories.map((catId, i) => ({ product_id: newProductId, category_id: catId, is_primary: i === 0, display_order: i }));
         await supabase.from("product_category_mapping").insert(mappings);
       }
 
@@ -227,7 +226,6 @@ export default function NewProductPage() {
         await supabase.from("product_variations").insert(toInsert);
       }
 
-      clearSavedData();
       toast.success("Nouvelle pépite créée !");
       router.push("/admin/products");
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
@@ -235,7 +233,6 @@ export default function NewProductPage() {
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-24">
-      {/* HEADER FIXE */}
       <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -256,8 +253,6 @@ export default function NewProductPage() {
 
       <div className="max-w-7xl mx-auto px-6 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          
-          {/* 1. L'ÂME DU PRODUIT */}
           <Card className="shadow-sm border-none bg-white">
             <CardHeader className="border-b bg-gray-50/50">
               <div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-[#C6A15B]"/><CardTitle className="text-lg">L&apos;Âme du Produit</CardTitle></div>
@@ -279,7 +274,6 @@ export default function NewProductPage() {
             </CardContent>
           </Card>
 
-          {/* 2. VISUELS & VIDÉO */}
           <Card className="shadow-sm border-none bg-white">
             <CardHeader className="border-b bg-gray-50/50">
               <div className="flex items-center gap-2"><Video className="h-5 w-5 text-gray-800" /><CardTitle className="text-lg">Visuels & Démo</CardTitle></div>
@@ -294,19 +288,18 @@ export default function NewProductPage() {
             </CardContent>
           </Card>
 
-          {/* 3. LE CROSS-SELLING */}
           <Card className="shadow-sm border-none bg-white">
             <CardHeader className="border-b bg-gray-50/50"><CardTitle className="text-lg flex items-center gap-2"><Layers className="h-5 w-5 text-blue-500" /> Ventes Suggérées</CardTitle></CardHeader>
             <CardContent className="p-6 space-y-4">
               <div className="flex flex-wrap gap-2">
-                {relatedProductIds.map(id => (
-                  <Badge key={id} variant="secondary" className="px-3 py-1 gap-2 bg-blue-50 text-blue-700 border-blue-100">
-                    {allProducts.find(p => p.id === id)?.name}
-                    <Trash2 className="h-3 w-3 cursor-pointer hover:text-red-500" onClick={() => setRelatedProductIds(relatedProductIds.filter(v => v !== id))} />
+                {relatedProductIds.map(rid => (
+                  <Badge key={rid} variant="secondary" className="px-3 py-1 gap-2 bg-blue-50 text-blue-700 border-blue-100">
+                    {allProducts.find(p => p.id === rid)?.name}
+                    <Trash2 className="h-3 w-3 cursor-pointer hover:text-red-500" onClick={() => setRelatedProductIds(relatedProductIds.filter(v => v !== rid))} />
                   </Badge>
                 ))}
               </div>
-              <Select onValueChange={(id) => id && !relatedProductIds.includes(id) && relatedProductIds.length < 3 && setRelatedProductIds([...relatedProductIds, id])}>
+              <Select onValueChange={(rid) => rid && !relatedProductIds.includes(rid) && relatedProductIds.length < 3 && setRelatedProductIds([...relatedProductIds, rid])}>
                 <SelectTrigger className="bg-white"><SelectValue placeholder="Ajouter une suggestion d'André..." /></SelectTrigger>
                 <SelectContent>{allProducts.map(p => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
               </Select>
@@ -314,19 +307,21 @@ export default function NewProductPage() {
           </Card>
         </div>
 
-        {/* COLONNE DROITE */}
         <div className="space-y-8">
           <Card className="shadow-lg border-2 border-[#d4af37]/30 bg-amber-50/20 overflow-hidden">
             <CardHeader className="bg-[#d4af37]/10 flex flex-row items-center justify-between pb-4">
               <CardTitle className="text-lg text-[#b8933d] flex items-center gap-2"><Calculator className="h-5 w-5"/> Marge</CardTitle>
-              <Badge className="bg-[#d4af37] text-white border-none">{margin}%</Badge>
+              <div className="text-right">
+                <Badge className="bg-[#d4af37] text-white border-none block">{marginData.percent}%</Badge>
+                <span className="text-[10px] font-bold text-[#b8933d]">{marginData.euro}€ net (HT)</span>
+              </div>
             </CardHeader>
             <CardContent className="p-6 space-y-4 bg-white/80">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Achat (€)</Label><Input type="number" step="0.01" value={purchasePrice} onChange={(e) => setPurchasePrice(parseFloat(e.target.value) || 0)} className="font-mono" /></div>
-                <div className="space-y-1"><Label className="text-xs font-bold text-[#b8933d] uppercase">Vente (€) *</Label><Input type="number" step="0.01" value={regularPrice} onChange={(e) => setRegularPrice(parseFloat(e.target.value) || 0)} className="font-bold font-mono border-amber-200" /></div>
+                <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Achat HT (€)</Label><Input type="number" step="0.01" value={purchasePrice} onChange={(e) => setPurchasePrice(parseFloat(e.target.value) || 0)} className="font-mono" /></div>
+                <div className="space-y-1"><Label className="text-xs font-bold text-[#b8933d] uppercase">Vente TTC (€) *</Label><Input type="number" step="0.01" value={regularPrice} onChange={(e) => setRegularPrice(parseFloat(e.target.value) || 0)} className="font-bold font-mono border-amber-200" /></div>
               </div>
-              <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Promo (€)</Label><Input type="number" step="0.01" value={salePrice || ""} onChange={(e) => setSalePrice(e.target.value ? parseFloat(e.target.value) : null)} className="text-red-600 font-mono border-red-100" /></div>
+              <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Promo TTC (€)</Label><Input type="number" step="0.01" value={salePrice || ""} onChange={(e) => setSalePrice(e.target.value ? parseFloat(e.target.value) : null)} className="text-red-600 font-mono border-red-100" /></div>
               <Separator />
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Stock</Label><Input type="number" value={stockQuantity} onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)} /></div>
@@ -335,28 +330,40 @@ export default function NewProductPage() {
             </CardContent>
           </Card>
 
+          {/* SEO & TAGS HARMONISÉS */}
           <Card className="shadow-sm border-none bg-white">
-            <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="text-lg flex items-center gap-2"><Globe className="h-5 w-5 text-green-600" /> SEO</CardTitle></CardHeader>
+            <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="text-lg flex items-center gap-2 text-green-600"><Globe className="h-5 w-5" /> SEO & Tags</CardTitle></CardHeader>
             <CardContent className="p-6 space-y-4">
               <div><Label>Titre Google</Label><Input value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} placeholder={name} /></div>
               <div><Label>Description Google</Label><Textarea value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} placeholder={shortDescription} rows={3} /></div>
+              
+              <Separator className="my-2" />
+              
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2 text-[#b8933d] font-bold"><Tag className="h-4 w-4" /> Mots-clés (Tags)</Label>
+                <Input 
+                  placeholder="vintage, doré, été..." 
+                  value={tags.join(", ")}
+                  onChange={(e) => setTags(e.target.value.split(",").map(t => t.trim()).filter(t => t !== ""))}
+                />
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {tags.map((tag, i) => (
+                      <Badge key={i} variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[10px] font-bold">#{tag}</Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
 
           <Card className="shadow-sm border-none bg-white">
             <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="text-lg flex items-center gap-2 text-gray-600"><Settings2 className="h-5 w-5"/> Options</CardTitle></CardHeader>
             <CardContent className="p-6 space-y-5">
-              
-              {/* NOUVEAU SÉLECTEUR DE STATUT */}
               <div className="flex items-center justify-between p-3 border rounded-xl bg-gray-50">
-                <div className="space-y-0.5">
-                  <Label className="text-gray-900 font-bold">Statut du produit</Label>
-                  <p className="text-[10px] text-gray-500 italic">Visibilité sur la boutique</p>
-                </div>
+                <div className="space-y-0.5"><Label className="text-gray-900 font-bold">Statut</Label></div>
                 <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger className="w-[130px] bg-white border-gray-200">
-                    <SelectValue placeholder="Sélectionner..." />
-                  </SelectTrigger>
+                  <SelectTrigger className="w-[130px] bg-white border-gray-200"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="draft">Brouillon</SelectItem>
                     <SelectItem value="publish">Publié</SelectItem>
@@ -365,11 +372,11 @@ export default function NewProductPage() {
               </div>
 
               <div className="flex items-center justify-between p-3 border rounded-xl bg-blue-50/30">
-                <div className="space-y-0.5"><Label className="text-blue-900">Variantes ?</Label><p className="text-[10px] text-blue-500 italic">Couleurs & Stocks multiples</p></div>
+                <div className="space-y-0.5"><Label className="text-blue-900">Variantes ?</Label></div>
                 <Switch checked={hasVariations} onCheckedChange={setHasVariations} />
               </div>
               <div className="flex items-center justify-between p-3 border rounded-xl bg-purple-50/30 opacity-60">
-                <div className="space-y-0.5"><Label className="text-purple-900">Module Tailles ?</Label><p className="text-[10px] text-purple-500 italic">Désactivé par défaut</p></div>
+                <div className="space-y-0.5"><Label className="text-purple-900">Module Tailles ?</Label></div>
                 <Switch checked={showSizes} onCheckedChange={setShowSizes} />
               </div>
               <div className="space-y-4 pt-2">
@@ -384,13 +391,12 @@ export default function NewProductPage() {
       <div className="max-w-7xl mx-auto px-6 mt-8 space-y-8">
         <GeneralAttributesSelector selectedAttributes={selectedAttributes} onAttributesChange={setSelectedAttributes} />
         <HierarchicalCategorySelector selectedCategories={selectedCategories} onCategoriesChange={setSelectedCategories} />
-        
         {hasVariations && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <ColorSwatchSelector selectedMainColor={activeFamilyView} selectedSecondaryColors={selectedNuances} onMainColorSelect={setActiveFamilyView} onSecondaryColorToggle={handleNuanceToggle} showSecondaryColors={true} />
-            <VariationDetailsForm selectedSecondaryColors={selectedNuances} secondaryColorIds={nuanceIds} variations={variations} onVariationUpdate={(name, field, val) => {
+            <VariationDetailsForm selectedSecondaryColors={selectedNuances} secondaryColorIds={nuanceIds} variations={variations} onVariationUpdate={(vName, field, val) => {
                 setVariations(prev => {
-                  const idx = prev.findIndex(v => v.colorName === name);
+                  const idx = prev.findIndex(v => v.colorName === vName);
                   const newVars = [...prev];
                   newVars[idx] = { ...newVars[idx], [field]: val };
                   return newVars;

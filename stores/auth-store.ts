@@ -7,6 +7,9 @@ interface Profile {
   email: string | null;
   first_name: string | null;
   last_name: string | null;
+  phone: string | null;
+  birth_date: string | null;
+  avatar_url: string | null;
   wallet_balance: number;
   loyalty_points: number;
   loyalty_euros: number;
@@ -74,7 +77,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
+      if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user) {
         set({ user: session.user });
 
         const { data: profile } = await supabase

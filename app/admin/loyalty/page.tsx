@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -24,6 +24,7 @@ async function getLoyaltyStats() {
   const profiles = profilesResult.data || [];
   const transactions = transactionsResult.data || [];
 
+  // Somme totale des wallets clients
   const totalPoints = profiles.reduce(
     (sum, profile) => sum + (profile.wallet_balance || 0),
     0
@@ -47,7 +48,7 @@ export default async function LoyaltyPage() {
           Programme de fidélité
         </h1>
         <p className="text-gray-600 mt-2">
-          Gérez les points de fidélité de vos clients
+          Gérez les points de fidélité de vos clients (Paliers : Esprit curieux, Passionné, Collectionneur)
         </p>
       </div>
 
@@ -61,10 +62,10 @@ export default async function LoyaltyPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-gray-900">
-              {stats.totalPoints}
+              {stats.totalPoints.toFixed(2)}€
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              Points en circulation
+              Points en circulation (en euros)
             </p>
           </CardContent>
         </Card>
@@ -98,7 +99,7 @@ export default async function LoyaltyPage() {
               {stats.transactions.length}
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              Dernières transactions
+              Dernières transactions enregistrées
             </p>
           </CardContent>
         </Card>

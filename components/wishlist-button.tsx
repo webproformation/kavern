@@ -30,18 +30,21 @@ export function WishlistButton({
   if (variant === 'icon') {
     return (
       <Button
-        variant="ghost"
-        size={size}
+        variant="outline"
+        size="icon"
         onClick={handleClick}
         className={cn(
-          'transition-all',
+          'transition-all duration-300 flex items-center justify-center border-gray-200',
+          inWishlist 
+            ? 'bg-pink-50 border-pink-200 hover:bg-pink-100 hover:border-pink-300' 
+            : 'bg-white hover:bg-gray-50 hover:text-pink-500 hover:border-pink-200',
           className
         )}
       >
         <Heart
           className={cn(
-            'h-5 w-5 transition-all',
-            inWishlist && 'fill-pink-500 text-pink-500'
+            'h-6 w-6 transition-all duration-300',
+            inWishlist ? 'fill-pink-500 text-pink-500 scale-110' : 'text-gray-400 group-hover:text-pink-500'
           )}
         />
       </Button>
@@ -74,7 +77,7 @@ export function WishlistButton({
       onClick={handleClick}
       className={cn(
         'gap-2 transition-all',
-        inWishlist && 'bg-pink-500 hover:bg-pink-600 text-white',
+        inWishlist && 'bg-pink-500 hover:bg-pink-600 text-white border-transparent',
         className
       )}
     >

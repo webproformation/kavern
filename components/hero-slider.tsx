@@ -85,13 +85,22 @@ export function HeroSlider() {
             index === currentSlide ? 'opacity-100' : 'opacity-0'
           }`}
         >
+          {/* FIX : Rétablissement du lien sur le slide complet. 
+            On le place en absolu sous le contenu pour qu'il soit cliquable partout sur l'image.
+          */}
+          {slide.link_url && (
+            <Link href={slide.link_url} className="absolute inset-0 z-10">
+              <span className="sr-only">{slide.title}</span>
+            </Link>
+          )}
+
           <img
             src={slide.image_url}
             alt={slide.title}
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/30 flex items-center">
-            <div className="container mx-auto px-4">
+            <div className="container mx-auto px-4 z-20">
               <div className="max-w-2xl text-white ml-[10%]">
                 <h2
                   key={`title-${slide.id}-${currentSlide}`}
@@ -111,11 +120,13 @@ export function HeroSlider() {
                     {slide.subtitle}
                   </p>
                 )}
-                {/* Utilisation de Link et priorité à link_url */}
-                {slide.button_text && (slide.link_url || slide.button_url) && (
+                {/* FIX : Priorité au button_url (celui que vous éditez dans l'admin) 
+                  pour le lien du bouton spécifique.
+                */}
+                {slide.button_text && (slide.button_url || slide.link_url) && (
                   <Link
                     key={`button-${slide.id}-${currentSlide}`}
-                    href={(slide.link_url || slide.button_url) as string}
+                    href={(slide.button_url || slide.link_url || '/shop') as string}
                     className={`inline-block px-6 py-3 bg-[#D4AF37] text-white font-semibold rounded-md hover:bg-[#b8933d] transition-all duration-300 drop-shadow-lg ${
                       index === currentSlide ? 'animate-fade-in' : 'opacity-0'
                     }`}
@@ -135,7 +146,7 @@ export function HeroSlider() {
           <Button
             variant="ghost"
             size="icon"
-            className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full h-12 w-12"
+            className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full h-12 w-12 z-30"
             onClick={prevSlide}
           >
             <ChevronLeft className="h-6 w-6" />
@@ -144,13 +155,13 @@ export function HeroSlider() {
           <Button
             variant="ghost"
             size="icon"
-            className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full h-12 w-12"
+            className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full h-12 w-12 z-30"
             onClick={nextSlide}
           >
             <ChevronRight className="h-6 w-6" />
           </Button>
 
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-30">
             {slides.map((_, index) => (
               <button
                 key={index}

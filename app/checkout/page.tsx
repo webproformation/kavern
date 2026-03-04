@@ -65,6 +65,8 @@ interface PaymentMethod {
 }
 
 const TVA_RATE = 0.20;
+// --- RÈGLE : MINIMUM DE COMMANDE ---
+const MIN_ORDER_AMOUNT = 10;
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -83,9 +85,13 @@ export default function CheckoutPage() {
   const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<string>('');
   const [relayPointData, setRelayPointData] = useState<any>(null);
 
-  const [useLoyalty, setUseLoyalty] = useState(false);
+  // --- LOGIQUE AVANTAGES & NON-CUMULABILITÉ ---
+  const [useLoyalty, setUseLoyalty] = useState(false); // Cagnotte multiplicatrice
   const [loyaltyAmountToUse, setLoyaltyAmountToUse] = useState(0);
   
+  const [useWallet, setUseWallet] = useState(false); // Avoirs / Bonus 5€ (Cumulable)
+  const [walletAmountToUse, setWalletAmountToUse] = useState(0);
+
   const [couponCode, setCouponCode] = useState('');
   const [selectedUserCouponId, setSelectedUserCouponId] = useState<string>('');
   const [discountAmount, setDiscountAmount] = useState(0);
@@ -98,7 +104,6 @@ export default function CheckoutPage() {
   const [newsletterConsent, setNewsletterConsent] = useState(false);
   const [rgpdConsent, setRgpdConsent] = useState(false);
   const [shippingInsurance, setShippingInsurance] = useState('0');
-  const [bankDialogOpen, setBankDialogOpen] = useState(false);
   const [createPendingPackage, setCreatePendingPackage] = useState(false);
   const [showStripePayment, setShowStripePayment] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
@@ -117,6 +122,26 @@ export default function CheckoutPage() {
       router.push('/cart');
     }
   }, [cart, loading, router, isSuccess]);
+
+  // --- RÈGLE : NON-CUMULABILITÉ DES AVANTAGES ---
+  // Si on utilise la cagnotte, on annule les remises promo/parrainage
+  useEffect(() => {
+    if (useLoyalty && loyaltyAmountToUse > 0) {
+      setDiscountAmount(0);
+      setCouponCode('');
+      setSelectedUserCouponId('');
+      setReferralDiscount(0);
+      setAppliedReferral(null);
+    }
+  }, [useLoyalty, loyaltyAmountToUse]);
+
+  // Si on applique une remise, on désactive la cagnotte
+  useEffect(() => {
+    if (discountAmount > 0 || referralDiscount > 0) {
+      setUseLoyalty(false);
+      setLoyaltyAmountToUse(0);
+    }
+  }, [discountAmount, referralDiscount]);
 
   useEffect(() => {
     if (addToOpenPackage) {
@@ -178,11 +203,9 @@ export default function CheckoutPage() {
   const selectedPaymentMethod = paymentMethods.find(m => m.id === selectedPaymentMethodId);
   const selectedAddress = addresses.find(a => a.id === selectedAddressId);
 
-  // --- LOGIQUE COMMANDE BOUTIQUE ---
   const isStorePickup = selectedPaymentMethod?.code === 'store_pickup_payment' || selectedPaymentMethod?.type === 'store';
 
   const subtotal = cartTotal;
-  // Si boutique ou colis ouvert, frais de port = 0
   const shippingCost = (addToOpenPackage || isStorePickup) ? 0 : (selectedShippingMethod?.cost || 0);
   const insuranceCost = isStorePickup ? 0 : parseFloat(shippingInsurance);
   
@@ -191,10 +214,25 @@ export default function CheckoutPage() {
     : 0;
 
   const totalBeforeDiscount = subtotal + shippingCost + insuranceCost + paymentFee;
-  const totalAfterDiscount = Math.max(0, totalBeforeDiscount - discountAmount - referralDiscount);
-  const totalAfterWallet = Math.max(0, totalAfterDiscount - loyaltyAmountToUse);
+  
+  // Calcul du total après remise exclusive (Promo OU Cagnotte)
+  const totalAfterAdvantage = Math.max(0, totalBeforeDiscount - discountAmount - referralDiscount - loyaltyAmountToUse);
+  
+  // Calcul Final TTC après Avoirs (Toujours cumulable)
+  const totalAfterWallet = Math.max(0, totalAfterAdvantage - walletAmountToUse);
+  
   const tvaAmount = totalAfterWallet * TVA_RATE / (1 + TVA_RATE);
-  const totalHT = totalAfterWallet - tvaAmount;
+
+  // --- RÈGLES DE LIMITES ET MAX ---
+  const isGiftCardPayment = selectedPaymentMethod?.type === 'gift_card';
+  
+  // On ne peut utiliser la cagnotte que si le total reste > 10€ (sauf Carte Cadeau)
+  const maxLoyaltyAllowed = isGiftCardPayment 
+    ? Math.min(profile?.loyalty_euros || 0, totalBeforeDiscount)
+    : Math.min(profile?.loyalty_euros || 0, Math.max(0, totalBeforeDiscount - MIN_ORDER_AMOUNT));
+
+  // L'avoir peut tout couvrir, il n'est pas limité par la règle des 10€
+  const maxWalletAllowed = Math.min(profile?.wallet_balance || 0, totalAfterAdvantage);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,12 +248,23 @@ export default function CheckoutPage() {
       return;
     }
 
+    // --- SÉCURITÉ : MINIMUM 10€ PANIER ---
+    if (subtotal < MIN_ORDER_AMOUNT) {
+      toast.error(`Le montant minimum de commande est de ${MIN_ORDER_AMOUNT}€.`);
+      return;
+    }
+
+    // --- SÉCURITÉ : MINIMUM 10€ APRÈS RÉDUCTIONS (HORS AVOIRS / CARTE CADEAU) ---
+    if (totalAfterAdvantage < MIN_ORDER_AMOUNT && !isGiftCardPayment) {
+      toast.error(`Le montant minimum après réductions doit être de ${MIN_ORDER_AMOUNT}€ (hors avoirs ou carte cadeau).`);
+      return;
+    }
+
     if (!selectedPaymentMethodId) {
       toast.error('Veuillez sélectionner un mode de paiement');
       return;
     }
 
-    // Validation conditionnelle : on ne vérifie l'adresse et la livraison QUE si ce n'est pas un retrait boutique
     if (!addToOpenPackage && !isStorePickup) {
         if (!selectedShippingMethodId) {
             toast.error('Veuillez sélectionner un mode de livraison');
@@ -245,10 +294,10 @@ export default function CheckoutPage() {
         subtotal: subtotal.toFixed(2),
         shipping_cost: shippingCost.toFixed(2),
         tax_amount: tvaAmount.toFixed(2),
-        discount_amount: discountAmount.toFixed(2),
-        wallet_amount_used: loyaltyAmountToUse.toFixed(2),
+        discount_amount: (discountAmount + referralDiscount).toFixed(2),
+        wallet_amount_used: (loyaltyAmountToUse + walletAmountToUse).toFixed(2),
         total: totalAfterWallet.toFixed(2),
-        shipping_address: isStorePickup ? null : selectedAddress, // Pas d'adresse si boutique
+        shipping_address: isStorePickup ? null : selectedAddress,
         shipping_street: selectedAddress?.address_line1 || '',
         shipping_phone: selectedAddress?.phone || '',
         shipping_method_id: isStorePickup ? null : (selectedShippingMethodId || null),
@@ -271,9 +320,7 @@ export default function CheckoutPage() {
 
       if (orderError) throw orderError;
 
-// --- CORRECTIF : CAPTURE DU SKU DEPUIS LE PANIER ---
       const orderItems = cart.map(item => {
-        // On cherche le SKU partout : dans la variation, dans l'item parent, ou dans les attributs
         const finalSku = 
           item.sku || 
           item.variationSku || 
@@ -282,7 +329,6 @@ export default function CheckoutPage() {
           (item.attributes && item.attributes.sku) ||
           null;
 
-        // On sauvegarde les attributs complets (nécessaire pour le PDF)
         const finalVariationData = item.selectedAttributes || item.variation_data || item.attributes || null;
         
         return {
@@ -293,7 +339,7 @@ export default function CheckoutPage() {
           price: String(item.price || 0),
           quantity: item.quantity || 1,
           variation_data: finalVariationData,
-          sku: finalSku // <-- C'est cette ligne qui permet l'affichage "Ref" sur la facture
+          sku: finalSku 
         };
       });
       
@@ -304,15 +350,13 @@ export default function CheckoutPage() {
       if (itemsError) throw itemsError;
 
       if (addToOpenPackage && openPackage) {
-        const { error: packageError } = await supabase
+        await supabase
           .from('open_package_orders')
           .insert([{
             open_package_id: openPackage.id,
             order_id: newOrder.id,
             is_paid: false,
           }]);
-
-        if (packageError) throw packageError;
       }
 
       if (createPendingPackage && !addToOpenPackage && !isStorePickup) {
@@ -335,46 +379,46 @@ export default function CheckoutPage() {
 
         if (packageError) throw packageError;
 
-        const { error: linkError } = await supabase
+        await supabase
           .from('open_package_orders')
           .insert([{
             open_package_id: newPackage.id,
             order_id: newOrder.id,
             is_paid: false,
           }]);
-
-        if (linkError) throw linkError;
-
-        toast.success('Colis ouvert créé avec succès ! Expédition dans 5 jours.');
       }
 
-      // CORRECTION : UPSERT pour éviter l'erreur 409
       if (newsletterConsent && profile?.email) {
-        const { error: newsletterError } = await supabase
+        await supabase
           .from('newsletter_subscriptions')
-          .upsert(
-            [{ email: profile.email }],
-            { onConflict: 'email', ignoreDuplicates: true }
-          );
-
-        if (newsletterError) console.error('Newsletter error:', newsletterError);
+          .upsert([{ email: profile.email }], { onConflict: 'email', ignoreDuplicates: true });
       }
 
-      if (useLoyalty && loyaltyAmountToUse > 0) {
-        const newLoyaltyBalance = (profile?.loyalty_euros || 0) - loyaltyAmountToUse;
+      // MISE À JOUR DES SOLDES CLIENT
+      if (loyaltyAmountToUse > 0) {
+        const newLoyaltyBalance = Math.max(0, (profile?.loyalty_euros || 0) - loyaltyAmountToUse);
         await supabase.from('profiles').update({ loyalty_euros: newLoyaltyBalance }).eq('id', user.id);
+      }
+      if (walletAmountToUse > 0) {
+        const newWalletBalance = Math.max(0, (profile?.wallet_balance || 0) - walletAmountToUse);
+        await supabase.from('profiles').update({ wallet_balance: newWalletBalance }).eq('id', user.id);
       }
 
       if (selectedUserCouponId) {
         await markCouponAsUsed(selectedUserCouponId, newOrder.id);
       }
 
-      if (selectedPaymentMethod?.code === 'stripe') {
+      if (selectedPaymentMethod?.code === 'stripe' && totalAfterWallet > 0) {
         setCreatedOrderId(newOrder.id);
         setCreatedOrderNumber(orderNumber);
         setShowStripePayment(true);
         setLoading(false);
         return;
+      }
+
+      // Si le total est à 0€ (couvert par avoir), on marque directement comme payé
+      if (totalAfterWallet === 0) {
+        await supabase.from('orders').update({ payment_status: 'paid', status: 'processing' }).eq('id', newOrder.id);
       }
 
       setIsSuccess(true);
@@ -392,31 +436,12 @@ export default function CheckoutPage() {
     }
   };
 
-  if (!user) {
-    return (
-      <div className="container mx-auto px-4 py-12">
-        <Card className="max-w-md mx-auto">
-          <CardHeader>
-            <CardTitle>Connexion requise</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-gray-600">Vous devez être connecté pour accéder au processus de commande.</p>
-            <div className="flex gap-3">
-              <Button asChild className="flex-1"><Link href="/auth/login">Se connecter</Link></Button>
-              <Button asChild variant="outline" className="flex-1"><Link href="/auth/register">Créer un compte</Link></Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   if (showStripePayment && createdOrderId) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-white via-[#F2F2E8] to-[#F2F2E8] py-8">
         <div className="container mx-auto px-4">
           <div className="mb-6">
-            <button onClick={() => { setShowStripePayment(false); setCreatedOrderId(null); setCreatedOrderNumber(null); }} className="inline-flex items-center text-gray-600 hover:text-[#D4AF37] transition-colors">
+            <button onClick={() => { setShowStripePayment(false); setCreatedOrderId(null); }} className="inline-flex items-center text-gray-600 hover:text-[#D4AF37] transition-colors">
               <ArrowLeft className="h-4 w-4 mr-2" /> Retour au récapitulatif
             </button>
           </div>
@@ -424,9 +449,8 @@ export default function CheckoutPage() {
           <div className="max-w-2xl mx-auto mt-8">
             <StripePaymentForm
               orderId={createdOrderId}
-              userId={user.id}
+              userId={user!.id}
               total={totalAfterWallet}
-              // FIX STRIPE : Statut et Panier
               onSuccess={async () => {
                 await supabase.from('orders').update({ payment_status: 'paid', status: 'processing' }).eq('id', createdOrderId);
                 setIsSuccess(true);
@@ -455,28 +479,18 @@ export default function CheckoutPage() {
         {/* BLOCK 1 : COLIS OUVERT */}
         <div className="max-w-4xl mx-auto mb-6">
           <Card className="border-4 border-[#D4AF37] bg-gradient-to-br from-[#D4AF37]/20 via-[#F2F2E8] to-white shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-[#D4AF37]/30 to-transparent rounded-full -mr-20 -mt-20" />
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-[#b8933d]/20 to-transparent rounded-full -ml-16 -mb-16" />
             <CardHeader className="relative z-10">
               <CardTitle className="flex items-center gap-3 text-2xl bg-gradient-to-r from-[#b8933d] to-[#d4af37] bg-clip-text text-transparent">
                 <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-[#b8933d] to-[#d4af37] rounded-full shadow-lg"><Clock className="h-6 w-6 text-white" /></div>
                 Mettre ma commande en attente
               </CardTitle>
-              <CardDescription className="text-base text-gray-700 ml-15">Payez les frais de livraison maintenant, mais l'expédition sera effectuée dans 5 jours (ou validée manuellement avant).</CardDescription>
+              <CardDescription className="text-base text-gray-700 ml-15">Payez les frais de livraison maintenant, expédition dans 5 jours.</CardDescription>
             </CardHeader>
             <CardContent className="relative z-10">
               <div className="flex items-start space-x-4 bg-white/80 backdrop-blur-sm rounded-xl p-5 border-2 border-[#D4AF37]/40 shadow-lg">
                 <Checkbox id="createPendingPackage" checked={createPendingPackage} onCheckedChange={(checked) => setCreatePendingPackage(checked as boolean)} className="mt-1 border-[#D4AF37] data-[state=checked]:bg-[#D4AF37]" />
                 <div className="space-y-3 flex-1">
                   <label htmlFor="createPendingPackage" className="text-base font-semibold leading-none cursor-pointer text-gray-900">Créer un colis en attente pour cette commande</label>
-                  {createPendingPackage && (
-                    <div className="p-4 bg-gradient-to-br from-[#D4AF37]/10 to-[#b8933d]/5 border-2 border-[#D4AF37]/50 rounded-lg shadow-md">
-                      <ul className="text-sm text-gray-800 space-y-2">
-                        <li className="flex items-start gap-3"><span className="font-medium">Les frais de livraison seront payés aujourd'hui</span></li>
-                        <li className="flex items-start gap-3"><span className="font-medium">Votre colis sera expédié automatiquement dans 5 jours</span></li>
-                      </ul>
-                    </div>
-                  )}
                 </div>
               </div>
             </CardContent>
@@ -486,26 +500,23 @@ export default function CheckoutPage() {
         <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
           <div className="space-y-6">
             
-            {/* 1 BIS: COLIS OUVERT EXISTANT */}
             {openPackage && !packageLoading && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2"><Package className="h-5 w-5 text-[#D4AF37]" /> Colis ouvert disponible</CardTitle>
-                  <CardDescription>Vous avez un colis ouvert actif. Ajoutez cette commande pour économiser les frais de port !</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center space-x-2">
                     <Checkbox id="addToOpenPackage" checked={addToOpenPackage} onCheckedChange={(checked) => setAddToOpenPackage(checked as boolean)} />
-                    <label htmlFor="addToOpenPackage" className="text-sm font-medium leading-none cursor-pointer">Ajouter au colis ouvert</label>
+                    <label htmlFor="addToOpenPackage" className="text-sm font-medium leading-none cursor-pointer">Ajouter au colis ouvert existant</label>
                   </div>
                 </CardContent>
               </Card>
             )}
 
-            {/* BLOCK 2 : PAIEMENT (REMONTE) */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5 text-[#D4AF37]" /> Mode de paiement</CardTitle>
+                <CardTitle className="flex items-center gap-2 italic uppercase font-black"><CreditCard className="h-5 w-5 text-[#D4AF37]" /> Mode de paiement</CardTitle>
               </CardHeader>
               <CardContent>
                 <RadioGroup value={selectedPaymentMethodId} onValueChange={setSelectedPaymentMethodId}>
@@ -514,128 +525,74 @@ export default function CheckoutPage() {
                       <div key={method.id} className="flex items-start space-x-3 border p-4 rounded-lg hover:border-[#D4AF37] transition-colors">
                         <RadioGroupItem value={method.id} id={`payment-${method.id}`} />
                         <label htmlFor={`payment-${method.id}`} className="flex-1 cursor-pointer">
-                          <div className="flex items-center gap-2 mb-1"><span className="text-2xl">{method.icon}</span><span className="font-medium">{method.name}</span></div>
+                          <div className="flex items-center gap-2 mb-1 font-bold uppercase text-xs tracking-widest"><span className="text-2xl">{method.icon}</span>{method.name}</div>
                           <div className="text-sm text-gray-600">{method.description}</div>
-                          {(method.processing_fee_percentage > 0 || method.processing_fee_fixed > 0) && (
-                            <div className="text-xs text-gray-500 mt-1">Frais: {method.processing_fee_percentage > 0 && `${method.processing_fee_percentage}%`} {method.processing_fee_fixed > 0 && `+ ${method.processing_fee_fixed.toFixed(2)} €`}</div>
-                          )}
                         </label>
                       </div>
                     ))}
                   </div>
                 </RadioGroup>
-
-                {selectedPaymentMethod?.code === 'bank_transfer' && (
-                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex items-center gap-3 mb-2 text-blue-800 font-medium">
-                        <Info className="h-5 w-5" /> Virement Bancaire
-                    </div>
-                    <p className="text-sm text-blue-700">Votre commande sera validée dès réception des fonds. Le RIB s'affichera à l'étape suivante.</p>
-                  </div>
-                )}
               </CardContent>
             </Card>
 
-            {/* BLOCK 3 & 4 & 5 : LIVRAISON & ADRESSE (Masqués si boutique) */}
             {!addToOpenPackage && !isStorePickup && (
               <>
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Truck className="h-5 w-5 text-[#D4AF37]" /> Mode de livraison</CardTitle>
-                  </CardHeader>
+                  <CardHeader><CardTitle className="flex items-center gap-2 italic uppercase font-black"><Truck className="h-5 w-5 text-[#D4AF37]" /> Mode de livraison</CardTitle></CardHeader>
                   <CardContent>
                     <RadioGroup value={selectedShippingMethodId} onValueChange={setSelectedShippingMethodId}>
                       <div className="space-y-3">
                         {shippingMethods.map((method) => (
-                          <div key={method.id} className="flex items-start space-x-3 border p-4 rounded-lg hover:border-[#D4AF37] transition-colors">
+                          <div key={method.id} className="flex items-start space-x-3 border p-4 rounded-lg hover:border-[#D4AF37]">
                             <RadioGroupItem value={method.id} id={method.id} />
                             <label htmlFor={method.id} className="flex-1 cursor-pointer">
-                              <div className="flex items-center justify-between mb-1"><span className="font-medium">{method.name}</span><span className="font-semibold text-[#D4AF37]">{method.cost === 0 ? 'Gratuit' : `${method.cost.toFixed(2)} €`}</span></div>
+                              <div className="flex items-center justify-between mb-1 font-bold uppercase text-xs tracking-widest"><span>{method.name}</span><span className="text-[#D4AF37]">{method.cost === 0 ? 'Gratuit' : `${method.cost.toFixed(2)} €`}</span></div>
                               <div className="text-sm text-gray-600">{method.description}</div>
-                              <div className="text-xs text-gray-500 mt-1">Délai: {method.delivery_time}</div>
                             </label>
                           </div>
                         ))}
                       </div>
                     </RadioGroup>
-
                     {selectedShippingMethod?.is_relay && (
-                      <div className="mt-4">
-                        <RelayPointSelector
-                          provider={(() => {
-                            const code = selectedShippingMethod.code;
-                            if (code === 'mondial_relay') return 'mondial-relay';
-                            if (code === 'chronopost_relay') return 'chronopost';
-                            if (code === 'gls_relay') return 'gls';
-                            return code as 'mondial-relay' | 'chronopost' | 'gls';
-                          })()}
-                          onSelect={(point) => {
-                            setRelayPointData({ name: point.name, address: `${point.address}, ${point.postalCode} ${point.city}`, id: point.id, provider: point.provider });
-                          }}
-                          selectedPoint={relayPointData}
-                          customerAddress={selectedAddress ? { postalCode: selectedAddress.postal_code, city: selectedAddress.city } : undefined}
-                        />
-                        {relayPointData && (
-                          <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-md">
-                            <p className="text-sm text-green-800 font-medium"><MapPin className="h-4 w-4 inline mr-1" /> Point relais sélectionné</p>
-                            <p className="text-sm text-green-800 mt-1">{relayPointData.name} - {relayPointData.address}</p>
-                          </div>
-                        )}
-                      </div>
+                      <div className="mt-4"><RelayPointSelector provider={selectedShippingMethod.code as any} onSelect={setRelayPointData} selectedPoint={relayPointData} /></div>
                     )}
                   </CardContent>
                 </Card>
 
                 <Card>
-                  <CardHeader><CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5 text-[#D4AF37]" /> Adresse de livraison</CardTitle></CardHeader>
+                  <CardHeader><CardTitle className="flex items-center gap-2 italic uppercase font-black"><MapPin className="h-5 w-5 text-[#D4AF37]" /> Adresse de livraison</CardTitle></CardHeader>
                   <CardContent>
                     {addresses.length > 0 ? (
                       <RadioGroup value={selectedAddressId} onValueChange={setSelectedAddressId}>
                         <div className="space-y-3">
                           {addresses.map((address) => (
-                            <div key={address.id} className="flex items-start space-x-3 border p-4 rounded-lg hover:border-[#D4AF37] transition-colors">
+                            <div key={address.id} className="flex items-start space-x-3 border p-4 rounded-lg">
                               <RadioGroupItem value={address.id} id={address.id} />
-                              <label htmlFor={address.id} className="flex-1 cursor-pointer">
-                                <div className="font-medium">{address.label || 'Adresse'}</div>
-                                <div className="text-sm text-gray-600">{address.first_name} {address.last_name}<br />{address.address_line1}, {address.postal_code} {address.city}</div>
+                              <label htmlFor={address.id} className="flex-1 cursor-pointer font-bold text-xs uppercase">
+                                <div>{address.label}</div>
+                                <div className="text-gray-500 font-medium">{address.first_name} {address.last_name}</div>
+                                <div className="text-gray-500 font-medium">{address.address_line1}, {address.postal_code} {address.city}</div>
                               </label>
                             </div>
                           ))}
                         </div>
                       </RadioGroup>
                     ) : (
-                      <div className="text-center py-6">
-                        <Button asChild variant="outline"><Link href="/account/addresses">Ajouter une adresse</Link></Button>
-                      </div>
+                      <Button asChild variant="outline" className="w-full rounded-2xl"><Link href="/account/addresses">Ajouter une adresse</Link></Button>
                     )}
                   </CardContent>
                 </Card>
 
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><AlertCircle className="h-5 w-5 text-[#D4AF37]" /> Assurance livraison (facultative)</CardTitle>
-                  </CardHeader>
+                  <CardHeader><CardTitle className="flex items-center gap-2 italic uppercase font-black"><AlertCircle className="h-5 w-5 text-[#D4AF37]" /> Assurance livraison</CardTitle></CardHeader>
                   <CardContent>
                     <RadioGroup value={shippingInsurance} onValueChange={setShippingInsurance}>
                       <div className="space-y-3">
                         <div className="flex items-center space-x-3 border p-4 rounded-lg hover:border-[#D4AF37] transition-colors">
-                          <RadioGroupItem value="0" id="insurance-none" />
-                          <label htmlFor="insurance-none" className="flex-1 cursor-pointer flex justify-between">
-                            <span className="font-medium">Sans assurance</span><span className="font-semibold text-[#D4AF37]">Gratuit</span>
-                          </label>
+                          <RadioGroupItem value="0" id="ins-0" /><label htmlFor="ins-0" className="flex-1 cursor-pointer flex justify-between font-bold text-xs uppercase"><span>Sans assurance</span><span>Gratuit</span></label>
                         </div>
-                        <div className="flex items-center space-x-3 border p-4 rounded-lg hover:border-[#D4AF37] transition-colors">
-                          <RadioGroupItem value="1.00" id="insurance-serenity" />
-                          <label htmlFor="insurance-serenity" className="flex-1 cursor-pointer flex justify-between">
-                            <span className="font-medium">Garantie Sérénité</span><span className="font-semibold text-[#D4AF37]">1,00 €</span>
-                          </label>
-                        </div>
-                        <div className="flex items-center space-x-3 border-2 border-[#D4AF37]/40 p-4 rounded-lg bg-gradient-to-br from-[#F2F2E8] to-white relative">
-                          <RadioGroupItem value="2.90" id="insurance-diamond" />
-                          <Badge className="absolute -top-2 right-4 bg-gradient-to-r from-[#b8933d] to-[#d4af37] text-white px-2 py-0.5 text-xs">La plus choisie</Badge>
-                          <label htmlFor="insurance-diamond" className="flex-1 cursor-pointer flex justify-between">
-                            <span className="font-semibold text-[#D4AF37]">Protection Diamant</span><span className="font-bold text-[#D4AF37] text-lg">2,90 €</span>
-                          </label>
+                        <div className="flex items-center space-x-3 border-2 border-[#D4AF37] p-4 rounded-lg bg-amber-50">
+                          <RadioGroupItem value="2.90" id="ins-2" /><label htmlFor="ins-2" className="flex-1 cursor-pointer flex justify-between font-black text-xs uppercase text-[#D4AF37]"><span>Protection Diamant</span><span>2,90 €</span></label>
                         </div>
                       </div>
                     </RadioGroup>
@@ -644,121 +601,145 @@ export default function CheckoutPage() {
               </>
             )}
 
-            {/* BLOCK 6 : REDUCTION & FIDELITE */}
-            <Card className="border-[#D4AF37]/20 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-[#F2F2E8] to-white border-b border-[#D4AF37]/10">
-                <CardTitle className="flex items-center gap-2 text-xl"><Gift className="h-6 w-6 text-[#D4AF37]" /> Réductions & Fidélité</CardTitle>
+            {/* BLOCK RÉDUCTIONS & FIDÉLITÉ (AVEC RÈGLES DE NON-CUMUL ET DE SÉCURITÉ MINIMUM) */}
+            <Card className="border-[#D4AF37]/20 shadow-lg overflow-hidden rounded-[2.5rem]">
+              <CardHeader className="bg-black text-white p-8">
+                <CardTitle className="flex items-center gap-2 italic font-black uppercase text-2xl tracking-tighter"><Gift className="h-6 w-6 text-[#D4AF37]" /> Réductions & Fidélité</CardTitle>
+                <CardDescription className="text-gray-400 font-bold">Un seul avantage exclusif par commande (hors avoirs cumulables).</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6 pt-6">
-                {/* Cagnotte */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2"><PiggyBank className="h-5 w-5 text-[#D4AF37]" /><Label className="text-base font-semibold">Ma cagnotte fidélité</Label></div>
-                    <Badge variant="outline" className="bg-[#D4AF37]/10 text-[#D4AF37] border-[#D4AF37]/30 font-semibold px-3 py-1">{(profile?.loyalty_euros || 0).toFixed(2)} € disponible</Badge>
+              <CardContent className="p-8 space-y-8">
+                
+                {/* 1. Cagnotte Multiplicatrice (Pool de fidélité) */}
+                <div className={`p-6 rounded-3xl border-2 transition-all ${useLoyalty ? "border-[#D4AF37] bg-amber-50" : "border-gray-100"}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2 font-black uppercase text-xs tracking-widest"><PiggyBank className="h-5 w-5 text-[#D4AF37]" /> Ma Cagnotte Multipliée</div>
+                    <Badge className="bg-[#D4AF37] font-black">{profile?.loyalty_euros?.toFixed(2)} € disponible</Badge>
                   </div>
-                  {(profile?.loyalty_euros || 0) > 0 ? (
-                    <div className="border border-[#D4AF37]/20 rounded-lg p-4 bg-gradient-to-br from-[#F2F2E8] to-white hover:border-[#D4AF37]/40 transition-all">
-                      <div className="flex items-start space-x-3">
-                        <Checkbox id="useLoyalty" checked={useLoyalty} onCheckedChange={(checked) => { setUseLoyalty(checked as boolean); if (!checked) setLoyaltyAmountToUse(0); }} className="mt-1 border-[#D4AF37] data-[state=checked]:bg-[#D4AF37]" />
-                        <div className="flex-1">
-                          <label htmlFor="useLoyalty" className="cursor-pointer font-medium text-gray-900">Utiliser ma cagnotte</label>
-                          {useLoyalty && (
-                            <div className="mt-3 flex items-center gap-2">
-                              <Input type="number" min="0" max={Math.min(profile?.loyalty_euros || 0, totalAfterDiscount)} step="0.01" value={loyaltyAmountToUse} onChange={(e) => setLoyaltyAmountToUse(Math.min(Math.max(0, parseFloat(e.target.value) || 0), Math.min(profile?.loyalty_euros || 0, totalAfterDiscount)))} className="flex-1 border-[#D4AF37]/30" />
-                              <Button type="button" variant="outline" size="sm" onClick={() => setLoyaltyAmountToUse(Math.min(profile?.loyalty_euros || 0, totalAfterDiscount))} className="border-[#D4AF37] text-[#D4AF37]">Tout utiliser</Button>
-                            </div>
-                          )}
+                  <div className="flex items-center gap-4">
+                    <Checkbox id="useLoyalty" checked={useLoyalty} disabled={discountAmount > 0 || referralDiscount > 0} onCheckedChange={(checked) => setUseLoyalty(checked as boolean)} className="h-6 w-6 rounded-lg data-[state=checked]:bg-[#D4AF37]" />
+                    <div className="flex-1">
+                      <Label htmlFor="useLoyalty" className="font-bold text-xs uppercase cursor-pointer">Dépenser mes euros de fidélité</Label>
+                      {useLoyalty && (
+                        <div className="mt-4 flex gap-2">
+                          <Input 
+                            type="number" 
+                            step="0.01" 
+                            max={maxLoyaltyAllowed} 
+                            value={loyaltyAmountToUse} 
+                            onChange={(e) => setLoyaltyAmountToUse(parseFloat(e.target.value) || 0)} 
+                            className="h-12 rounded-xl" 
+                          />
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setLoyaltyAmountToUse(maxLoyaltyAllowed)} 
+                            className="rounded-xl font-black text-[10px]"
+                          >
+                            MAX
+                          </Button>
                         </div>
-                      </div>
+                      )}
                     </div>
-                  ) : (<p className="text-sm text-gray-500">Votre cagnotte est vide.</p>)}
-                </div>
-                <Separator />
-                {/* Coupons */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 mb-2"><Gift className="h-5 w-5 text-[#D4AF37]" /><Label className="text-base font-semibold">Mes coupons gagnés</Label></div>
-                  {userCoupons.length > 0 ? (
-                    <RadioGroup value={selectedUserCouponId} onValueChange={(value) => {
-                      setSelectedUserCouponId(value);
-                      const c = userCoupons.find(i => i.id === value);
-                      if (c && c.coupon) setDiscountAmount(c.coupon.discount_type === 'percentage' ? subtotal * c.coupon.discount_value / 100 : Number(c.coupon.discount_value));
-                      else setDiscountAmount(0);
-                    }}>
-                      {userCoupons.map((c) => (
-                        <div key={c.id} className="border border-[#D4AF37]/20 rounded-lg p-4 flex items-center gap-3">
-                          <RadioGroupItem value={c.id} id={c.id} />
-                          <label htmlFor={c.id} className="flex-1 font-medium">{c.coupon?.name} - <span className="text-[#D4AF37]">{c.coupon?.discount_type === 'percentage' ? `-${c.coupon.discount_value}%` : `-${Number(c.coupon?.discount_value).toFixed(2)}€`}</span></label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  ) : (<p className="text-sm text-gray-500">Aucun coupon disponible.</p>)}
-                </div>
-                <Separator />
-                {/* Code promo */}
-                <div className="space-y-2">
-                  <Label htmlFor="coupon">Code promo</Label>
-                  <div className="flex gap-2"><Input id="coupon" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} placeholder="Code" /><Button type="button" variant="outline">Appliquer</Button></div>
-                </div>
-                <Separator />
-                {/* Parrainage */}
-                <div className="space-y-2">
-                  <Label htmlFor="referralCode">Code parrainage</Label>
-                  <div className="flex gap-2">
-                    <Input id="referralCode" value={referralCode} onChange={(e) => setReferralCode(e.target.value.toUpperCase())} placeholder="Code parrainage (5€ offerts)" />
-                    <Button type="button" variant="outline" onClick={async () => { /* Logique parrainage identique */ }}>Appliquer</Button>
                   </div>
-                  {appliedReferral && (<p className="text-sm text-green-600 flex items-center gap-1"><Gift className="h-4 w-4" /> Code parrainage appliqué : -5,00 €</p>)}
                 </div>
+
+                <div className="relative py-4"><Separator /><span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-6 text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">OU</span></div>
+
+                <div className="space-y-4">
+                  <Label className="font-black uppercase text-xs tracking-widest">Code promo / Parrainage / Coupons gagnés</Label>
+                  <div className="flex gap-2">
+                    <Input id="coupon" disabled={useLoyalty} value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} placeholder="VOTRE CODE ICI" className="rounded-xl h-12 font-bold shadow-sm" />
+                    <Button type="button" disabled={useLoyalty} className="rounded-xl px-6 font-black uppercase italic tracking-widest bg-black text-white">Appliquer</Button>
+                  </div>
+                </div>
+
+                <div className="relative py-4"><Separator /><span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-6 text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">ET</span></div>
+
+                {/* 2. Avoirs / Bonus 5€ (TOUJOURS CUMULABLE) */}
+                <div className="p-6 rounded-3xl border-2 border-green-100 bg-green-50/30">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2 font-black uppercase text-xs tracking-widest text-green-700"><Wallet className="h-5 w-5" /> Avoirs & Cadeaux (Cumulable)</div>
+                    <Badge variant="outline" className="text-green-700 border-green-200 font-black">{profile?.wallet_balance?.toFixed(2)} €</Badge>
+                  </div>
+                  <div className="flex items-center gap-4 mt-6">
+                    <Checkbox id="useWallet" checked={useWallet} onCheckedChange={(c) => setUseWallet(c as boolean)} className="h-6 w-6 rounded-lg data-[state=checked]:bg-green-600" />
+                    <Label htmlFor="useWallet" className="font-bold text-xs uppercase text-green-700 cursor-pointer">Utiliser mes avoirs / bonus de bienvenue</Label>
+                    {useWallet && (
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        max={maxWalletAllowed} 
+                        value={walletAmountToUse} 
+                        onChange={(e) => setWalletAmountToUse(parseFloat(e.target.value) || 0)} 
+                        className="w-24 h-10 ml-auto rounded-xl border-none font-bold shadow-sm" 
+                      />
+                    )}
+                  </div>
+                </div>
+
               </CardContent>
             </Card>
 
-            {/* BLOCK 7 : INFOS COMPLEMENTAIRES */}
-            <Card>
-              <CardHeader><CardTitle>Informations complémentaires</CardTitle></CardHeader>
+            <Card className="rounded-[2.5rem]">
+              <CardHeader><CardTitle className="italic uppercase font-black">Informations complémentaires</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <div><Label htmlFor="notes">Notes de commande (optionnel)</Label><Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Instructions..." rows={3} /></div>
-                <Separator />
+                <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Instructions de livraison ou mot doux..." rows={3} className="rounded-2xl" />
                 <div className="space-y-3">
-                  <div className="flex items-start space-x-2"><Checkbox id="newsletter" checked={newsletterConsent} onCheckedChange={(c) => setNewsletterConsent(c as boolean)} /><label htmlFor="newsletter" className="text-sm">Je souhaite recevoir les offres</label></div>
-                  <div className="flex items-start space-x-2"><Checkbox id="rgpd" checked={rgpdConsent} onCheckedChange={(c) => setRgpdConsent(c as boolean)} /><label htmlFor="rgpd" className="text-sm"><span className="text-red-500">*</span> J'accepte la politique de confidentialité</label></div>
+                  <div className="flex items-start space-x-2"><Checkbox id="newsletter" checked={newsletterConsent} onCheckedChange={(c) => setNewsletterConsent(c as boolean)} /><label htmlFor="newsletter" className="text-[10px] font-bold uppercase cursor-pointer">S&apos;abonner à la newsletter d&apos;André</label></div>
+                  <div className="flex items-start space-x-2"><Checkbox id="rgpd" checked={rgpdConsent} onCheckedChange={(c) => setRgpdConsent(c as boolean)} /><label htmlFor="rgpd" className="text-[10px] font-black uppercase cursor-pointer"><span className="text-red-500">*</span> J&apos;accepte les CGV & la politique de confidentialité</label></div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* BLOCK 8 : RECAPITULATIF */}
-            <Card>
-              <CardHeader><CardTitle>Récapitulatif de votre commande</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
+            <Card className="rounded-[3rem] shadow-2xl overflow-hidden border-none">
+              <CardHeader className="bg-black text-white p-10">
+                <CardTitle className="italic font-black text-3xl uppercase tracking-tighter">Récapitulatif de ma malle</CardTitle>
+                <CardDescription className="text-gray-400 font-bold">{cart.length} pépites sélectionnées</CardDescription>
+              </CardHeader>
+              <CardContent className="p-10 space-y-6 bg-white">
+                <div className="space-y-3">
                   {cart.map((item) => (
-                    <div key={item.id} className="flex justify-between text-sm">
-                      <div className="flex-1">{item.name} × {item.quantity}</div>
-                      <span className="font-medium ml-2">{(parseFloat(item.price) * item.quantity).toFixed(2)} €</span>
+                    <div key={item.id} className="flex justify-between text-xs font-bold uppercase tracking-widest">
+                      <span>{item.name} × {item.quantity}</span>
+                      <span>{(parseFloat(item.price) * item.quantity).toFixed(2)} €</span>
                     </div>
                   ))}
                 </div>
                 <Separator />
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm"><span className="text-gray-600">Sous-total</span><span className="font-medium">{subtotal.toFixed(2)} €</span></div>
-                  {!addToOpenPackage && !isStorePickup && (<div className="flex justify-between text-sm"><span className="text-gray-600">Livraison</span><span className="font-medium">{shippingCost.toFixed(2)} €</span></div>)}
-                  {isStorePickup && (<div className="flex justify-between text-sm"><span className="text-gray-600">Retrait Boutique</span><span className="font-medium text-green-600">Gratuit</span></div>)}
-                  {insuranceCost > 0 && (<div className="flex justify-between text-sm"><span className="text-gray-600">Assurance</span><span className="font-medium">{insuranceCost.toFixed(2)} €</span></div>)}
-                  {paymentFee > 0 && (<div className="flex justify-between text-sm"><span className="text-gray-600">Frais de paiement</span><span className="font-medium">{paymentFee.toFixed(2)} €</span></div>)}
-                  {discountAmount > 0 && (<div className="flex justify-between text-sm text-green-600"><span>Remise</span><span className="font-medium">-{discountAmount.toFixed(2)} €</span></div>)}
-                  {loyaltyAmountToUse > 0 && (<div className="flex justify-between text-sm text-[#D4AF37]"><span>Fidélité</span><span className="font-medium">-{loyaltyAmountToUse.toFixed(2)} €</span></div>)}
+                <div className="space-y-2 text-xs font-black uppercase tracking-widest">
+                  <div className="flex justify-between"><span>Sous-total</span><span>{subtotal.toFixed(2)} €</span></div>
+                  {!addToOpenPackage && !isStorePickup && (<div className="flex justify-between"><span>Livraison</span><span>{shippingCost.toFixed(2)} €</span></div>)}
+                  {loyaltyAmountToUse > 0 && (<div className="flex justify-between text-[#D4AF37]"><span>Cagnotte</span><span>-{loyaltyAmountToUse.toFixed(2)} €</span></div>)}
+                  {discountAmount > 0 && (<div className="flex justify-between text-blue-600"><span>Remise</span><span>-{discountAmount.toFixed(2)} €</span></div>)}
+                  {walletAmountToUse > 0 && (<div className="flex justify-between text-green-600"><span>Avoirs</span><span>-{walletAmountToUse.toFixed(2)} €</span></div>)}
                 </div>
-                <Separator />
-                <div className="flex justify-between font-bold text-xl text-[#D4AF37]"><span>Total TTC</span><span>{totalAfterWallet.toFixed(2)} €</span></div>
-                <Separator />
-                {selectedPaymentMethod?.code === 'paypal' ? (
-                  <>
-                    {!rgpdConsent && <div className="p-3 bg-amber-50 text-amber-800 text-sm border border-amber-200 rounded-md">Veuillez accepter la politique de confidentialité</div>}
-                    <PayPalButtons amount={totalAfterWallet} disabled={!rgpdConsent || loading} onSuccess={(orderId) => { clearCart(); setIsSuccess(true); toast.success('Paiement réussi !'); router.push(`/checkout/confirmation?paypal=${orderId}`); }} onError={() => toast.error('Erreur PayPal')} />
-                  </>
-                ) : (
-                  <Button type="submit" disabled={loading || !rgpdConsent} className="w-full bg-gradient-to-r from-[#b8933d] to-[#d4af37] text-white hover:to-[#b8933d]">{loading ? 'Traitement...' : `Payer ${totalAfterWallet.toFixed(2)} €`}</Button>
+                <Separator className="h-1 bg-black" />
+                <div className="flex justify-between items-end">
+                  <span className="font-black text-xs uppercase tracking-widest">Total TTC</span>
+                  <span className="font-black text-5xl text-[#D4AF37] tracking-tighter">{totalAfterWallet.toFixed(2)} €</span>
+                </div>
+
+                {/* ALERTES SUR LES MINIMUMS DE COMMANDE */}
+                {subtotal < MIN_ORDER_AMOUNT && (
+                  <div className="p-4 bg-red-50 text-red-600 text-[10px] font-black uppercase rounded-2xl border border-red-100 flex gap-2">
+                    <AlertCircle className="h-5 w-5 shrink-0" /> Commande minimum de {MIN_ORDER_AMOUNT}€ requise pour valider.
+                  </div>
                 )}
-                <div className="text-center text-xs text-gray-500 mt-2"><AlertCircle className="inline h-3 w-3 mr-1"/> Paiement 100% Sécurisé</div>
+                {subtotal >= MIN_ORDER_AMOUNT && totalAfterAdvantage < MIN_ORDER_AMOUNT && !isGiftCardPayment && (
+                  <div className="p-4 bg-amber-50 text-amber-600 text-[10px] font-black uppercase rounded-2xl border border-amber-100 flex gap-2">
+                    <AlertCircle className="h-5 w-5 shrink-0" /> Le total après réductions (hors avoirs) ne peut descendre sous {MIN_ORDER_AMOUNT}€.
+                  </div>
+                )}
+
+                <Button 
+                  type="submit" 
+                  disabled={loading || !rgpdConsent || subtotal < MIN_ORDER_AMOUNT || (totalAfterAdvantage < MIN_ORDER_AMOUNT && !isGiftCardPayment)} 
+                  className="w-full h-16 rounded-[2rem] bg-[#D4AF37] hover:bg-black text-white font-black uppercase tracking-widest shadow-xl transition-all"
+                >
+                  {loading ? 'Traitement...' : `Confirmer le paiement de ${totalAfterWallet.toFixed(2)} €`}
+                </Button>
+                <div className="text-center text-[9px] font-black uppercase text-gray-400 mt-4"><AlertCircle className="inline h-3 w-3 mr-1"/> Paiement 100% Sécurisé via Kavern</div>
               </CardContent>
             </Card>
 

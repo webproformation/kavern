@@ -1,9 +1,9 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google'; // 1. On importe Inter
+import { Inter } from 'next/font/google';
 import { LayoutWrapper } from '@/components/layout-wrapper';
+import { AppLifecycle } from '@/components/AppLifecycle'; // Nouveau composant
 
-// 2. On configure la police avec le sous-ensemble latin
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
@@ -23,8 +23,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr">
-      {/* 3. On applique la classe de la police au body */}
       <body className={inter.className}>
+        {/* Ce composant invisible gère le rafraîchissement automatique pour Mamie */}
+        <AppLifecycle />
         <LayoutWrapper>{children}</LayoutWrapper>
       </body>
     </html>

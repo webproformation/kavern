@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { MapPin, Phone, Mail, Send, Facebook, Instagram, ArrowUp, Cookie } from 'lucide-react';
+import { MapPin, Phone, Mail, Send, Facebook, Instagram, ArrowUp, Cookie, Youtube } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { GDPRConsent } from '@/components/gdpr-consent';
@@ -36,19 +36,10 @@ const reassuranceBlocks = [
   }
 ];
 
-const categories = [
-  { name: 'Nouveautés', href: '/category/nouveautes' },
-  { name: 'Mode', href: '/category/mode' },
-  { name: 'Les looks d\'André', href: '/category/les-looks-de-morgane' },
-  { name: 'Maison', href: '/category/maison' },
-  { name: 'Beauté et Senteurs', href: '/category/beaute-et-senteurs' },
-  { name: 'Bonnes affaires', href: '/category/bonnes-affaires' },
-];
-
 const informations = [
   { name: 'Qui sommes-nous', href: '/qui-sommes-nous' },
   { name: 'Contact', href: '/contact' },
-  { name: 'Le colis ouvert', href: '/colis-ouvert' }, // AJOUT DU LIEN ICI
+  { name: 'Le colis ouvert', href: '/colis-ouvert' },
   { name: 'Le droit à l\'erreur', href: '/le-droit-a-lerreur' },
   { name: 'Vite chez vous', href: '/vite-chez-vous' },
   { name: 'Transactions protégées', href: '/transactions-protegees' },
@@ -58,10 +49,34 @@ const informations = [
   { name: 'Lives', href: '/live' },
 ];
 
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export function SiteFooter() {
   const [email, setEmail] = useState('');
   const [gdprConsent, setGdprConsent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [dynamicCategories, setDynamicCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id, name, slug')
+        .is('parent_id', null)
+        .eq('is_visible', true)
+        .order('display_order', { ascending: true });
+
+      if (!error && data) {
+        setDynamicCategories(data);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,14 +193,19 @@ export function SiteFooter() {
               </div>
             </div>
 
-            {/* COLONNE 2 : CATEGORIES */}
+            {/* COLONNE 2 : CATEGORIES AUTOMATIQUES */}
             <div>
               <h3 className="text-white font-bold text-xl md:text-lg mb-4">Catégories</h3>
               <ul className="space-y-2">
-                {categories.map((category) => (
-                  <li key={category.href}>
+                <li>
+                  <Link href="/category/nouveautes" className="text-base md:text-sm hover:text-white transition-colors">
+                    Nouveautés
+                  </Link>
+                </li>
+                {dynamicCategories.map((category) => (
+                  <li key={category.id}>
                     <Link
-                      href={category.href}
+                      href={`/category/${category.slug}`}
                       className="text-base md:text-sm hover:text-white transition-colors"
                     >
                       {category.name}
@@ -275,9 +295,9 @@ export function SiteFooter() {
 
               <div className="mt-6">
                 <h4 className="text-white font-semibold mb-3">Suivez-nous</h4>
-                <div className="flex gap-3 justify-center md:justify-start">
+                <div className="flex gap-3 justify-center md:justify-start flex-wrap">
                   <a
-                    href="https://www.facebook.com/"
+                    href="https://www.facebook.com/share/1ApxRYbs2v/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="bg-gray-800 hover:bg-gray-700 p-3 rounded-full transition-colors"
@@ -285,7 +305,7 @@ export function SiteFooter() {
                     <Facebook className="h-5 w-5" />
                   </a>
                   <a
-                    href="https://www.instagram.com/kavern-france/"
+                    href="https://www.instagram.com/kavern2026?igsh=MTJ3bng1NmVyenV3ZA=="
                     target="_blank"
                     rel="noopener noreferrer"
                     className="bg-gray-800 hover:bg-gray-700 p-3 rounded-full transition-colors"
@@ -293,7 +313,7 @@ export function SiteFooter() {
                     <Instagram className="h-5 w-5" />
                   </a>
                   <a
-                    href="https://www.tiktok.com/@kavern-france"
+                    href="https://tiktok.com/@kavernfrance"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="bg-gray-800 hover:bg-gray-700 p-3 rounded-full transition-colors"
@@ -301,6 +321,14 @@ export function SiteFooter() {
                     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
                     </svg>
+                  </a>
+                  <a
+                    href="https://youtube.com/@kavern2026?si=J9TTl72dAOTIuFrB"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-gray-800 hover:bg-gray-700 p-3 rounded-full transition-colors"
+                  >
+                    <Youtube className="h-5 w-5" />
                   </a>
                 </div>
               </div>

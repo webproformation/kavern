@@ -2,14 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Gem, Heart, Truck, Sparkles } from 'lucide-react'; // Ajout de Sparkles
+import { Gem, Heart, Truck, Sparkles } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { SectionTitle } from '@/components/ui/SectionTitle'; // Import du nouveau composant
+import { SectionTitle } from '@/components/ui/SectionTitle';
 
-// ... (Gardez la fonction useCounter telle quelle) ...
 function useCounter(end: number, duration = 2000) {
   const [count, setCount] = useState(0);
+  
   useEffect(() => {
+    if (end === 0) return; // Pas d'animation inutile si la cible est 0
+    
     let startTime: number | null = null;
     const step = (timestamp: number) => {
       if (!startTime) startTime = timestamp;
@@ -21,6 +23,7 @@ function useCounter(end: number, duration = 2000) {
     };
     window.requestAnimationFrame(step);
   }, [end, duration]);
+  
   return count;
 }
 
@@ -66,13 +69,12 @@ export default function KeyFigures() {
         />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* ... (Le reste des Cartes reste identique) ... */}
           <Card className="p-8 text-center border-none shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-br from-yellow-50 to-white">
             <div className="inline-flex items-center justify-center w-16 h-16 mb-6 rounded-full bg-[#D4AF37]/10 text-[#D4AF37]">
               <Gem className="w-8 h-8" />
             </div>
-            <div className="text-4xl font-bold text-[#D4AF37] mb-2 font-display">
-              {animatedDiamonds}
+            <div className="text-4xl font-bold text-[#D4AF37] mb-2 font-display min-h-[40px]">
+              {stats.diamonds === 0 ? '\u00A0' : animatedDiamonds}
             </div>
             <div className="text-gray-600 font-medium">Diamants dénichés</div>
           </Card>
@@ -81,8 +83,8 @@ export default function KeyFigures() {
             <div className="inline-flex items-center justify-center w-16 h-16 mb-6 rounded-full bg-pink-100 text-pink-500">
               <Heart className="w-8 h-8" />
             </div>
-            <div className="text-4xl font-bold text-pink-500 mb-2 font-display">
-              {animatedReviews}
+            <div className="text-4xl font-bold text-pink-500 mb-2 font-display min-h-[40px]">
+              {stats.reviews === 0 ? '\u00A0' : animatedReviews}
             </div>
             <div className="text-gray-600 font-medium">Mots doux reçus</div>
           </Card>
@@ -91,8 +93,8 @@ export default function KeyFigures() {
             <div className="inline-flex items-center justify-center w-16 h-16 mb-6 rounded-full bg-green-100 text-green-500">
               <Truck className="w-8 h-8" />
             </div>
-            <div className="text-4xl font-bold text-green-500 mb-2 font-display">
-              {animatedShipped}
+            <div className="text-4xl font-bold text-green-500 mb-2 font-display min-h-[40px]">
+              {stats.shipped === 0 ? '\u00A0' : animatedShipped}
             </div>
             <div className="text-gray-600 font-medium">Colis chouchoutés</div>
           </Card>

@@ -70,6 +70,7 @@ const navSections: NavSection[] = [
     title: "Accueil",
     icon: Home,
     items: [
+      { href: "/admin/settings", label: "Top bar" },
       { href: "/admin/slides", label: "Slides" },
       { href: "/admin/home-categories", label: "Catégories Accueil" },
       { href: "/admin/featured-products", label: "Produits Vedettes" },

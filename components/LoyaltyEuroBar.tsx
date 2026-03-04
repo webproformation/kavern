@@ -12,9 +12,9 @@ interface LoyaltyData {
 }
 
 const TIERS = [
-  { min: 0, max: 5, multiplier: 1, name: 'Débutant', icon: TrendingUp, color: 'from-gray-400 to-gray-600' },
-  { min: 5, max: 15, multiplier: 2, name: 'Expert', icon: Sparkles, color: 'from-[#C6A15B] to-[#D4AF37]' },
-  { min: 15, max: Infinity, multiplier: 3, name: 'Légende', icon: Crown, color: 'from-[#D4AF37] to-[#FFD700]' }
+  { min: 0, max: 5, multiplier: 1, name: 'Esprit curieux', icon: TrendingUp, color: 'from-gray-400 to-gray-600' },
+  { min: 5, max: 15, multiplier: 2, name: 'Passionné', icon: Sparkles, color: 'from-[#C6A15B] to-[#D4AF37]' },
+  { min: 15, max: Infinity, multiplier: 3, name: 'Collectionneur', icon: Crown, color: 'from-[#D4AF37] to-[#FFD700]' }
 ];
 
 export function LoyaltyEuroBar() {

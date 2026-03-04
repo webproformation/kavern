@@ -69,7 +69,7 @@ export default function CartesCadeauxPage() {
                 <Gift className="h-24 w-24 text-white opacity-90 mx-auto" />
                 <p className="text-5xl font-bold">{amount}€</p>
                 <p className="text-lg opacity-90">Carte Cadeau</p>
-                <p className="text-sm opacity-75">La Boutique de Morgane</p>
+                <p className="text-sm opacity-75">KAVERN</p>
               </div>
 
               {fromName && (

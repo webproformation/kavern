@@ -1,199 +1,262 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Home, ChevronRight, Loader2, Sparkles } from 'lucide-react';
-import { decodeHtmlEntities } from '@/lib/utils';
+import { 
+  SlidersHorizontal, Filter, AlertTriangle, ChevronRight, Home, Sparkles
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { ProductCard } from '@/components/ProductCard';
+import { ProductFilters, FilterState } from '@/components/ProductFilters';
+import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/context/AuthContext';
 
-// Interface basée sur les données nécessaires pour les cartes produits
-interface Product {
-  id: string;
-  name: string;
-  slug: string;
-  image_url: string;
-  regular_price: number;
-  sale_price: number | null;
-}
+const LIVE_KEYWORDS = ['live'];
 
-const ITEMS_PER_PAGE = 20;
+const FilterSidebarContent = ({ priceRange, setPriceRange, maxPrice, activeFilters, setActiveFilters, availableTerms }: any) => (
+  <div className="space-y-6">
+    <div>
+      <h3 className="font-semibold text-sm text-gray-900 mb-4 flex items-center gap-2">
+        <span className="bg-[#D4AF37] w-1 h-4 rounded-full"></span> Prix maximum
+      </h3>
+      <div className="px-2">
+        <Slider value={priceRange} onValueChange={(value) => setPriceRange(value as [number, number])} max={maxPrice} step={1} className="my-4" />
+        <div className="flex justify-between text-sm text-gray-600 font-medium">
+          <span>{priceRange[0]}€</span>
+          <span className="text-[#D4AF37] font-bold">{priceRange[1]}€</span>
+        </div>
+      </div>
+    </div>
+    <Separator />
+    <ProductFilters activeFilters={activeFilters} availableTerms={availableTerms} onFiltersChange={setActiveFilters} />
+  </div>
+);
 
 export default function ShopPage() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const { profile } = useAuth();
+
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
+  const [availableTerms, setAvailableTerms] = useState<Set<string>>(new Set());
+  const [productTermsMap, setProductTermsMap] = useState<Record<string, Set<string>>>({});
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 200]);
+  const [maxPrice, setMaxPrice] = useState(200);
+  const [activeFilters, setActiveFilters] = useState<FilterState>({
+    mySize: false, sizes: [], colors: [], comfort: [], coupe: [], live: false, nouveautes: false,
+  });
 
-  // Référence pour l'élément déclencheur du lazy loading
-  const observerTarget = useRef<HTMLDivElement>(null);
+  const extractProductTerms = (p: any, dictionary: Record<string, string>): Set<string> => {
+    const terms = new Set<string>();
 
-  const fetchProducts = useCallback(async (pageNumber: number) => {
-    try {
-      if (pageNumber === 0) setLoading(true);
-      else setLoadingMore(true);
+    const addValue = (v: any) => {
+      if (v == null || v === '') return;
+      const vStr = String(v).toLowerCase().trim();
+      const resolved = dictionary[vStr] ? dictionary[vStr].toLowerCase().trim() : vStr;
+      terms.add(resolved);
+    };
 
-      const from = pageNumber * ITEMS_PER_PAGE;
-      const to = from + ITEMS_PER_PAGE - 1;
-
-      const { data, error } = await supabase
-        .from('products')
-        .select('id, name, slug, image_url, regular_price, sale_price')
-        // Si tu as une colonne pour masquer certains produits, tu peux l'ajouter ici. ex: .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .range(from, to);
-
-      if (error) throw error;
-
-      if (data) {
-        if (pageNumber === 0) {
-          setProducts(data);
-        } else {
-          setProducts(prev => [...prev, ...data]);
-        }
-        
-        // S'il y a moins de 20 produits retournés, c'est qu'on a atteint la fin du catalogue
-        setHasMore(data.length === ITEMS_PER_PAGE);
+    const processAttributes = (attrObj: any) => {
+      if (!attrObj) return;
+      let data: any;
+      try {
+        data = typeof attrObj === 'string' ? JSON.parse(attrObj) : attrObj;
+      } catch {
+        return;
       }
-    } catch (error) {
-      console.error('Error loading products:', error);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, []);
+      if (!data) return;
 
-  // Chargement initial
-  useEffect(() => {
-    fetchProducts(0);
-  }, [fetchProducts]);
+      if (Array.isArray(data)) {
+        data.forEach((item: any) => {
+          if (!item || typeof item !== 'object') return;
+          if (Array.isArray(item.options)) {
+            item.options.forEach(addValue);
+          } else if (item.option != null) {
+            addValue(item.option);
+          } else if (Array.isArray(item.term_ids)) {
+            item.term_ids.forEach(addValue);
+          } else if (item.value != null) {
+            addValue(item.value);
+          }
+        });
+      } else if (typeof data === 'object') {
+        Object.values(data).forEach((val: any) => {
+          Array.isArray(val) ? val.forEach(addValue) : addValue(val);
+        });
+      }
+    };
 
-  // Configuration de l'Intersection Observer pour le Lazy Loading
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        // Si la cible est visible et qu'on n'est pas déjà en train de charger
-        if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
-          const nextPage = page + 1;
-          setPage(nextPage);
-          fetchProducts(nextPage);
-        }
-      },
-      { threshold: 0.1 } // Se déclenche quand 10% de la cible est visible
+    processAttributes(p.attributes);
+    p.product_variations?.forEach((v: any) =>
+      processAttributes(v.attributes)
     );
 
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
+    return terms;
+  };
 
-    return () => observer.disconnect();
-  }, [hasMore, loading, loadingMore, page, fetchProducts]);
+  useEffect(() => { loadProducts(); }, []);
+  useEffect(() => { applyFilters(); }, [priceRange, activeFilters, allProducts, productTermsMap]);
+
+  async function loadProducts() {
+    setLoading(true);
+    try {
+      const { data: termsData } = await supabase.from('product_attribute_terms').select('id, name');
+      const dict: Record<string, string> = {};
+      if (termsData) {
+        termsData.forEach(t => { dict[String(t.id).toLowerCase()] = t.name; });
+      }
+
+      const { data: productsData } = await supabase
+        .from('products')
+        .select('*')
+        .eq('status', 'publish')
+        .order('created_at', { ascending: false });
+
+      if (productsData) {
+        const productIds = productsData.map(p => p.id);
+        const { data: variationsData } = await supabase.from('product_variations').select('*').in('product_id', productIds);
+        
+        const finalProducts = productsData.map(p => ({
+          ...p,
+          product_variations: variationsData?.filter(v => v.product_id === p.id) || []
+        }));
+
+        const globalSet = new Set<string>();
+        const pMap: Record<string, Set<string>> = {};
+        
+        finalProducts.forEach(p => {
+          const terms = extractProductTerms(p, dict);
+          pMap[p.id] = terms;
+          terms.forEach(t => globalSet.add(t));
+        });
+
+        setAllProducts(finalProducts);
+        setProductTermsMap(pMap);
+        setAvailableTerms(globalSet);
+
+        const prices = productsData.map(p => p.sale_price || p.regular_price || 0).filter(p => p > 0);
+        const max = prices.length > 0 ? Math.ceil(Math.max(...prices)) : 200;
+        setMaxPrice(max);
+        setPriceRange([0, max]);
+      }
+    } catch (error) {
+      console.error('Erreur chargement produits:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function applyFilters() {
+    if (!allProducts.length) return;
+    const boolKeys = ['mySize', 'live', 'nouveautes'];
+    const filtered = allProducts.filter(p => {
+      const price = p.sale_price || p.regular_price || 0;
+      const terms = productTermsMap[p.id] || new Set<string>();
+      
+      if (price < priceRange[0] || price > priceRange[1]) return false;
+      
+      for (const [key, selectedValues] of Object.entries(activeFilters)) {
+        if (boolKeys.includes(key)) continue;
+        if (!Array.isArray(selectedValues) || selectedValues.length === 0) continue;
+        const hasMatch = selectedValues.some((val: string) => terms.has(val.toLowerCase().trim()));
+        if (!hasMatch) return false;
+      }
+      
+      if (activeFilters.live) {
+        const hasLive = [...terms].some(t => LIVE_KEYWORDS.some(k => t.includes(k)));
+        if (!hasLive) return false;
+      }
+      return true;
+    });
+    
+    setFilteredProducts(filtered);
+  }
+
+  if (loading) return (
+    <div className="min-h-screen bg-white flex items-center justify-center font-black uppercase text-[#b8933d] animate-pulse">
+      Chargement de la malle...
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-[#FDFCFB]">
-      {/* FIL D'ARIANE */}
-      <nav className="bg-white border-b overflow-x-auto whitespace-nowrap">
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-2 text-sm text-gray-500">
-          <Link href="/" className="hover:text-[#b8933d] flex items-center gap-1">
-            <Home className="h-4 w-4" /> Accueil
-          </Link>
-          <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-900 font-medium truncate">La KAVERN complète</span>
+    <div className="min-h-screen bg-gray-50/30">
+      {profile?.is_admin && (
+        <div className="bg-red-50 border-b border-red-100 py-2 sticky top-0 z-50">
+          <div className="container mx-auto px-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-red-700 font-black text-[10px] uppercase tracking-widest">
+              <AlertTriangle className="h-3 w-3" /> Mode Administrateur
+            </div>
+            <Button asChild size="sm" variant="outline" className="h-7 text-[10px] font-bold border-red-200 hover:bg-red-100">
+              <Link href="/admin/products/new">Ajouter une pépite</Link>
+            </Button>
+          </div>
+        </div>
+      )}
+      
+      <nav className="bg-white border-b py-3 px-4">
+        <div className="container mx-auto flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+          <Link href="/" className="hover:text-[#b8933d] flex items-center gap-1"><Home className="h-3 w-3" /> Accueil</Link>
+          <ChevronRight className="h-3 w-3" />
+          <span className="text-[#b8933d]">Tous les Produits</span>
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 py-8 lg:py-12">
-        {/* EN-TÊTE DE PAGE */}
-        <div className="flex flex-col items-center justify-center text-center space-y-4 mb-16">
-          <div className="p-3 bg-[#D4AF37]/10 rounded-full mb-2">
-            <Sparkles className="h-8 w-8 text-[#D4AF37]" />
-          </div>
-          <h1 className="text-4xl md:text-5xl font-black text-gray-900 leading-[1.1] uppercase tracking-tighter">
-            La KAVERN complète
-          </h1>
-          <p className="text-xl text-[#C6A15B] italic font-semibold max-w-2xl mx-auto">
-            &quot;Explorez l'intégralité de nos pépites et trouvez la perle rare qui vous correspond.&quot;
-          </p>
-          <div className="h-1 w-24 bg-[#D4AF37] rounded-full mt-4" />
-        </div>
+      <main className="container mx-auto px-4 py-8">
+        <div className="flex flex-col lg:flex-row gap-8">
+          
+          <aside className="hidden lg:block w-64 flex-shrink-0">
+            <div className="sticky top-24 bg-white rounded-3xl shadow-sm border border-gray-100 p-6 overflow-y-auto max-h-[calc(100vh-8rem)]">
+              <div className="flex items-center gap-2 mb-8 text-[#D4AF37] font-black uppercase text-xs tracking-widest">
+                <Filter className="w-4 h-4" /> Vos Critères
+              </div>
+              <FilterSidebarContent priceRange={priceRange} setPriceRange={setPriceRange} maxPrice={maxPrice} activeFilters={activeFilters} setActiveFilters={setActiveFilters} availableTerms={availableTerms} />
+            </div>
+          </aside>
 
-        {/* GRILLE PRODUITS */}
-        {loading && page === 0 ? (
-          <div className="flex flex-col items-center justify-center py-32 space-y-4">
-            <Loader2 className="h-12 w-12 animate-spin text-[#D4AF37]" />
-            <p className="text-sm font-black text-gray-400 uppercase tracking-widest">Ouverture de la Kavern...</p>
-          </div>
-        ) : products.length === 0 ? (
-          <div className="text-center py-32 bg-white rounded-[2.5rem] border border-gray-100 shadow-sm">
-            <Sparkles className="h-16 w-16 mx-auto mb-4 text-gray-200" />
-            <h3 className="text-2xl font-black text-gray-900 uppercase">La Kavern est vide</h3>
-            <p className="text-gray-500 font-medium mt-2">
-              Revenez très vite pour découvrir nos futures pépites.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-12">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {products.map((product) => (
-                <Link key={product.id} href={`/product/${product.slug}`} className="group space-y-3">
-                  <div className="aspect-[4/5] rounded-2xl overflow-hidden bg-gray-100 relative shadow-sm transition-all group-hover:shadow-xl group-hover:-translate-y-1">
-                    <img 
-                      src={product.image_url} 
-                      alt={decodeHtmlEntities(product.name)} 
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
-                    
-                    {/* Badge Promo Optionnel si besoin */}
-                    {product.sale_price && product.regular_price > product.sale_price && (
-                      <div className="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-widest shadow-md">
-                        Promo
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-1 px-1">
-                    <h3 className="font-bold text-gray-900 line-clamp-1 text-sm group-hover:text-[#b8933d] transition-colors">
-                      {decodeHtmlEntities(product.name)}
-                    </h3>
-                    <div className="flex items-baseline gap-2">
-                      <p className="text-[#b8933d] font-black text-base">
-                        {(product.sale_price || product.regular_price).toFixed(2)} €
-                      </p>
-                      {product.sale_price && (
-                        <p className="text-xs text-gray-400 line-through font-medium">
-                          {product.regular_price.toFixed(2)} €
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </Link>
+          <div className="flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-10">
+              <div className="space-y-1">
+                <h1 className="text-xl md:text-2xl font-black text-gray-900 uppercase tracking-tighter leading-none flex items-center gap-3">
+                  La Kavern Complète <Sparkles className="h-6 w-6 text-[#D4AF37]" />
+                </h1>
+                <p className="text-gray-400 font-medium italic text-sm">Explorez l'intégralité de nos pépites et trouvez la perle rare.</p>
+              </div>
+              
+              {allProducts.length > 0 && (
+                <div className="flex items-center gap-3 lg:hidden">
+                  <Sheet>
+                    <SheetTrigger asChild>
+                      <Button variant="outline" className="rounded-2xl border-gray-200 h-12 px-6 font-bold shadow-sm">
+                        <SlidersHorizontal className="h-4 w-4 mr-2" /> Filtres
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="w-full sm:max-w-md overflow-y-auto rounded-r-[2rem]">
+                      <SheetHeader className="mb-8 text-left">
+                        <SheetTitle className="text-2xl font-black text-[#D4AF37] uppercase italic">Affiner</SheetTitle>
+                      </SheetHeader>
+                      <FilterSidebarContent priceRange={priceRange} setPriceRange={setPriceRange} maxPrice={maxPrice} activeFilters={activeFilters} setActiveFilters={setActiveFilters} availableTerms={availableTerms} />
+                    </SheetContent>
+                  </Sheet>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              {filteredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} showAddToCart={true} />
               ))}
             </div>
 
-            {/* Cible pour déclencher le chargement (Intersection Observer Target) */}
-            {hasMore && (
-              <div 
-                ref={observerTarget} 
-                className="flex justify-center items-center py-10"
-              >
-                {loadingMore && (
-                  <div className="flex items-center gap-3 text-[#D4AF37]">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                    <span className="text-xs font-black uppercase tracking-widest">Chargement des pépites...</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {!hasMore && products.length > 0 && (
-              <div className="text-center py-12">
-                <p className="text-xs font-black text-gray-300 uppercase tracking-[0.3em]">
-                  Vous avez exploré toute la Kavern
-                </p>
+            {filteredProducts.length === 0 && !loading && (
+              <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
+                <p className="text-gray-500 font-bold uppercase tracking-widest">Aucun résultat trouvé dans la Kavern</p>
               </div>
             )}
           </div>
-        )}
+        </div>
       </main>
     </div>
   );

@@ -25,12 +25,13 @@ export default function Home() {
 
         <FeaturedProducts />
 
+        {/* Le livre d'or remonte juste en dessous des produits vedettes */}
+        <HomeReviewsCarousel />
+
         <VideoShortsSection />
 
         {/* Affichage des statistiques animées */}
         <KeyFigures />
-
-        <HomeReviewsCarousel />
       </main>
     </div>
   );
