@@ -10,10 +10,10 @@ export function AppLifecycle() {
   useEffect(() => {
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible') {
-        // Rafraîchit les données sans recharger toute la page
+        // Rafraîchit les données sans recharger la page
         router.refresh();
 
-        // Vérifie et rafraîchit la session de l'utilisateur si besoin
+        // Réveille la session Supabase
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
           await supabase.auth.refreshSession();
