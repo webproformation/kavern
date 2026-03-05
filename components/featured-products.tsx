@@ -2,11 +2,11 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, ChevronLeft, ChevronRight, Gem } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Gem } from 'lucide-react';
 import { ProductCard } from '@/components/ProductCard';
 import useEmblaCarousel from 'embla-carousel-react';
+import Autoplay from 'embla-carousel-autoplay';
 import { SectionTitle } from '@/components/ui/SectionTitle';
 import Link from 'next/link';
 
@@ -30,15 +30,20 @@ interface Product {
 export function FeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    align: 'start',
-    loop: true,
-    slidesToScroll: 1,
-    breakpoints: {
-      '(min-width: 768px)': { slidesToScroll: 2 },
-      '(min-width: 1024px)': { slidesToScroll: 3 }
-    }
-  });
+
+  // CONFIGURATION DU SLIDER AVEC AUTOPLAY ET 5 COLONNES
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    {
+      align: 'start',
+      loop: true,
+      slidesToScroll: 1,
+      breakpoints: {
+        '(min-width: 768px)': { slidesToScroll: 2 },
+        '(min-width: 1024px)': { slidesToScroll: 5 } // On défile par 5 sur desktop
+      }
+    },
+    [Autoplay({ delay: 4000, stopOnInteraction: false })] // Défilement auto toutes les 4s
+  );
 
   const scrollPrev = useCallback(() => {
     if (emblaApi) emblaApi.scrollPrev();
@@ -54,10 +59,10 @@ export function FeaturedProducts() {
         const { data, error } = await supabase
           .from('products')
           .select('*')
-          .eq('is_featured', true) // CORRECTION ICI : is_featured au lieu de featured
+          .eq('is_featured', true)
           .eq('status', 'publish')
           .order('created_at', { ascending: false })
-          .limit(8);
+          .limit(15); // On en prend un peu plus pour le slider
 
         if (error) throw error;
         setProducts(data || []);
@@ -80,9 +85,10 @@ export function FeaturedProducts() {
             subtitle="Chargement des pépites..." 
             icon={Gem} 
           />
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-[400px] bg-gray-100 rounded-lg animate-pulse" />
+          {/* SQUELETTE MIS À JOUR EN 5 COLONNES */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="h-[350px] bg-gray-200/50 rounded-2xl animate-pulse" />
             ))}
           </div>
         </div>
@@ -93,31 +99,37 @@ export function FeaturedProducts() {
   if (products.length === 0) return null;
 
   return (
-    <section className="py-16 bg-[#F2F2E8]/30">
+    <section className="py-16 bg-[#F2F2E8]/30 overflow-hidden">
       <div className="container mx-auto px-4">
         
-        {/* TITRE HARMONISÉ */}
         <SectionTitle 
           title="Les pépites du moment" 
           subtitle="Ces pièces que vous adorez... et que nous aussi !"
           icon={Gem}
         />
 
-        <div className="relative group">
+        <div className="relative group px-2">
           <div className="overflow-hidden" ref={emblaRef}>
             <div className="flex -ml-4">
               {products.map((product) => (
-                <div key={product.id} className="flex-[0_0_85%] min-w-0 pl-4 sm:flex-[0_0_50%] md:flex-[0_0_33.33%] lg:flex-[0_0_25%]">
-                  <ProductCard product={product} />
+                /* CONFIGURATION TAILWIND POUR 5 COLONNES : lg:flex-[0_0_20%] */
+                <div 
+                  key={product.id} 
+                  className="flex-[0_0_80%] min-w-0 pl-4 sm:flex-[0_0_45%] md:flex-[0_0_33.33%] lg:flex-[0_0_20%]"
+                >
+                  <div className="h-full transition-transform duration-300 hover:scale-[1.02] py-2">
+                    <ProductCard product={product} />
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
+          {/* BOUTONS DE NAVIGATION S'AFFICHENT AU SURVOL */}
           <Button
             variant="outline"
             size="icon"
-            className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/80 hover:bg-white border-[#D4AF37] text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 hidden md:flex"
+            className="absolute -left-2 top-1/2 -translate-y-1/2 rounded-full bg-white shadow-lg border-none text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 hidden md:flex z-10"
             onClick={scrollPrev}
           >
             <ChevronLeft className="h-6 w-6" />
@@ -126,7 +138,7 @@ export function FeaturedProducts() {
           <Button
             variant="outline"
             size="icon"
-            className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/80 hover:bg-white border-[#D4AF37] text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 hidden md:flex"
+            className="absolute -right-2 top-1/2 -translate-y-1/2 rounded-full bg-white shadow-lg border-none text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 hidden md:flex z-10"
             onClick={scrollNext}
           >
             <ChevronRight className="h-6 w-6" />
@@ -137,10 +149,10 @@ export function FeaturedProducts() {
           <Button 
             variant="outline" 
             asChild
-            className="border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-white transition-colors px-8 py-6 text-lg rounded-full"
+            className="border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-white transition-all px-10 py-6 text-sm font-black uppercase tracking-widest rounded-xl shadow-sm"
           >
             <Link href="/shop">
-              Voir toute la collection
+              Découvrir tout le trésor
             </Link>
           </Button>
         </div>

@@ -90,39 +90,41 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader className="space-y-1">
-          <div className="flex justify-center mb-4">
-            <img src="/lbdm-icone.png" alt="Logo" className="h-16 w-auto" />
+      <Card className="w-full max-w-2xl border-none shadow-xl rounded-[2rem] overflow-hidden">
+        <CardHeader className="space-y-1 pt-10">
+          <div className="flex justify-center mb-6">
+            <img src="/kavern-logo.png" alt="Logo Kavern" className="h-20 w-auto" />
           </div>
-          <CardTitle className="text-2xl font-bold text-center">Créer un compte</CardTitle>
-          <CardDescription className="text-center">
-            Rejoignez-nous et profitez d'avantages exclusifs
+          <CardTitle className="text-3xl font-black text-center uppercase tracking-tighter text-gray-900">
+            Rejoindre la KAVERN
+          </CardTitle>
+          <CardDescription className="text-center font-medium text-gray-500 italic">
+            Créez votre compte et commencez votre collection de pépites
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <CardContent className="px-8 pb-10">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+              <div className="bg-red-50 border border-red-100 rounded-2xl p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
                 <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-600">{error}</p>
+                <p className="text-sm font-bold text-red-600">{error}</p>
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="firstName">
-                  Prénom <span className="text-red-500">*</span>
+                <Label htmlFor="firstName" className="font-bold text-gray-700 ml-1">
+                  Prénom <span className="text-[#D4AF37]">*</span>
                 </Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <User className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     id="firstName"
                     type="text"
                     placeholder="Claire"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="pl-10"
+                    className="pl-12 h-12 rounded-xl border-gray-200 focus:border-[#D4AF37] focus:ring-[#D4AF37]"
                     required
                     disabled={loading}
                   />
@@ -130,18 +132,18 @@ export default function RegisterPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="lastName">
-                  Nom <span className="text-red-500">*</span>
+                <Label htmlFor="lastName" className="font-bold text-gray-700 ml-1">
+                  Nom <span className="text-[#D4AF37]">*</span>
                 </Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <User className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     id="lastName"
                     type="text"
                     placeholder="Dupont"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="pl-10"
+                    className="pl-12 h-12 rounded-xl border-gray-200 focus:border-[#D4AF37] focus:ring-[#D4AF37]"
                     required
                     disabled={loading}
                   />
@@ -150,18 +152,18 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">
-                Email <span className="text-red-500">*</span>
+              <Label htmlFor="email" className="font-bold text-gray-700 ml-1">
+                Email <span className="text-[#D4AF37]">*</span>
               </Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="email"
                   type="email"
                   placeholder="votre@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
+                  className="pl-12 h-12 rounded-xl border-gray-200 focus:border-[#D4AF37] focus:ring-[#D4AF37]"
                   required
                   disabled={loading}
                 />
@@ -169,91 +171,91 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone">Téléphone</Label>
+              <Label htmlFor="phone" className="font-bold text-gray-700 ml-1">Téléphone</Label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="phone"
                   type="tel"
                   placeholder="+33 6 12 34 56 78"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="pl-10"
+                  className="pl-12 h-12 rounded-xl border-gray-200 focus:border-[#D4AF37] focus:ring-[#D4AF37]"
                   disabled={loading}
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="birthDate">Date de naissance</Label>
+                <Label htmlFor="birthDate" className="font-bold text-gray-700 ml-1">Date de naissance</Label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     id="birthDate"
                     type="date"
                     value={birthDate}
                     onChange={(e) => setBirthDate(e.target.value)}
                     max={getTodayDate()}
-                    className="pl-10"
+                    className="pl-12 h-12 rounded-xl border-gray-200 focus:border-[#D4AF37] focus:ring-[#D4AF37]"
                     disabled={loading}
                   />
                 </div>
-                <p className="text-xs text-gray-500">
-                  Recevez un cadeau spécial pour votre anniversaire
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter ml-1">
+                  Une surprise vous attendra le jour J ! 🎁
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="referralCode">Code de parrainage</Label>
+                <Label htmlFor="referralCode" className="font-bold text-gray-700 ml-1">Code de parrainage</Label>
                 <div className="relative">
-                  <Gift className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Gift className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     id="referralCode"
                     type="text"
-                    placeholder="MORGANE2025"
+                    placeholder="KAVERN2026"
                     value={referralCode}
                     onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                    className="pl-10 uppercase"
+                    className="pl-12 h-12 rounded-xl border-gray-200 focus:border-[#D4AF37] focus:ring-[#D4AF37] uppercase"
                     disabled={loading}
                   />
                 </div>
-                <p className="text-xs text-gray-500">
-                  Bénéficiez d'avantages en utilisant un code
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter ml-1">
+                  Profitez d&apos;avantages exclusifs
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="password">
-                  Mot de passe <span className="text-red-500">*</span>
+                <Label htmlFor="password" className="font-bold text-gray-700 ml-1">
+                  Mot de passe <span className="text-[#D4AF37]">*</span>
                 </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
+                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
                   <PasswordInput
                     id="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10"
+                    className="pl-12 pr-10 h-12 rounded-xl border-gray-200 focus:border-[#D4AF37] focus:ring-[#D4AF37]"
                     required
                     disabled={loading}
                   />
                 </div>
-                <p className="text-xs text-gray-500">Minimum 8 caractères</p>
+                <p className="text-[10px] text-gray-400 font-bold ml-1">8 caractères minimum</p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">
-                  Confirmer le mot de passe <span className="text-red-500">*</span>
+                <Label htmlFor="confirmPassword" className="font-bold text-gray-700 ml-1">
+                  Confirmer <span className="text-[#D4AF37]">*</span>
                 </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
+                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
                   <PasswordInput
                     id="confirmPassword"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-10 pr-10"
+                    className="pl-12 pr-10 h-12 rounded-xl border-gray-200 focus:border-[#D4AF37] focus:ring-[#D4AF37]"
                     required
                     disabled={loading}
                   />
@@ -264,23 +266,23 @@ export default function RegisterPage() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-[#b8933d] to-[#d4af37] hover:from-[#9a7a2f] hover:to-[#b8933d] text-white"
+              className="w-full h-14 bg-gradient-to-r from-[#b8933d] to-[#d4af37] hover:from-[#9a7a2f] hover:to-[#b8933d] text-white font-black uppercase tracking-widest rounded-xl shadow-lg shadow-amber-200 transition-all active:scale-95"
             >
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Création en cours...
+                  <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+                  Ouverture de la malle...
                 </>
               ) : (
                 'Créer mon compte'
               )}
             </Button>
 
-            <div className="text-center text-sm text-gray-600">
-              Vous avez déjà un compte?{' '}
+            <div className="text-center text-sm font-medium text-gray-500 pt-4">
+              Déjà membre de la communauté ?{' '}
               <Link
                 href="/auth/login"
-                className="text-[#D4AF37] hover:text-[#b8933d] font-medium transition-colors"
+                className="text-[#D4AF37] hover:text-[#b8933d] font-black underline underline-offset-4 transition-colors"
               >
                 Se connecter
               </Link>

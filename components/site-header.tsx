@@ -11,10 +11,8 @@ import {
   Menu,
   Shield,
   Package,
-  MapPin,
   LogOut,
   Play,
-  MoreHorizontal,
   ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -37,10 +35,11 @@ import { supabase } from '@/lib/supabase';
 import { decodeHtmlEntities } from '@/lib/utils';
 import { CUSTOM_TEXTS } from '@/lib/texts';
 
+// --- MISE À JOUR : UNIQUEMENT LIVE, CADEAU ET NOUVEAUTÉS ---
 const STATIC_LINKS = [
   { name: 'Live Shopping et Replay', href: '/live', slug: 'live', hasMegaMenu: false },
   { name: 'Carte cadeau', href: '/carte-cadeau', slug: 'carte-cadeau', hasMegaMenu: false },
-  { name: 'Actus', href: '/actualites', slug: 'actualites', hasMegaMenu: false },
+  { name: 'Nouveautés', href: '/nouveautes', slug: 'nouveautes', hasMegaMenu: false },
 ];
 
 interface NavigationItem {
@@ -61,7 +60,6 @@ export function SiteHeader() {
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [openMegaMenu, setOpenMegaMenu] = useState<string | null>(null);
   const [navigation, setNavigation] = useState<NavigationItem[]>([]);
-  const [otherCategories, setOtherCategories] = useState<NavigationItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [topBarText, setTopBarText] = useState('Bienvenue dans la KAVERN');
@@ -117,11 +115,10 @@ export function SiteHeader() {
           })
         );
 
+        // On ne garde que les catégories marquées pour le menu principal
         const mainNav = processedCategories.filter(c => c.showInMain);
-        const others = processedCategories.filter(c => !c.showInMain);
 
         setNavigation([...mainNav, ...STATIC_LINKS]);
-        setOtherCategories(others);
       }
     } catch (error) {
       console.error('Error loading navigation categories:', error);
@@ -166,7 +163,7 @@ export function SiteHeader() {
 
       <header className="sticky top-0 z-[100] bg-white shadow-sm border-b border-amber-50">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-20">
+          <div className="flex items-center justify-between h-24 md:h-28">
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
@@ -181,77 +178,47 @@ export function SiteHeader() {
                 <img
                   src="/kavern-logo.png"
                   alt="Kavern"
-                  className="h-12 md:h-16 w-auto"
+                  className="h-14 md:h-20 w-auto"
                 />
               </Link>
             </div>
 
-            <nav className="hidden md:flex items-center gap-4 lg:gap-6 flex-1 justify-center">
+            {/* NAVIGATION CENTRÉE ET ÉPURÉE (SANS "...") */}
+            <nav className="hidden md:flex items-center gap-4 lg:gap-8 flex-1 justify-center px-4">
               {loading ? (
-                <div className="text-gray-400 text-[10px] font-bold uppercase tracking-widest animate-pulse">Ouverture de la malle...</div>
+                <div className="text-gray-400 text-[9px] font-bold uppercase tracking-widest animate-pulse text-center">Chargement...</div>
               ) : (
                 <>
                   {navigation.map((item) => (
                     <div
                       key={item.slug}
-                      className="relative"
+                      className="relative h-full flex items-center"
                       onMouseEnter={() => item.hasMegaMenu && handleMouseEnter(item.slug)}
                       onMouseLeave={handleMouseLeave}
                     >
                       <Link
                         href={item.href}
-                        className={`flex items-center gap-1.5 text-xs lg:text-[13px] font-bold uppercase tracking-tight transition-all duration-300 hover:scale-105 ${
-                          item.slug === 'live'
+                        className={`flex flex-col items-center justify-center text-center gap-1 text-[9px] lg:text-[10px] font-extrabold uppercase tracking-tight transition-all duration-300 hover:scale-105 max-w-[120px] leading-tight ${
+                          item.slug === 'live' || item.slug === 'nouveautes'
                             ? 'text-[#D4AF37] hover:text-gray-900'
                             : pathname === item.href || pathname.startsWith(item.href + '/')
-                            ? 'text-[#D4AF37] border-b-2 border-[#D4AF37] pb-1'
+                            ? 'text-[#D4AF37]'
                             : 'text-gray-600 hover:text-[#D4AF37]'
                         }`}
                       >
-                        {item.slug === 'live' && <Play className="h-3 w-3 fill-current" />}
-                        {item.name}
+                        {item.slug === 'live' && <Play className="h-2.5 w-2.5 fill-current mb-0.5" />}
+                        <span className="block whitespace-normal">{item.name}</span>
+                        {(pathname === item.href || pathname.startsWith(item.href + '/')) && (
+                          <div className="h-0.5 w-3 bg-[#D4AF37] mt-0.5 rounded-full" />
+                        )}
                       </Link>
                     </div>
                   ))}
-
-                  {otherCategories.length > 0 && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full hover:bg-amber-50 text-gray-400 hover:text-[#D4AF37] transition-all">
-                          <MoreHorizontal className="h-5 w-5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="center" className="w-64 rounded-2xl p-3 shadow-2xl border border-amber-50 bg-white/98 backdrop-blur-md animate-in fade-in slide-in-from-top-2">
-                        <DropdownMenuLabel className="text-[9px] font-black uppercase tracking-[0.2em] text-[#C6A15B] px-3 py-2">
-                          Explorer plus
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator className="bg-amber-50" />
-                        <div className="max-h-[60vh] overflow-y-auto py-1 custom-scrollbar">
-                          {otherCategories.map((cat) => (
-                            <DropdownMenuItem key={cat.slug} asChild className="rounded-xl focus:bg-amber-50 mb-1">
-                              <Link href={cat.href} className="flex items-center justify-between w-full px-4 py-3 cursor-pointer group">
-                                <span className="font-bold text-gray-700 group-hover:text-[#C6A15B] transition-colors text-sm">
-                                  {cat.name}
-                                </span>
-                                <ChevronRight className="h-4 w-4 text-gray-200 group-hover:text-[#C6A15B] transition-transform group-hover:translate-x-1" />
-                              </Link>
-                            </DropdownMenuItem>
-                          ))}
-                        </div>
-                        <DropdownMenuSeparator className="bg-amber-50" />
-                        <DropdownMenuItem asChild className="rounded-xl focus:bg-gray-900 focus:text-white mt-1">
-                          <Link href="/shop" className="flex items-center justify-center gap-2 w-full px-4 py-3 font-black text-[10px] uppercase tracking-widest text-[#C6A15B] hover:text-white">
-                            Toute la Boutique
-                          </Link>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
                 </>
               )}
             </nav>
 
-            <div className="flex items-center gap-2 md:gap-3">
+            <div className="flex items-center gap-1 md:gap-3">
               <Button
                 variant="ghost"
                 size="icon"
@@ -342,7 +309,7 @@ export function SiteHeader() {
                   className="relative text-gray-900 hover:text-[#D4AF37] hover:bg-transparent gap-2 px-3 sm:px-4"
                 >
                   <ShoppingCart className="h-5 w-5" />
-                  <span className="hidden sm:inline text-[11px] font-black uppercase tracking-widest">{CUSTOM_TEXTS.buttons.cart}</span>
+                  <span className="hidden lg:inline text-[11px] font-black uppercase tracking-widest">{CUSTOM_TEXTS.buttons.cart}</span>
                   {(cartItemCount || 0) > 0 && (
                     <Badge className="absolute -top-2 -right-1 sm:relative sm:top-0 sm:right-0 h-5 w-5 flex items-center justify-center p-0 bg-[#D4AF37] text-black text-[10px] font-black border-2 border-white md:border-none">
                       {cartItemCount}

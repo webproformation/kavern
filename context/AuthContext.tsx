@@ -79,7 +79,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
       if (data) {
         setProfile(data);
-        // SYNCHRONISATION FORCEE AVEC ZUSTAND
         useAuthStore.getState().setProfile(data); 
         
         if (data.blocked) { 
@@ -157,10 +156,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, metadata: any) => {
+    // On s'assure que metadata est un objet pour éviter l'erreur 400
     return await supabase.auth.signUp({
       email,
       password,
-      options: { data: metadata }
+      options: { 
+        data: metadata,
+        emailRedirectTo: `${window.location.origin}/auth/callback`
+      }
     });
   };
 
@@ -188,4 +191,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export const useAuth = () => useContext(AuthContext)!;
+export const useAuth = () => useContext(AuthContext) as AuthContextType;
