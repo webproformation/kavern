@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   Table,
@@ -22,7 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Edit, Eye, Package, Diamond, Star, Trash2 } from "lucide-react";
+import { Search, Edit, Eye, Package, Diamond, Star, Trash2, Bell } from "lucide-react";
 import { decodeHtmlEntities } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -42,6 +42,28 @@ export default function ProductsTable({
   const [stockFilter, setStockFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [localProducts, setLocalProducts] = useState(products);
+  
+  // ÉTAT POUR LES NOTIFICATIONS DE STOCK
+  const [notificationCounts, setNotificationCounts] = useState<Record<string, number>>({});
+
+  // CHARGEMENT DES NOTIFICATIONS
+  useEffect(() => {
+    async function fetchNotificationCounts() {
+      const { data } = await supabase
+        .from("stock_notifications")
+        .select("product_id")
+        .eq("status", "pending");
+
+      if (data) {
+        const counts: Record<string, number> = {};
+        data.forEach((notif) => {
+          counts[notif.product_id] = (counts[notif.product_id] || 0) + 1;
+        });
+        setNotificationCounts(counts);
+      }
+    }
+    fetchNotificationCounts();
+  }, [localProducts]);
 
   const handleToggleDiamond = async (productId: string, currentValue: boolean) => {
     try {
@@ -277,15 +299,24 @@ export default function ProductsTable({
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant={
-                            product.stock_quantity > 0 ? "default" : "destructive"
-                          }
-                        >
-                          {product.stock_quantity > 0
-                            ? `${product.stock_quantity} en stock`
-                            : "Rupture"}
-                        </Badge>
+                        <div className="flex flex-col gap-1">
+                          <Badge
+                            variant={
+                              product.stock_quantity > 0 ? "default" : "destructive"
+                            }
+                          >
+                            {product.stock_quantity > 0
+                              ? `${product.stock_quantity} en stock`
+                              : "Rupture"}
+                          </Badge>
+                          
+                          {/* BULLE NOTIFICATION CLIENTS EN ATTENTE */}
+                          {notificationCounts[product.id] > 0 && (
+                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 gap-1 text-[10px] font-black uppercase tracking-tighter w-fit">
+                              <Bell className="h-2.5 w-2.5" /> {notificationCounts[product.id]} en attente
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -390,29 +421,38 @@ export default function ProductsTable({
                     </div>
 
                     {/* Price & Stock */}
-                    <div className="flex items-center gap-3 mb-2">
-                      <div>
-                        {product.sale_price ? (
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs line-through text-gray-400">
+                    <div className="flex flex-col gap-2 mb-2">
+                      <div className="flex items-center gap-3">
+                        <div>
+                          {product.sale_price ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs line-through text-gray-400">
+                                {product.regular_price.toFixed(2)}€
+                              </span>
+                              <span className="font-bold text-red-600">
+                                {product.sale_price.toFixed(2)}€
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="font-bold text-gray-900">
                               {product.regular_price.toFixed(2)}€
                             </span>
-                            <span className="font-bold text-red-600">
-                              {product.sale_price.toFixed(2)}€
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="font-bold text-gray-900">
-                            {product.regular_price.toFixed(2)}€
-                          </span>
-                        )}
+                          )}
+                        </div>
+                        <Badge
+                          variant={product.stock_quantity > 0 ? "default" : "destructive"}
+                          className="text-xs"
+                        >
+                          {product.stock_quantity > 0 ? `Stock: ${product.stock_quantity}` : "Rupture"}
+                        </Badge>
                       </div>
-                      <Badge
-                        variant={product.stock_quantity > 0 ? "default" : "destructive"}
-                        className="text-xs"
-                      >
-                        {product.stock_quantity > 0 ? `Stock: ${product.stock_quantity}` : "Rupture"}
-                      </Badge>
+
+                      {/* NOTIF ATTENTE MOBILE */}
+                      {notificationCounts[product.id] > 0 && (
+                        <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 w-fit">
+                          <Bell className="h-2.5 w-2.5" /> {notificationCounts[product.id]} client(s) attendent
+                        </div>
+                      )}
                     </div>
 
                     {/* Categories */}

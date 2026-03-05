@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
+import { v4 as uuidv4 } from 'uuid'; // Import pour générer une clé unique
 
 interface CartItem {
   id: string;
@@ -17,6 +18,11 @@ interface CartItem {
   variationPrice?: string | null;
   variationImage?: any;
   selectedAttributes?: Record<string, string>;
+  // AJOUTS POUR LES PACKS (LOTS)
+  isPack?: boolean;
+  packItems?: any[] | null;
+  // Clé unique pour éviter le warning React "two children with the same key"
+  cartItemId?: string; 
 }
 
 interface CartContextType {
@@ -55,31 +61,45 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const loadCartFromSupabase = async () => {
+  const loadCartFromSupabase = async (abortSignal?: AbortSignal) => {
     if (!user) return [];
 
-    const { data, error } = await supabase
-      .from('cart_items')
-      .select('*')
-      .eq('user_id', user.id);
+    try {
+      const { data, error } = await supabase
+        .from('cart_items')
+        .select('*')
+        .eq('user_id', user.id)
+        .abortSignal(abortSignal as any); // Sécurisation contre l'AbortError
 
-    if (error) {
-      console.error('Error loading cart from Supabase:', error);
+      if (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Error loading cart from Supabase:', error);
+        }
+        return [];
+      }
+
+      return (data || []).map(item => ({
+        id: item.product_id,
+        name: item.product_name,
+        slug: item.product_slug,
+        price: item.product_price,
+        image: item.product_image_url ? { sourceUrl: item.product_image_url } : undefined,
+        quantity: item.quantity,
+        variationId: item.variation_id === 'default' ? null : item.variation_id,
+        variationPrice: item.variation_data?.price || null,
+        variationImage: item.variation_data?.image || null,
+        selectedAttributes: item.variation_data?.attributes || {},
+        // RÉCUPÉRATION DES DONNÉES PACK DEPUIS SUPABASE
+        isPack: item.variation_data?.isPack || false,
+        packItems: item.variation_data?.packItems || null,
+        cartItemId: uuidv4(), // Assure l'unicité à la récupération
+      }));
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error('Error in loadCartFromSupabase:', error);
+      }
       return [];
     }
-
-    return (data || []).map(item => ({
-      id: item.product_id,
-      name: item.product_name,
-      slug: item.product_slug,
-      price: item.product_price,
-      image: item.product_image_url ? { sourceUrl: item.product_image_url } : undefined,
-      quantity: item.quantity,
-      variationId: item.variation_id === 'default' ? null : item.variation_id,
-      variationPrice: item.variation_data?.price || null,
-      variationImage: item.variation_data?.image || null,
-      selectedAttributes: item.variation_data?.attributes || {},
-    }));
   };
 
   const syncCartToSupabase = useCallback(async (cartItems: CartItem[], showToast = false) => {
@@ -95,11 +115,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
         product_image_url: item.image?.sourceUrl || null,
         quantity: item.quantity,
         variation_id: item.variationId || 'default',
-        variation_data: item.variationId && item.variationId !== 'default' ? {
+        variation_data: {
           price: item.variationPrice,
           image: item.variationImage,
           attributes: item.selectedAttributes,
-        } : null,
+          // SAUVEGARDE DES DONNÉES PACK DANS LE JSONB
+          isPack: item.isPack,
+          packItems: item.packItems
+        },
         updated_at: new Date().toISOString(),
       }));
 
@@ -119,6 +142,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const cartProductIds = cartItems.map(item => item.id);
 
       if (cartProductIds.length > 0) {
+        // Nettoyage des items qui ne sont plus dans le panier local
         const { error: deleteError } = await supabase
           .from('cart_items')
           .delete()
@@ -144,42 +168,66 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   useEffect(() => {
+    const abortController = new AbortController();
+
     const initCart = async () => {
       setLoading(true);
 
       if (user) {
-        const supabaseCart = await loadCartFromSupabase();
+        const supabaseCart = await loadCartFromSupabase(abortController.signal);
         const localCart = loadCartFromLocalStorage();
 
         const mergedCart: CartItem[] = [...supabaseCart];
         let hasMerged = false;
 
         localCart.forEach(localItem => {
+          // Un lot est unique par sa composition
+          const localPackKey = localItem.isPack ? JSON.stringify(localItem.packItems) : "";
+          
           const existingIndex = mergedCart.findIndex(
-            item => item.id === localItem.id && item.variationId === localItem.variationId
+            item => {
+              const itemPackKey = item.isPack ? JSON.stringify(item.packItems) : "";
+              return item.id === localItem.id && 
+                     item.variationId === localItem.variationId && 
+                     itemPackKey === localPackKey;
+            }
           );
+
           if (existingIndex >= 0) {
             mergedCart[existingIndex].quantity += localItem.quantity;
             hasMerged = true;
           } else {
-            mergedCart.push(localItem as CartItem);
+            // Assigner un ID unique lors de la fusion pour React
+            mergedCart.push({ ...localItem, cartItemId: uuidv4() } as CartItem);
             hasMerged = true;
           }
         });
 
-        setCart(mergedCart);
-        await syncCartToSupabase(mergedCart, hasMerged || mergedCart.length > 0);
-        localStorage.removeItem('cart');
+        // On ne met à jour le state que si la requête n'a pas été annulée
+        if (!abortController.signal.aborted) {
+          setCart(mergedCart);
+          // Retarder la synchro pour éviter le conflit 400 immédiat
+          setTimeout(() => {
+            syncCartToSupabase(mergedCart, hasMerged || mergedCart.length > 0);
+          }, 500);
+          localStorage.removeItem('cart');
+        }
       } else {
         const localCart = loadCartFromLocalStorage();
-        setCart(localCart);
+        setCart(localCart.map(item => ({ ...item, cartItemId: item.cartItemId || uuidv4() })));
       }
 
-      setLoading(false);
+      if (!abortController.signal.aborted) {
+        setLoading(false);
+      }
     };
 
     initCart();
-  }, [user]);
+
+    return () => {
+      abortController.abort(); // Annule la requête en cours si le composant est démonté
+    };
+  }, [user, syncCartToSupabase]); // J'ai ajouté syncCartToSupabase aux dépendances pour être propre
 
   useEffect(() => {
     if (loading) return;
@@ -190,19 +238,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
       } else {
         saveCartToLocalStorage(cart);
       }
-    }, 500);
+    }, 1000); // J'ai passé le délai de debounce à 1s pour soulager Supabase
 
     return () => clearTimeout(timeoutId);
   }, [cart, user, loading, syncCartToSupabase]);
 
   const addToCart = (product: any, quantity: number = 1) => {
-    const cartItemId = product.variationId
-      ? `${product.id}-${product.variationId}`
-      : product.id;
-
     setCart(prevCart => {
+      // Pour les packs, la composition définit l'unicité
+      const newPackKey = product.isPack ? JSON.stringify(product.packItems) : "";
+      
       const existingIndex = prevCart.findIndex(
-        item => item.id === product.id && item.variationId === product.variationId
+        item => {
+          const itemPackKey = item.isPack ? JSON.stringify(item.packItems) : "";
+          return item.id === product.id && 
+                 item.variationId === product.variationId && 
+                 itemPackKey === newPackKey;
+        }
       );
 
       if (existingIndex >= 0) {
@@ -228,17 +280,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
           variationPrice: product.variationPrice || null,
           variationImage: product.variationImage || null,
           selectedAttributes: product.selectedAttributes || {},
+          // DONNÉES DU PACK
+          isPack: product.isPack || false,
+          packItems: product.packItems || null,
+          cartItemId: uuidv4(), // Génération de la clé unique pour React
         };
         return [...prevCart, newItem];
       }
     });
   };
 
-  const removeFromCart = (productId: string) => {
+  const removeFromCart = (cartItemId: string) => {
+    // cartItemId peut être id ou id-variationId, on gère les deux cas de figure
     setCart(prevCart => {
       const newCart = prevCart.filter(item => {
+        // Si l'item a un cartItemId unique, on l'utilise, sinon on fallback sur l'ancienne méthode
+        if (item.cartItemId) {
+            return item.cartItemId !== cartItemId && 
+                   (item.variationId ? `${item.id}-${item.variationId}` : item.id) !== cartItemId;
+        }
         const itemId = item.variationId ? `${item.id}-${item.variationId}` : item.id;
-        return itemId !== productId;
+        return itemId !== cartItemId;
       });
       toast.success('Article retiré du panier', {
         position: 'bottom-right',
@@ -247,16 +309,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = (cartItemId: string, quantity: number) => {
     if (quantity < 1) {
-      removeFromCart(productId);
+      removeFromCart(cartItemId);
       return;
     }
 
     setCart(prevCart => {
       return prevCart.map(item => {
         const itemId = item.variationId ? `${item.id}-${item.variationId}` : item.id;
-        if (itemId === productId) {
+        // On check le cartItemId (nouvelle méthode) ou l'itemId composite (ancienne méthode)
+        if (item.cartItemId === cartItemId || itemId === cartItemId) {
           return { ...item, quantity };
         }
         return item;

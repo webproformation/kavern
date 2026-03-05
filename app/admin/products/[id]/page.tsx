@@ -32,7 +32,10 @@ import {
   Layers,
   Settings2,
   Loader2,
-  Tag
+  Tag,
+  EyeOff,
+  Box,
+  LayoutGrid
 } from "lucide-react";
 import Link from "next/link";
 import RichTextEditor from "@/components/RichTextEditor";
@@ -45,8 +48,8 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 
 interface Variation {
   id?: string;
-  colorName: string;
-  colorId: string;
+  variationName: string;
+  attributeName: string; 
   sku: string;
   regular_price: number | null;
   sale_price: number | null;
@@ -87,16 +90,25 @@ export default function EditProductPage() {
   const [mainImage, setMainImage] = useState<string>("");
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string[]>>({});
   const [relatedProductIds, setRelatedProductIds] = useState<string[]>([]); 
   const [allProducts, setAllProducts] = useState<{id: string, name: string}[]>([]);
+  const [allCategories, setAllCategories] = useState<{id: string, name: string}[]>([]);
 
-  const [activeFamilyView, setActiveFamilyView] = useState<string>("");
-  const [selectedNuances, setSelectedNuances] = useState<string[]>([]);
-  const [nuanceIds, setNuanceIds] = useState<Record<string, string>>({});
+  // ÉTAT MANQUANT PRÉCÉDEMMENT : selectedAttributes
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string[]>>({});
+  
+  // ÉTATS POUR LES VARIANTES DYNAMIQUES
+  const [variationAxes, setVariationAxes] = useState<string[]>([]);
+  const [variations, setVariations] = useState<Variation[]>([]);
+  const [termIds, setTermIds] = useState<Record<string, string>>({});
+
+  // ÉTATS POUR LES LOTS (PACKS)
+  const [isPack, setIsPack] = useState(false);
+  const [packSlots, setPackSlots] = useState<number>(0);
+  const [packSourceCategoryId, setPackSourceCategoryId] = useState<string | null>(null);
+
   const [sizeRangeStart, setSizeRangeStart] = useState<number | null>(null);
   const [sizeRangeEnd, setSizeRangeEnd] = useState<number | null>(null);
-  const [variations, setVariations] = useState<Variation[]>([]);
 
   // --- CHARGEMENT ---
   useEffect(() => {
@@ -133,28 +145,41 @@ export default function EditProductPage() {
         setRelatedProductIds(prod.related_product_ids || []);
         setSizeRangeStart(prod.size_range_start);
         setSizeRangeEnd(prod.size_range_end);
+        
+        // Chargement des données Pack
+        setIsPack(prod.is_pack || false);
+        setPackSlots(prod.pack_slots || 0);
+        setPackSourceCategoryId(prod.pack_source_category_id || null);
 
         const { data: catMapping } = await supabase.from("product_category_mapping").select("category_id").eq("product_id", id);
         setSelectedCategories(catMapping?.map(c => c.category_id) || []);
 
         const { data: varData } = await supabase.from("product_variations").select("*").eq("product_id", id);
         if (varData && varData.length > 0) {
-          const loadedVariations = varData.map(v => ({
-            id: v.id,
-            colorName: v.attributes?.Couleur || "",
-            colorId: "", 
-            sku: v.sku || "",
-            regular_price: v.regular_price,
-            sale_price: v.sale_price,
-            stock_quantity: v.stock_quantity,
-            image_url: v.image_url
-          }));
+          const axes = new Set<string>();
+          const loadedVariations = varData.map(v => {
+            const attrKey = Object.keys(v.attributes || {})[0] || "Couleur";
+            axes.add(attrKey);
+            return {
+              id: v.id,
+              variationName: v.attributes[attrKey] || "",
+              attributeName: attrKey,
+              sku: v.sku || "",
+              regular_price: v.regular_price,
+              sale_price: v.sale_price,
+              stock_quantity: v.stock_quantity,
+              image_url: v.image_url
+            };
+          });
           setVariations(loadedVariations);
-          setSelectedNuances(loadedVariations.map(v => v.colorName));
+          setVariationAxes(Array.from(axes));
         }
 
         const { data: prods } = await supabase.from("products").select("id, name").order("name");
         if (prods) setAllProducts(prods);
+
+        const { data: cats } = await supabase.from("categories").select("id, name").order("name");
+        if (cats) setAllCategories(cats);
 
       } catch (e: any) { toast.error("Erreur : " + e.message); } finally { setLoading(false); }
     };
@@ -167,54 +192,45 @@ export default function EditProductPage() {
     purchasePrice, regularPrice, salePrice, stockQuantity, virtualWeight,
     status, isFeatured, isDiamond, hasVariations, showSizes, seoTitle, seoDescription, tags,
     mainImage, galleryImages, selectedCategories, selectedAttributes, relatedProductIds,
-    selectedNuances, nuanceIds, sizeRangeStart, sizeRangeEnd, variations
+    sizeRangeStart, sizeRangeEnd, variations, variationAxes, termIds,
+    isPack, packSlots, packSourceCategoryId
   };
   useAutoSave(`edit_product_${id}`, currentFormData, () => {});
 
-  // --- CALCUL DE LA MARGE RÉELLE (BASÉ SUR LE HT) ---
   const marginData = useMemo(() => {
-    const saleHT = regularPrice / 1.2; // Conversion Vente TTC en HT
-    const marginEuro = saleHT - purchasePrice; // Marge nette en euros
+    const saleHT = regularPrice / 1.2;
+    const marginEuro = saleHT - purchasePrice;
     const marginPercent = saleHT > 0 ? (marginEuro / saleHT) * 100 : 0;
-    
-    return {
-      euro: marginEuro.toFixed(2),
-      percent: marginPercent.toFixed(1)
-    };
+    return { euro: marginEuro.toFixed(2), percent: marginPercent.toFixed(1) };
   }, [purchasePrice, regularPrice]);
 
+  // Synchronisation des variations
   useEffect(() => {
     if (hasVariations && !loading) {
+      const variationTerms: { name: string, attr: string }[] = [];
+      variationAxes.forEach(axis => {
+        const axisTerms = selectedAttributes[axis] || [];
+        axisTerms.forEach(t => variationTerms.push({ name: t, attr: axis }));
+      });
+
       setVariations(prev => {
-        const kept = prev.filter(v => selectedNuances.includes(v.colorName));
-        const added = selectedNuances
-          .filter(name => !kept.some(v => v.colorName === name))
-          .map(colorName => ({
-            colorName, colorId: nuanceIds[colorName] || "", sku: "",
+        const kept = prev.filter(v => variationTerms.some(t => t.name === v.variationName));
+        const added = variationTerms
+          .filter(t => !kept.some(v => v.variationName === t.name))
+          .map(t => ({
+            variationName: t.name, attributeName: t.attr, sku: "",
             regular_price: regularPrice || null, sale_price: salePrice,
             stock_quantity: stockQuantity || null, image_url: null,
           }));
         return [...kept, ...added];
       });
     }
-  }, [selectedNuances, nuanceIds, hasVariations, loading, regularPrice, salePrice, stockQuantity]);
-
-  const handleNuanceToggle = (nuanceName: string, nid: string, selected: boolean) => {
-    if (selected) {
-      setSelectedNuances(prev => Array.from(new Set([...prev, nuanceName])));
-      setNuanceIds(prev => ({ ...prev, [nuanceName]: nid }));
-    } else {
-      setSelectedNuances(prev => prev.filter(n => n !== nuanceName));
-    }
-  };
+  }, [selectedAttributes, variationAxes, hasVariations, loading, regularPrice, salePrice, stockQuantity]);
 
   const handleSave = async () => {
     if (!name || !slug) { toast.error("Le nom et le slug sont requis"); return; }
     setSaving(true);
     try {
-      const finalAttributes = { ...selectedAttributes };
-      if (hasVariations) finalAttributes['Couleur'] = selectedNuances;
-
       const { error: pErr } = await supabase.from("products").update({
         name: name.trim(), slug: slug.trim(), sku: sku.trim() || null,
         short_description: shortDescription.substring(0, 150), description, andre_review: andreReview,
@@ -223,10 +239,13 @@ export default function EditProductPage() {
         status, is_featured: isFeatured, is_diamond: isDiamond, has_variations: hasVariations,
         seo_title: seoTitle || name, seo_description: seoDescription || shortDescription,
         tags: tags,
-        image_url: mainImage, gallery_images: galleryImages, attributes: finalAttributes,
+        image_url: mainImage, gallery_images: galleryImages, attributes: selectedAttributes,
         related_product_ids: relatedProductIds,
         size_range_start: showSizes ? sizeRangeStart : null,
         size_range_end: showSizes ? sizeRangeEnd : null,
+        is_pack: isPack,
+        pack_slots: packSlots,
+        pack_source_category_id: packSourceCategoryId,
         updated_at: new Date().toISOString()
       }).eq("id", id);
 
@@ -241,7 +260,8 @@ export default function EditProductPage() {
       await supabase.from("product_variations").delete().eq("product_id", id);
       if (hasVariations && variations.length > 0) {
         const toInsert = variations.map(v => ({
-          product_id: id, sku: v.sku, attributes: { "Couleur": v.colorName },
+          product_id: id, sku: v.sku, 
+          attributes: { [v.attributeName]: v.variationName },
           regular_price: v.regular_price || regularPrice, sale_price: v.sale_price || salePrice,
           stock_quantity: v.stock_quantity || stockQuantity, image_url: v.image_url || mainImage,
           stock_status: (v.stock_quantity || 0) > 0 ? "instock" : "outofstock", is_active: true,
@@ -283,15 +303,73 @@ export default function EditProductPage() {
 
       <div className="max-w-7xl mx-auto px-6 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
+          
+          {/* SECTION : CONFIGURATION DU LOT (PACK) */}
+          <Card className="shadow-lg border-2 border-blue-200 bg-blue-50/10 overflow-hidden">
+            <CardHeader className="bg-blue-50 border-b border-blue-100">
+              <div className="flex items-center gap-2">
+                <Box className="h-5 w-5 text-blue-600"/>
+                <CardTitle className="text-lg text-blue-900 uppercase font-black tracking-tighter">Configuration du Lot (Pack)</CardTitle>
+              </div>
+              <CardDescription className="text-blue-700 font-medium italic">
+                Activez cette option pour créer une malle ou un coffret personnalisable par le client.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6 bg-white">
+              <div className="flex items-center justify-between p-4 border-2 border-blue-100 rounded-2xl bg-blue-50/20">
+                <div className="space-y-0.5">
+                  <Label className="text-blue-900 font-black uppercase tracking-widest text-xs">Transformer en lot ?</Label>
+                  <p className="text-[10px] text-blue-600">Le client pourra choisir ses produits un par un.</p>
+                </div>
+                <Switch checked={isPack} onCheckedChange={setIsPack} className="data-[state=checked]:bg-blue-600" />
+              </div>
+
+              {isPack && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-top-2 duration-300">
+                  <div className="space-y-2">
+                    <Label className="font-bold flex items-center gap-2 text-gray-700">
+                      <LayoutGrid className="h-4 w-4 text-blue-500" /> Nombre d'articles (Slots)
+                    </Label>
+                    <Input 
+                      type="number" 
+                      min="1" 
+                      value={packSlots} 
+                      onChange={(e) => setPackSlots(parseInt(e.target.value) || 0)} 
+                      placeholder="Ex: 6"
+                      className="h-12 rounded-xl border-blue-100 focus:border-blue-400"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-bold flex items-center gap-2 text-gray-700">
+                      <Package className="h-4 w-4 text-blue-500" /> Catégorie source
+                    </Label>
+                    <Select value={packSourceCategoryId || "none"} onValueChange={(v) => setPackSourceCategoryId(v === "none" ? null : v)}>
+                      <SelectTrigger className="h-12 rounded-xl border-blue-100">
+                        <SelectValue placeholder="Sélectionner une catégorie..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Toute la boutique</SelectItem>
+                        {allCategories.map(cat => (
+                          <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card className="shadow-sm border-none bg-white">
             <CardHeader className="border-b bg-gray-50/50">
               <div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-[#C6A15B]"/><CardTitle className="text-lg">L&apos;Âme du Produit</CardTitle></div>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2"><Label>Nom de la pépite *</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
-                <div className="space-y-2"><Label>Slug (URL)</Label><Input value={slug} onChange={(e) => setSlug(e.target.value)} className="bg-gray-50 font-mono text-xs" /></div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="md:col-span-2 space-y-2"><Label>Nom de la pépite *</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
+                <div className="space-y-2"><Label className="text-[#b8933d] font-bold">Référence (SKU)</Label><Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="EX: MAC-BAIN-01" className="border-amber-100" /></div>
               </div>
+              <div className="space-y-2"><Label>Slug (URL)</Label><Input value={slug} onChange={(e) => setSlug(e.target.value)} className="bg-gray-50 font-mono text-xs" /></div>
               <div className="space-y-2">
                 <div className="flex justify-between"><Label>Phrase d&apos;Accroche</Label><span className="text-[10px] text-gray-400">{shortDescription.length}/150</span></div>
                 <Input value={shortDescription} onChange={(e) => setShortDescription(e.target.value.substring(0, 150))} className="italic" />
@@ -369,11 +447,6 @@ export default function EditProductPage() {
               <div className="space-y-3">
                 <Label className="flex items-center gap-2 text-[#b8933d] font-bold"><Tag className="h-4 w-4" /> Mots-clés (Tags)</Label>
                 <Input placeholder="vintage, doré, été..." value={tags.join(", ")} onChange={(e) => setTags(e.target.value.split(",").map(t => t.trim()).filter(t => t !== ""))} />
-                {tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {tags.map((tag, i) => (<Badge key={i} variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[10px] font-bold">#{tag}</Badge>))}
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>
@@ -388,21 +461,18 @@ export default function EditProductPage() {
                   <SelectContent>
                     <SelectItem value="draft">Brouillon</SelectItem>
                     <SelectItem value="publish">Publié</SelectItem>
+                    <SelectItem value="private">Privé (Exclu Live)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="flex items-center justify-between p-3 border rounded-xl bg-blue-50/30">
-                <div className="space-y-0.5"><Label className="text-blue-900">Variantes ?</Label></div>
+                <div className="space-y-0.5"><Label className="text-blue-900 font-bold">Variantes ?</Label></div>
                 <Switch checked={hasVariations} onCheckedChange={setHasVariations} />
               </div>
-              <div className="flex items-center justify-between p-3 border rounded-xl bg-purple-50/30 opacity-60">
-                <div className="space-y-0.5"><Label className="text-purple-900">Module Tailles ?</Label></div>
-                <Switch checked={showSizes} onCheckedChange={setShowSizes} />
-              </div>
               <div className="space-y-4 pt-2">
-                <div className="flex items-center gap-2"><Checkbox id="f" checked={isFeatured} onCheckedChange={(c) => setIsFeatured(!!c)}/><Label htmlFor="f">⭐ Mettre en Vedette</Label></div>
-                <div className="flex items-center gap-2"><Checkbox id="d" checked={isDiamond} onCheckedChange={(c) => setIsDiamond(!!c)}/><Label htmlFor="d">💎 Produit Diamant</Label></div>
+                <div className="flex items-center gap-2"><Checkbox id="f" checked={isFeatured} onCheckedChange={(c) => setIsFeatured(!!c)}/><Label htmlFor="f" className="cursor-pointer">⭐ Mettre en Vedette</Label></div>
+                <div className="flex items-center gap-2"><Checkbox id="d" checked={isDiamond} onCheckedChange={(c) => setIsDiamond(!!c)}/><Label htmlFor="d" className="cursor-pointer">💎 Produit Diamant</Label></div>
               </div>
             </CardContent>
           </Card>
@@ -410,20 +480,33 @@ export default function EditProductPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 mt-8 space-y-8">
-        <GeneralAttributesSelector selectedAttributes={selectedAttributes} onAttributesChange={setSelectedAttributes} />
+        <GeneralAttributesSelector 
+          selectedAttributes={selectedAttributes} 
+          variationAxes={variationAxes}
+          onAttributesChange={(attrs, ids) => {
+             setSelectedAttributes(attrs);
+             setTermIds(ids); 
+          }}
+          onVariationAxesChange={setVariationAxes}
+        />
+        
         <HierarchicalCategorySelector selectedCategories={selectedCategories} onCategoriesChange={setSelectedCategories} />
+        
         {hasVariations && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <ColorSwatchSelector selectedMainColor={activeFamilyView} selectedSecondaryColors={selectedNuances} onMainColorSelect={setActiveFamilyView} onSecondaryColorToggle={handleNuanceToggle} showSecondaryColors={true} />
-            <VariationDetailsForm selectedSecondaryColors={selectedNuances} secondaryColorIds={nuanceIds} variations={variations} onVariationUpdate={(vName, field, val) => {
+            <VariationDetailsForm 
+              selectedTerms={variationAxes.flatMap(axis => selectedAttributes[axis] || [])} 
+              termIds={termIds} 
+              variations={variations} 
+              onVariationUpdate={(vName, field, val) => {
                 setVariations(prev => {
-                  const idx = prev.findIndex(v => v.colorName === vName);
+                  const idx = prev.findIndex(v => v.variationName === vName);
                   if (idx === -1) return prev;
                   const newVars = [...prev];
                   newVars[idx] = { ...newVars[idx], [field]: val };
                   return newVars;
                 });
-            }} defaultRegularPrice={regularPrice} defaultSalePrice={salePrice} defaultStock={stockQuantity} />
+            }} defaultRegularPrice={regularPrice} defaultStock={stockQuantity} />
           </div>
         )}
       </div>

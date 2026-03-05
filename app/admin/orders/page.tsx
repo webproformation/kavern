@@ -41,6 +41,7 @@ import {
   Truck,
   Trash2,
   MapPin,
+  Box
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
@@ -93,7 +94,7 @@ const paymentStatusLabels: Record<string, string> = {
   processing: "En cours",
   completed: "Payée",
   paid: "Payée",
-  succeeded: "Payée", // Ajout de variantes possibles pour Stripe
+  succeeded: "Payée",
   failed: "Échouée",
   cancelled: "Annulée",
   refunded: "Remboursée",
@@ -195,7 +196,6 @@ export default function OrdersPage() {
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
     const order = orders.find(o => o.id === orderId);
 
-    // SÉCURITÉ COLIS OUVERT (Réactivée mais flexible si besoin)
     if (order?.open_package && (order.open_package.status === 'active' || order.open_package.status === 'ready_to_prepare')) {
       if (newStatus === 'shipped') {
         toast.error("❌ Impossible : Cette commande appartient à un Colis Ouvert non clôturé.");
@@ -606,7 +606,6 @@ export default function OrdersPage() {
                       <CardTitle className="text-sm">Statut commande</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {/* AJOUT DE Z-INDEX POUR FORCER L'AFFICHAGE AU DESSUS DU DIALOG */}
                       <Select
                         value={selectedOrder.status}
                         onValueChange={(value) => handleUpdateStatus(selectedOrder.id, value)}
@@ -631,7 +630,6 @@ export default function OrdersPage() {
                       <CardTitle className="text-sm">Statut paiement</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {/* AJOUT DE Z-INDEX POUR FORCER L'AFFICHAGE AU DESSUS DU DIALOG */}
                       <Select
                         value={selectedOrder.payment_status}
                         onValueChange={(value) =>
@@ -727,7 +725,23 @@ export default function OrdersPage() {
                           )}
                           <div className="flex-1">
                             <p className="font-medium">{item.product_name}</p>
-                            {item.variation_data && (
+
+                            {/* --- AFFICHAGE DU CONTENU DU PACK POUR ANDRÉ (NOUVEAU) --- */}
+                            {item.variation_data?.isPack && item.variation_data?.packItems && (
+                              <div className="mt-2 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                                <p className="text-[10px] font-black uppercase text-blue-600 flex items-center gap-1.5 mb-1">
+                                  <Box className="h-3 w-3" /> Guide de préparation du lot :
+                                </p>
+                                {item.variation_data.packItems.map((pItem: any, idx: number) => (
+                                  <div key={idx} className="text-xs text-gray-700 flex justify-between border-b border-blue-50 py-1 last:border-0">
+                                    <span className="font-medium">{pItem.name}</span>
+                                    <span className="font-bold text-blue-600">Quantité: {pItem.quantity}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {item.variation_data && !item.variation_data.isPack && (
                               <div className="text-sm text-gray-600 mt-1">
                                 {(() => {
                                   const attributes = item.variation_data.attributes || item.variation_data;
@@ -740,7 +754,7 @@ export default function OrdersPage() {
                                   }
                                   if (typeof attributes === 'object') {
                                     return Object.entries(attributes).map(([key, value]) => {
-                                      if (key === 'price' || key === 'image' || key.includes('_id') || key.includes('color_code')) return null;
+                                      if (key === 'price' || key === 'image' || key.includes('_id') || key.includes('color_code') || key === 'isPack' || key === 'packItems') return null;
                                       const displayValue = typeof value === 'object'
                                         ? (value as any)?.name || (value as any)?.option || String(value)
                                         : String(value);

@@ -156,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, metadata: any) => {
-    // On s'assure que metadata est un objet pour éviter l'erreur 400
+    // On force l'objet metadata pour éviter l'erreur "cannot unmarshal string"
     return await supabase.auth.signUp({
       email,
       password,
@@ -191,4 +191,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export const useAuth = () => useContext(AuthContext) as AuthContextType;
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

@@ -61,13 +61,17 @@ export default function RegisterPage() {
       return;
     }
 
+    // ON ENCAPSULE TOUT DANS UN OBJET UNIQUE (metadata) POUR SUPABASE
     const { error: signUpError } = await signUp(
       email,
       password,
-      firstName,
-      lastName,
-      phone,
-      birthDate || null
+      {
+        first_name: firstName,
+        last_name: lastName,
+        phone: phone,
+        birth_date: birthDate || null,
+        referral_code: referralCode || null
+      }
     );
 
     if (signUpError) {
@@ -76,13 +80,13 @@ export default function RegisterPage() {
       return;
     }
 
-    toast.success('Compte créé avec succès!');
+    toast.success('Compte créé ! Vérifie tes e-mails pour confirmer.');
     router.push('/account');
   };
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-[#F2F2E8]/30">
         <Loader2 className="h-8 w-8 animate-spin text-[#D4AF37]" />
       </div>
     );
@@ -90,7 +94,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl border-none shadow-xl rounded-[2rem] overflow-hidden">
+      <Card className="w-full max-w-2xl border-none shadow-xl rounded-[2rem] overflow-hidden bg-white">
         <CardHeader className="space-y-1 pt-10">
           <div className="flex justify-center mb-6">
             <img src="/kavern-logo.png" alt="Logo Kavern" className="h-20 w-auto" />
@@ -228,9 +232,7 @@ export default function RegisterPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="password" className="font-bold text-gray-700 ml-1">
-                  Mot de passe <span className="text-[#D4AF37]">*</span>
-                </Label>
+                <Label htmlFor="password">Mot de passe <span className="text-[#D4AF37]">*</span></Label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
                   <PasswordInput
@@ -246,9 +248,7 @@ export default function RegisterPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="font-bold text-gray-700 ml-1">
-                  Confirmer <span className="text-[#D4AF37]">*</span>
-                </Label>
+                <Label htmlFor="confirmPassword">Confirmer <span className="text-[#D4AF37]">*</span></Label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
                   <PasswordInput

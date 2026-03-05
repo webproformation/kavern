@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Gem, Trash2, Plus, Minus, Info } from 'lucide-react';
+import { Gem, Trash2, Plus, Minus, Info, Box } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
@@ -167,7 +167,22 @@ export default function CartPage() {
                             </p>
                           )}
 
-                          {item.selectedAttributes && Object.keys(item.selectedAttributes).length > 0 && (
+                          {/* --- AFFICHAGE DU CONTENU DU PACK (NOUVEAU) --- */}
+                          {item.isPack && item.packItems && item.packItems.length > 0 && (
+                            <div className="mt-2 p-3 bg-blue-50/50 rounded-xl border border-blue-100 space-y-1">
+                              <p className="text-[10px] font-black uppercase text-blue-600 flex items-center gap-1.5 mb-1">
+                                <Box className="h-3 w-3" /> Composition de votre lot :
+                              </p>
+                              {item.packItems.map((pItem: any, idx: number) => (
+                                <div key={idx} className="text-xs text-gray-700 flex justify-between">
+                                  <span className="font-medium">{pItem.name}</span>
+                                  <span className="font-bold text-blue-600">x{pItem.quantity}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {item.selectedAttributes && Object.keys(item.selectedAttributes).length > 0 && !item.isPack && (
                             <div className="mt-2 space-y-1">
                               {Object.entries(item.selectedAttributes).map(([key, value]) => {
                                 const formattedKey = key.replace(/^attribute_/, '').replace(/_/g, ' ');

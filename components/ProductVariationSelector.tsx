@@ -19,8 +19,7 @@ export function ProductVariationSelector({
     return String(k).toLowerCase().replace(/^(attribute_pa_|attribute_|pa_)/, '').trim();
   };
 
-  // 1. RÉCUPÉRATION GLOBALE DES COULEURS DEPUIS TA BASE DE DONNÉES
-  // On charge tout une seule fois pour éviter les bugs de casse (majuscules/minuscules)
+  // 1. ON GARDE TON CHARGEMENT DES COULEURS BDD
   useEffect(() => {
     async function loadDbColors() {
       try {
@@ -32,7 +31,6 @@ export function ProductVariationSelector({
           const map: Record<string, string> = {};
           data.forEach(term => {
             if (term.name && term.color_code && term.color_code.trim() !== "") {
-              // On uniformise totalement le texte pour la correspondance
               map[term.name.toLowerCase().trim()] = term.color_code;
             }
           });
@@ -45,7 +43,7 @@ export function ProductVariationSelector({
     loadDbColors();
   }, []);
 
-  // 2. DICTIONNAIRE DE SECOURS (Si la BDD est lente ou hors-ligne)
+  // 2. ON RESTAURE TON DICTIONNAIRE DE SECOURS COMPLET (Pierres et Couleurs)
   const fallbackMap: Record<string, string> = {
     "noir": "#111111", "blanc": "#ffffff", "rouge": "#ef4444", 
     "bleu": "#3b82f6", "vert": "#22c55e", "jaune": "#eab308", 
@@ -61,7 +59,7 @@ export function ProductVariationSelector({
     "multicolore": "conic-gradient(red, yellow, green, blue, magenta, red)"
   };
 
-  // 3. DÉCODAGE ET NETTOYAGE DES ATTRIBUTS DU PRODUIT
+  // 3. ON GARDE TON NETTOYAGE DES ATTRIBUTS AVEC LA WHITELIST ÉLARGIE
   const normalizedAttributes = useMemo(() => {
     let raw = attributes;
     if (typeof raw === 'string') {
@@ -91,7 +89,8 @@ export function ProductVariationSelector({
     });
 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const whitelist = ['couleur', 'color', 'pierre', 'taille', 'size', 'pointure', 'dimension', 'modèle', 'modele', 'type', 'variante', 'variant', 'poids', 'format', 'choix'];
+    // ON AJOUTE 'parfum' À TA WHITELIST
+    const whitelist = ['couleur', 'color', 'pierre', 'taille', 'size', 'pointure', 'dimension', 'modèle', 'modele', 'type', 'variante', 'variant', 'poids', 'format', 'choix', 'parfum'];
 
     return parsedAttrs.map((attr: any) => {
       const cleanName = getCleanKey(attr.name);
@@ -125,7 +124,6 @@ export function ProductVariationSelector({
 
   }, [attributes, variations]);
 
-  // Initialisation du premier choix
   useEffect(() => {
     if (normalizedAttributes.length > 0 && Object.keys(selectedOptions).length === 0) {
       const initial: Record<string, string> = {};
@@ -174,7 +172,7 @@ export function ProductVariationSelector({
     <div className="space-y-6">
       {normalizedAttributes.map((attr: any) => {
         
-        // C'est une couleur si c'est indiqué dans le nom, ou si l'une des options a une correspondance en BDD ou dans le dico.
+        // ON GARDE TA LOGIQUE : Couleur si nom contient 'couleur' ou si options dans dico
         const isColor = attr.cleanName.includes("couleur") || 
                         attr.cleanName.includes("color") || 
                         attr.cleanName.includes("pierre") || 
@@ -194,75 +192,46 @@ export function ProductVariationSelector({
             </div>
 
             <div className="flex flex-wrap gap-3">
-              {attr.options.map((option: string, idx: number) => {
+              {attr.options.map((option: string) => {
                 const isSelected = selectedOptions[attr.name] === String(option);
 
-                // Vérifie le stock
+                // On cherche la disponibilité dans les variations JSON
                 const isAvailable = variations?.some((v: any) => {
-                  let vAttrs: Record<string, any> = {};
-                  let rawV = v.attributes;
-                  if (typeof rawV === 'string') { try { rawV = JSON.parse(rawV); } catch(e) {} }
-                  if (Array.isArray(rawV)) {
-                    rawV.forEach((a: any) => { if (a.name) vAttrs[a.name] = a.option || a.value; });
-                  } else if (rawV && typeof rawV === 'object') {
-                    vAttrs = rawV;
-                  }
+                  let vAttrs: Record<string, any> = v.attributes || {};
+                  if (typeof vAttrs === 'string') { try { vAttrs = JSON.parse(vAttrs); } catch(e) {} }
                   for (const [vKey, vVal] of Object.entries(vAttrs)) {
                     if (getCleanKey(vKey) === attr.cleanName && String(vVal).toLowerCase().trim() === String(option).toLowerCase().trim()) {
-                      return true;
+                      return (v.stock_quantity ?? 0) > 0;
                     }
                   }
                   return false;
                 });
 
-                // --- RENDU SPÉCIAL POUR LES COULEURS ET PIERRES ---
                 if (isColor) {
                   const cleanOptionName = String(option).toLowerCase().trim();
-                  
-                  // 1. On cherche d'abord la vraie couleur depuis Supabase
-                  let colorCode = dbColors[cleanOptionName];
-                  
-                  // 2. Si ça échoue, on cherche dans le dico de secours
-                  if (!colorCode) {
-                    if (fallbackMap[cleanOptionName]) {
-                      colorCode = fallbackMap[cleanOptionName];
-                    } else {
-                      const foundKey = Object.keys(fallbackMap).sort((a,b) => b.length - a.length).find(k => cleanOptionName.includes(k));
-                      colorCode = foundKey ? fallbackMap[foundKey] : "#e5e7eb";
-                    }
-                  }
-                  
-                  const bgStyle = colorCode.includes("gradient") 
-                    ? { backgroundImage: colorCode } 
-                    : { backgroundColor: colorCode };
+                  let colorCode = dbColors[cleanOptionName] || fallbackMap[cleanOptionName] || "#e5e7eb";
+                  const bgStyle = colorCode.includes("gradient") ? { backgroundImage: colorCode } : { backgroundColor: colorCode };
 
                   return (
                     <button
                       key={option}
                       type="button"
                       onClick={() => handleSelect(attr.name, option)}
-                      title={option}
                       className={cn(
                         "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ring-1 ring-gray-200",
-                        isSelected
-                          ? "ring-2 ring-offset-2 ring-[#b8933d] scale-110 shadow-lg"
-                          : isAvailable 
-                            ? "hover:scale-105 hover:shadow-md opacity-90 hover:opacity-100"
-                            : "opacity-30 grayscale cursor-not-allowed"
+                        isSelected ? "ring-2 ring-offset-2 ring-[#b8933d] scale-110 shadow-lg" : isAvailable ? "hover:scale-105 opacity-90" : "opacity-30 grayscale cursor-not-allowed"
                       )}
                       style={bgStyle}
                     >
                       {isSelected && (
-                        <span className={['#ffffff', '#f5f5dc', 'transparent'].includes(colorCode.toLowerCase()) ? "text-gray-900 drop-shadow-md" : "text-white drop-shadow-md"}>
+                        <span className={['#ffffff', '#f5f5dc', 'transparent'].includes(colorCode.toLowerCase()) ? "text-gray-900" : "text-white"}>
                           <Check className="w-5 h-5" />
                         </span>
                       )}
-                      <span className="sr-only">{option}</span>
                     </button>
                   );
                 }
 
-                // --- RENDU TEXTE STANDARD (Pour les Tailles, Modèles, etc.) ---
                 return (
                   <button
                     key={option}
@@ -270,11 +239,7 @@ export function ProductVariationSelector({
                     onClick={() => handleSelect(attr.name, option)}
                     className={cn(
                       "px-4 py-2 text-sm font-black border-2 rounded-xl transition-all duration-200 min-w-[3.5rem] uppercase tracking-tighter",
-                      isSelected
-                        ? "border-[#b8933d] bg-[#b8933d] text-white shadow-lg" 
-                        : isAvailable
-                          ? "border-gray-100 bg-white text-gray-700 hover:border-[#b8933d] hover:text-[#b8933d]"
-                          : "opacity-30 border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed"
+                      isSelected ? "border-[#b8933d] bg-[#b8933d] text-white shadow-lg" : isAvailable ? "border-gray-100 bg-white text-gray-700 hover:border-[#b8933d]" : "opacity-30 border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed"
                     )}
                   >
                     {option}

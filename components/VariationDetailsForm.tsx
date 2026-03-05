@@ -9,8 +9,8 @@ import MediaLibrary from '@/components/MediaLibrary';
 import { X, ImageIcon } from 'lucide-react';
 
 interface VariationDetail {
-  colorName: string;
-  colorId: string;
+  variationName: string; // Adapté pour accepter autre chose que Couleur
+  variationId: string;
   sku: string;
   regular_price: number | null;
   sale_price: number | null;
@@ -19,18 +19,18 @@ interface VariationDetail {
 }
 
 interface VariationDetailsFormProps {
-  selectedSecondaryColors: string[];
-  secondaryColorIds: Record<string, string>;
+  selectedTerms: string[]; 
+  termIds: Record<string, string>;
   variations: VariationDetail[];
-  onVariationUpdate: (colorName: string, field: keyof VariationDetail, value: any) => void;
+  onVariationUpdate: (name: string, field: keyof VariationDetail, value: any) => void;
   defaultRegularPrice?: number;
   defaultSalePrice?: number | null;
   defaultStock?: number;
 }
 
 export default function VariationDetailsForm({
-  selectedSecondaryColors,
-  secondaryColorIds,
+  selectedTerms,
+  termIds = {}, // SÉCURITÉ : Initialisé à vide pour éviter le crash properties of undefined
   variations,
   onVariationUpdate,
   defaultRegularPrice = 0,
@@ -39,32 +39,33 @@ export default function VariationDetailsForm({
 }: VariationDetailsFormProps) {
   const [activeVariation, setActiveVariation] = useState<string | null>(null);
   const [showMediaLibrary, setShowMediaLibrary] = useState(false);
-  const [currentEditingColor, setCurrentEditingColor] = useState<string>('');
+  const [currentEditingTerm, setCurrentEditingTerm] = useState<string>('');
 
+  // ON GARDE TES LOGS DE DEBUG ORIGINAUX
   useEffect(() => {
-    console.log('[VariationDetailsForm] selectedSecondaryColors changed:', selectedSecondaryColors);
-    console.log('[VariationDetailsForm] secondaryColorIds:', secondaryColorIds);
+    console.log('[VariationDetailsForm] selectedTerms changed:', selectedTerms);
+    console.log('[VariationDetailsForm] termIds:', termIds);
     console.log('[VariationDetailsForm] variations:', variations);
 
-    if (selectedSecondaryColors.length === 1) {
-      setActiveVariation(selectedSecondaryColors[0]);
+    if (selectedTerms.length === 1) {
+      setActiveVariation(selectedTerms[0]);
     }
-  }, [selectedSecondaryColors, secondaryColorIds, variations]);
+  }, [selectedTerms, termIds, variations]);
 
-  if (selectedSecondaryColors.length === 0) {
-    console.log('[VariationDetailsForm] No secondary colors selected, not rendering');
+  if (selectedTerms.length === 0) {
+    console.log('[VariationDetailsForm] No terms selected, not rendering');
     return null;
   }
 
-  console.log('[VariationDetailsForm] Rendering with', selectedSecondaryColors.length, 'secondary colors');
+  console.log('[VariationDetailsForm] Rendering with', selectedTerms.length, 'terms');
 
-  const getVariation = (colorName: string): VariationDetail => {
-    const existing = variations.find(v => v.colorName === colorName);
+  const getVariation = (name: string): VariationDetail => {
+    const existing = variations.find(v => v.variationName === name);
     if (existing) return existing;
 
     return {
-      colorName,
-      colorId: secondaryColorIds[colorName] || '',
+      variationName: name,
+      variationId: termIds[name] || '', // Fixé ici avec la sécurité termIds = {}
       sku: '',
       regular_price: defaultRegularPrice || null,
       sale_price: defaultSalePrice,
@@ -73,25 +74,25 @@ export default function VariationDetailsForm({
     };
   };
 
-  const handleFieldChange = (colorName: string, field: keyof VariationDetail, value: any) => {
-    onVariationUpdate(colorName, field, value);
+  const handleFieldChange = (name: string, field: keyof VariationDetail, value: any) => {
+    onVariationUpdate(name, field, value);
   };
 
   const handleImageSelect = (url: string) => {
-    if (currentEditingColor) {
-      handleFieldChange(currentEditingColor, 'image_url', url);
+    if (currentEditingTerm) {
+      handleFieldChange(currentEditingTerm, 'image_url', url);
       setShowMediaLibrary(false);
-      setCurrentEditingColor('');
+      setCurrentEditingTerm('');
     }
   };
 
-  const openMediaLibrary = (colorName: string) => {
-    setCurrentEditingColor(colorName);
+  const openMediaLibrary = (name: string) => {
+    setCurrentEditingTerm(name);
     setShowMediaLibrary(true);
   };
 
-  const removeImage = (colorName: string) => {
-    handleFieldChange(colorName, 'image_url', null);
+  const removeImage = (name: string) => {
+    handleFieldChange(name, 'image_url', null);
   };
 
   return (
@@ -103,24 +104,24 @@ export default function VariationDetailsForm({
             Détails des Variations
           </CardTitle>
           <CardDescription className="text-purple-700">
-            Configurez les détails spécifiques pour chaque nuance de couleur sélectionnée
+            Configurez les détails spécifiques pour chaque choix (parfum, taille, couleur...)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2 flex-wrap mb-4">
-            {selectedSecondaryColors.map(colorName => {
-              const isActive = activeVariation === colorName;
-              const variation = getVariation(colorName);
+            {selectedTerms.map(name => {
+              const isActive = activeVariation === name;
+              const variation = getVariation(name);
               const hasData = variation.sku || variation.image_url ||
-                             variation.regular_price !== defaultRegularPrice ||
-                             variation.stock_quantity !== defaultStock;
+                               variation.regular_price !== defaultRegularPrice ||
+                               variation.stock_quantity !== defaultStock;
 
               return (
                 <Button
-                  key={colorName}
+                  key={name}
                   type="button"
                   variant={isActive ? "default" : "outline"}
-                  onClick={() => setActiveVariation(colorName)}
+                  onClick={() => setActiveVariation(name)}
                   className={`
                     relative
                     ${isActive
@@ -130,7 +131,7 @@ export default function VariationDetailsForm({
                     ${hasData ? 'ring-2 ring-green-500' : ''}
                   `}
                 >
-                  {colorName}
+                  {name}
                   {hasData && (
                     <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
                   )}
@@ -263,9 +264,9 @@ export default function VariationDetailsForm({
             </div>
           )}
 
-          {selectedSecondaryColors.length > 1 && !activeVariation && (
+          {selectedTerms.length > 1 && !activeVariation && (
             <div className="text-center text-gray-500 py-4">
-              Sélectionnez une nuance ci-dessus pour configurer ses détails
+              Sélectionnez une option ci-dessus pour configurer ses détails
             </div>
           )}
         </CardContent>
@@ -280,7 +281,7 @@ export default function VariationDetailsForm({
                 variant="ghost"
                 onClick={() => {
                   setShowMediaLibrary(false);
-                  setCurrentEditingColor('');
+                  setCurrentEditingTerm('');
                 }}
               >
                 <X className="w-5 h-5" />

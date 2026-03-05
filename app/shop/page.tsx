@@ -109,6 +109,7 @@ export default function ShopPage() {
         termsData.forEach(t => { dict[String(t.id).toLowerCase()] = t.name; });
       }
 
+      // CORRECTION : Filtre strict sur le statut 'publish' uniquement pour la boutique publique
       const { data: productsData } = await supabase
         .from('products')
         .select('*')

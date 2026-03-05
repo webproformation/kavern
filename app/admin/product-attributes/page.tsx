@@ -30,9 +30,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Plus, Edit, Trash2, Palette, Type, Settings, Upload, X as XIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, Palette, Type, Settings, Upload, X as XIcon, Layers } from 'lucide-react';
 import { toast } from 'sonner';
 import { ColorSwatchManager } from '@/components/ColorSwatchManager';
+import { Badge } from '@/components/ui/badge';
 
 interface ProductAttribute {
   id: string;
@@ -47,6 +48,7 @@ interface ProductAttribute {
 interface ProductAttributeTerm {
   id: string;
   attribute_id: string;
+  parent_id: string | null; // AJOUTÉ : Support du lien parent pour les familles
   name: string;
   slug: string;
   value: string | null;
@@ -78,6 +80,7 @@ export default function ProductAttributesPage() {
   const [termForm, setTermForm] = useState({
     name: '',
     slug: '',
+    parent_id: 'none', // AJOUTÉ : Pour gérer les parents
     value: '',
     color_code: '#000000',
     color_family: '',
@@ -233,6 +236,7 @@ export default function ProductAttributesPage() {
     try {
       const termData = {
         attribute_id: selectedAttribute.id,
+        parent_id: termForm.parent_id === 'none' ? null : termForm.parent_id, // CORRECTION : On envoie le parent_id
         name: termForm.name,
         slug: termForm.slug,
         value: termForm.value || termForm.name,
@@ -259,7 +263,7 @@ export default function ProductAttributesPage() {
         toast.success('Terme créé avec succès');
       }
 
-      setTermForm({ name: '', slug: '', value: '', color_code: '#000000', color_family: '', swatch_image: '' });
+      setTermForm({ name: '', slug: '', parent_id: 'none', value: '', color_code: '#000000', color_family: '', swatch_image: '' });
       setEditingTerm(null);
       setIsTermDialogOpen(false);
       loadTerms(selectedAttribute.id);
@@ -326,6 +330,7 @@ export default function ProductAttributesPage() {
     setTermForm({
       name: term.name,
       slug: term.slug,
+      parent_id: term.parent_id || 'none',
       value: term.value || '',
       color_code: term.color_code || '#000000',
       color_family: term.color_family || '',
@@ -348,7 +353,7 @@ export default function ProductAttributesPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Attributs de produits</h1>
           <p className="text-gray-600 mt-2">
-            Gérez les attributs (couleurs, tailles, etc.) et leurs valeurs
+            Gérez les familles et les nuances (ex: Famille "Bleu" {'>'} Nuance "Bleu Azur")
           </p>
         </div>
         <Dialog open={isAttributeDialogOpen} onOpenChange={setIsAttributeDialogOpen}>
@@ -499,7 +504,7 @@ export default function ProductAttributesPage() {
                   <Button
                     onClick={() => {
                       setEditingTerm(null);
-                      setTermForm({ name: '', slug: '', value: '', color_code: '#000000', color_family: '', swatch_image: '' });
+                      setTermForm({ name: '', slug: '', parent_id: 'none', value: '', color_code: '#000000', color_family: '', swatch_image: '' });
                     }}
                     disabled={!selectedAttribute}
                     size="sm"
@@ -547,10 +552,33 @@ export default function ProductAttributesPage() {
                         required
                       />
                     </div>
+
+                    {/* SÉLECTEUR DE FAMILLE (PARENT) */}
+                    <div>
+                      <Label className="text-[#C6A15B] font-bold flex items-center gap-2 uppercase tracking-tighter text-xs mb-2">
+                        <Layers className="h-4 w-4" /> Famille / Terme Parent
+                      </Label>
+                      <Select
+                        value={termForm.parent_id}
+                        onValueChange={(value) => setTermForm({ ...termForm, parent_id: value })}
+                      >
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="Aucun (C'est une famille)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Aucun (Terme de premier niveau)</SelectItem>
+                          {terms.filter(t => !t.parent_id && t.id !== editingTerm?.id).map((t) => (
+                            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[10px] text-gray-500 mt-1 italic">Ex: Liez "Bleu Azur" à sa famille "Bleu" ici.</p>
+                    </div>
+
                     {selectedAttribute && (selectedAttribute.slug.includes('couleur') || selectedAttribute.name.toLowerCase().includes('couleur')) && (
                       <>
                         <div>
-                          <Label htmlFor="term-color-family">Famille de couleur</Label>
+                          <Label htmlFor="term-color-family">Famille de couleur (Texte)</Label>
                           <Select
                             value={termForm.color_family}
                             onValueChange={(value) => setTermForm({ ...termForm, color_family: value })}
@@ -592,9 +620,6 @@ export default function ProductAttributesPage() {
                               className="flex-1"
                             />
                           </div>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Ce code sera utilisé pour afficher la pastille de couleur
-                          </p>
                         </div>
                         <div>
                           <Label htmlFor="term-swatch-image">Image de texture (optionnel)</Label>
@@ -625,9 +650,6 @@ export default function ProductAttributesPage() {
                               />
                               <Upload className="h-4 w-4 text-gray-400" />
                             </div>
-                            <p className="text-xs text-gray-500">
-                              Pour les textures (ex: léopard, paillettes). Prioritaire sur le code couleur.
-                            </p>
                           </div>
                         </div>
                       </>
@@ -659,10 +681,12 @@ export default function ProductAttributesPage() {
                 {terms.map((term) => {
                   const isColorAttribute = selectedAttribute.slug.includes('couleur') || selectedAttribute.name.toLowerCase().includes('couleur');
                   const isExpanded = expandedColorTermId === term.id;
+                  const isChild = !!term.parent_id;
+                  const parentTerm = terms.find(t => t.id === term.parent_id);
 
                   return (
-                    <div key={term.id} className="border border-gray-200 rounded-lg overflow-hidden">
-                      <div className="flex items-center justify-between p-4 bg-white hover:bg-gray-50 transition-colors">
+                    <div key={term.id} className={`border border-gray-200 rounded-lg overflow-hidden transition-all ${isChild ? 'ml-10 bg-gray-50/30 border-l-4 border-l-amber-200' : 'bg-white'}`}>
+                      <div className="flex items-center justify-between p-4 hover:bg-gray-50/50 transition-colors">
                         <div className="flex items-center gap-4 flex-1">
                           {isColorAttribute && (
                             <div className="relative">
@@ -684,6 +708,11 @@ export default function ProductAttributesPage() {
                             <div className="flex items-center gap-2">
                               <p className="font-semibold text-gray-900">{term.name}</p>
                               <code className="text-xs bg-gray-100 px-2 py-1 rounded">{term.slug}</code>
+                              {isChild && (
+                                <Badge variant="outline" className="text-[9px] bg-amber-50 text-amber-700 uppercase font-black">
+                                  Nuance de {parentTerm?.name}
+                                </Badge>
+                              )}
                             </div>
                             {isColorAttribute && term.color_family && (
                               <p className="text-sm text-gray-500 mt-1">
