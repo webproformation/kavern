@@ -307,6 +307,60 @@ export default function CheckoutPage() {
     toast.error('Erreur lors du paiement PayPal');
   };
 
+  const runPostOrderTasks = async (orderId: string, orderNumber: string) => {
+    try {
+      if (addToOpenPackage && openPackage) {
+        await supabase.from('open_package_orders').insert([{ open_package_id: openPackage.id, order_id: orderId, is_paid: false }]);
+      }
+
+      if (createPendingPackage && !addToOpenPackage) {
+        const openedAt = new Date();
+        const closesAt = new Date(openedAt.getTime() + (5 * 24 * 60 * 60 * 1000));
+        const { data: newPackage } = await supabase.from('open_packages').insert([{
+            user_id: user!.id,
+            status: 'active',
+            shipping_cost_paid: shippingCost,
+            shipping_method_id: selectedShippingMethodId || null,
+            shipping_address_id: selectedAddressId || null,
+            opened_at: openedAt.toISOString(),
+            closes_at: closesAt.toISOString(),
+        }]).select().single();
+
+        if (newPackage) {
+          await supabase.from('open_package_orders').insert([{ open_package_id: newPackage.id, order_id: orderId, is_paid: false }]);
+        }
+      }
+
+      if (newsletterConsent && profile?.email) {
+        await supabase.from('newsletter_subscriptions').upsert([{ email: profile.email }], { onConflict: 'email', ignoreDuplicates: true });
+      }
+
+      if (useWallet && walletAmountToUse > 0) {
+        await supabase.from('profiles').update({ wallet_balance: Math.max(0, (profile?.wallet_balance || 0) - walletAmountToUse) }).eq('id', user!.id);
+      }
+
+      if (useLoyalty && loyaltyAmountToUse > 0) {
+        await supabase.from('profiles').update({ loyalty_euros: Math.max(0, (profile?.loyalty_euros || 0) - loyaltyAmountToUse) }).eq('id', user!.id);
+      }
+
+      if (selectedUserCouponId) await markCouponAsUsed(selectedUserCouponId, orderId);
+
+      if (giftCardApplied && giftCardId && giftCardAmount > 0) {
+        await supabase.from('gift_cards').update({
+          balance: Math.max(0, (await supabase.from('gift_cards').select('balance').eq('id', giftCardId).single()).data?.balance - giftCardAmount),
+        }).eq('id', giftCardId);
+        await supabase.from('gift_card_transactions').insert({
+          gift_card_id: giftCardId,
+          order_id: orderId,
+          amount: giftCardAmount,
+          type: 'usage',
+        });
+      }
+    } catch (err) {
+      console.error('Post-order tasks error (non-blocking):', err);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -377,67 +431,24 @@ export default function CheckoutPage() {
 
       await supabase.from('order_items').insert(orderItems);
 
-      if (addToOpenPackage && openPackage) {
-        await supabase.from('open_package_orders').insert([{ open_package_id: openPackage.id, order_id: newOrder.id, is_paid: false }]);
-      }
-
-      if (createPendingPackage && !addToOpenPackage) {
-        const openedAt = new Date();
-        const closesAt = new Date(openedAt.getTime() + (5 * 24 * 60 * 60 * 1000));
-        const { data: newPackage } = await supabase.from('open_packages').insert([{
-            user_id: user.id,
-            status: 'active',
-            shipping_cost_paid: shippingCost,
-            shipping_method_id: selectedShippingMethodId || null,
-            shipping_address_id: selectedAddressId || null,
-            opened_at: openedAt.toISOString(),
-            closes_at: closesAt.toISOString(),
-        }]).select().single();
-
-        if (newPackage) {
-          await supabase.from('open_package_orders').insert([{ open_package_id: newPackage.id, order_id: newOrder.id, is_paid: false }]);
-          toast.success('Colis ouvert créé avec succès ! Expédition dans 5 jours.');
-        }
-      }
-
-      if (newsletterConsent && profile?.email) {
-        await supabase.from('newsletter_subscriptions').upsert([{ email: profile.email }], { onConflict: 'email', ignoreDuplicates: true });
-      }
-
-      if (useWallet && walletAmountToUse > 0) {
-        await supabase.from('profiles').update({ wallet_balance: Math.max(0, (profile?.wallet_balance || 0) - walletAmountToUse) }).eq('id', user.id);
-      }
-
-      if (useLoyalty && loyaltyAmountToUse > 0) {
-        await supabase.from('profiles').update({ loyalty_euros: Math.max(0, (profile?.loyalty_euros || 0) - loyaltyAmountToUse) }).eq('id', user.id);
-      }
-
-      if (selectedUserCouponId) await markCouponAsUsed(selectedUserCouponId, newOrder.id);
-
-      // Deduire le solde de la carte cadeau
-      if (giftCardApplied && giftCardId && giftCardAmount > 0) {
-        await supabase.from('gift_cards').update({
-          balance: Math.max(0, (await supabase.from('gift_cards').select('balance').eq('id', giftCardId).single()).data?.balance - giftCardAmount),
-        }).eq('id', giftCardId);
-        await supabase.from('gift_card_transactions').insert({
-          gift_card_id: giftCardId,
-          order_id: newOrder.id,
-          amount: giftCardAmount,
-          type: 'usage',
-        });
-      }
-
+      // --- STRIPE : afficher le formulaire de paiement ---
       if ((selectedPaymentMethod?.code === 'stripe' || selectedPaymentMethod?.provider === 'stripe') && totalAfterWallet > 0) {
         setCreatedOrderId(newOrder.id);
         setCreatedOrderNumber(orderNumber);
         setShowStripePayment(true);
         setLoading(false);
+        // Opérations annexes en arrière-plan pour Stripe (elles seront aussi exécutées au retour)
+        runPostOrderTasks(newOrder.id, orderNumber);
         return;
       }
 
+      // --- TOUS LES AUTRES PAIEMENTS : rediriger immédiatement ---
       clearCart();
       toast.success(`Commande ${orderNumber} validée avec succès !`, { position: 'bottom-right' });
       router.push(`/checkout/confirmation?order_id=${newOrder.id}`);
+
+      // Opérations secondaires en arrière-plan (ne bloquent pas la redirection)
+      runPostOrderTasks(newOrder.id, orderNumber);
       
     } catch (error) {
       console.error('Error processing order:', error);
