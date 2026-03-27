@@ -1,6 +1,20 @@
 {
   "buildCommand": "npm run build",
   "framework": "nextjs",
-  "regions": ["iad1"],
-  "installCommand": "npm install"
+  "regions": ["cdg1"],
+  "installCommand": "npm install",
+  "crons": [
+    {
+      "path": "/api/cron/abandoned-cart",
+      "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/cron/package-warning",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/review-request",
+      "schedule": "0 10 * * *"
+    }
+  ]
 }

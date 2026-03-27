@@ -16,6 +16,21 @@ export const metadata: Metadata = {
     apple: '/kavern-icone.png',
   },
   themeColor: '#D4AF37',
+  openGraph: {
+    title: 'KAVERN - L\'artisanat et l\'inattendu',
+    description: 'Concept Store en ligne - Bougies artisanales, epicerie fine, mode et lives shopping',
+    url: 'https://kavern-france.fr',
+    siteName: 'KAVERN',
+    images: [{ url: '/kavern-logo.png', width: 800, height: 400, alt: 'KAVERN' }],
+    locale: 'fr_FR',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'KAVERN - L\'artisanat et l\'inattendu',
+    description: 'Concept Store en ligne - Bougies artisanales, epicerie fine, mode et lives shopping',
+    images: ['/kavern-logo.png'],
+  },
 };
 
 export default function RootLayout({
