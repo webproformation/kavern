@@ -134,7 +134,7 @@ export default function QuiSommesNousPage() {
               </p>
               <div className="pt-6 border-t border-white/20">
                 <p className="text-3xl font-bold">André</p>
-                <p className="text-white/80 uppercase tracking-widest text-sm">Artisan cirier & Fondateur de KAVERN</p>
+                <p className="text-white/80 uppercase tracking-widest text-sm">Créateur cirier & Fondateur de KAVERN</p>
               </div>
             </CardContent>
             <Sparkles className="absolute -right-4 -bottom-4 h-32 w-32 text-white/10 rotate-12" />

@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lock, ShieldCheck, CreditCard, ShoppingBag } from 'lucide-react';
+import { Lock, ShieldCheck, CreditCard, ShoppingBag, Landmark } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 
 export default function TransactionsProtegeesPage() {
@@ -86,6 +86,23 @@ export default function TransactionsProtegeesPage() {
                   </p>
                   <p className="text-sm text-gray-600 mt-3">
                     Simple, rapide et ultra-sécurisé.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <Landmark className="h-6 w-6 text-[#C6A15B]" />
+                    <CardTitle>Virement Bancaire</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-gray-700">
+                    Virement instantané : Payez directement et de manière sécurisée depuis votre application bancaire.
+                  </p>
+                  <p className="text-sm text-gray-600 mt-3">
+                    Votre commande est validée dès réception du virement.
                   </p>
                 </CardContent>
               </Card>

@@ -110,7 +110,7 @@ export default function ViteChezVousPage() {
                     <span className="font-bold ml-2">Mondial Relay</span>
                   </div>
                   <p className="text-sm text-gray-600">
-                    Livraison en point relais à partir de <strong>4,90€</strong>. Idéal pour récupérer votre colis à votre rythme, près de chez vous ou du travail.
+                    Livraison en point relais. Idéal pour récupérer votre colis à votre rythme, près de chez vous ou du travail.
                   </p>
                 </CardContent>
               </Card>

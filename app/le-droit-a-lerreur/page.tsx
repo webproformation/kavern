@@ -89,7 +89,7 @@ export default function LeDroitALErreurPage() {
                       <ul className="space-y-2 text-gray-700">
                         <li className="flex items-start gap-2">
                           <span className="text-[#C6A15B] mt-1">•</span>
-                          <span>Les articles doivent être dans leur état d'origine, neufs et non portés</span>
+                          <span>Les articles doivent être dans leur état d&apos;origine, neufs, non utilisés (ou non portés pour les accessoires) et dans leur emballage d&apos;origine</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-[#C6A15B] mt-1">•</span>

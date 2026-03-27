@@ -32,13 +32,13 @@ export default function ColisOuvertInfoPage() {
           <Card className="bg-white shadow-md border-none overflow-hidden">
             <CardContent className="p-8 space-y-6">
               <p className="text-lg leading-relaxed text-gray-700">
-                C&apos;est l&apos;atout numéro 1 de <span className="font-bold text-[#C6A15B]">KAVERN</span> ! 
-                Vous avez un coup de cœur pour une bougie artisanale le samedi, et vous craquez pour des biscuits artisanaux lors de notre Live du lundi ? 
+                C&apos;est l&apos;atout numéro 1 de <span className="font-bold text-[#C6A15B]">KAVERN</span> !
+                Vous avez un coup de cœur pour une bougie artisanale le samedi, et vous craquez pour des biscuits artisanaux lors de notre Live du lundi ?
                 <span className="font-semibold text-gray-900"> Ne payez pas deux fois les frais de port !</span>
               </p>
               <p className="text-lg leading-relaxed text-gray-700">
-                Avec le système du Colis Ouvert, vous mettez vos trouvailles de côté, vous les cumulez au fil de l&apos;eau, 
-                et vous ne réglez l&apos;expédition qu&apos;une seule fois, quand vous l&apos;avez décidé.
+                Avec le système du Colis Ouvert, vous mettez vos trouvailles de côté, vous les cumulez au fil de l&apos;eau,
+                et vous ne réglez l&apos;expédition qu&apos;une seule fois, dès le départ.
               </p>
             </CardContent>
           </Card>
@@ -54,23 +54,23 @@ export default function ColisOuvertInfoPage() {
               {[
                 {
                   step: "1",
-                  title: "Je craque (En Live ou sur le site)",
-                  desc: "Vous avez repéré une pépite ? Ajoutez-la normalement à votre panier sur le site."
+                  title: "J'ouvre mon colis (Le premier craquage)",
+                  desc: "Vous avez repéré une pépite ? Validez votre commande normalement. C'est lors de ce premier achat que vous réglez vos frais de port fixes. Félicitations, votre Colis Ouvert est officiellement inauguré et votre carton vous attend à l'atelier !"
                 },
                 {
                   step: "2",
-                  title: "Je mets de côté (L'option magique)",
-                  desc: "Au moment de valider votre panier et de choisir la livraison, sélectionnez l'option \"Ajouter à mon Colis Ouvert\". Vous réglez uniquement vos articles du jour, avec 0 € de frais de port. Vos produits sont désormais réservés et stockés bien au chaud dans notre atelier !"
+                  title: "Je mets de côté (L'option magique pour la suite)",
+                  desc: "Le lendemain ou au prochain Live, vous repérez une nouvelle merveille ? Au moment de valider ce nouveau panier, sélectionnez l'option de livraison \"Ajouter à mon Colis Ouvert\". Le montant de la livraison passe à 0 € ! Vous ne payez que votre article, qui rejoint immédiatement les autres dans votre carton."
                 },
                 {
                   step: "3",
                   title: "Je cumule à mon rythme",
-                  desc: "Revenez le lendemain, au prochain Live, ou la semaine suivante. Recommencez l'opération autant de fois que vous le souhaitez. Nous ajouterons vos nouveaux coups de cœur dans votre carton."
+                  desc: "Recommencez l'opération autant de fois que vous le souhaitez. Nous chouchoutons vos nouveaux coups de cœur et les ajoutons dans votre malle."
                 },
                 {
                   step: "4",
                   title: "Je ferme et j'expédie !",
-                  desc: "Votre malle aux trésors est pleine ? Il vous suffit de vous rendre dans la rubrique \"Fermer mon Colis Ouvert\" (ou de sélectionner l'expédition classique lors de votre ultime achat). Vous réglez une seule fois les frais de port, et André s'occupe de préparer votre commande avec soin !"
+                  desc: "Votre malle aux trésors est pleine ? Il vous suffit de vous rendre dans la rubrique \"Fermer mon Colis Ouvert\" d'un simple clic. Vous n'avez plus rien à payer, André s'occupe de préparer votre commande avec soin pour l'expédition !"
                 }
               ].map((item) => (
                 <Card key={item.step} className="bg-white border-none shadow-sm hover:shadow-md transition-shadow">
@@ -105,7 +105,7 @@ export default function ColisOuvertInfoPage() {
                 </CardHeader>
                 <CardContent className="text-sm text-gray-600">
                   Pour des raisons d&apos;organisation et de stockage dans notre atelier, vous pouvez garder un colis ouvert pendant 
-                  <span className="font-bold text-gray-900"> 7 jours maximum </span> après votre premier achat. Passé ce délai, votre colis se fermera automatiquement pour être expédié.
+                  <span className="font-bold text-gray-900"> 7 jours maximum </span> après votre premier achat. Passé ce délai, votre colis se fermera et sera expédié automatiquement !
                 </CardContent>
               </Card>
 
