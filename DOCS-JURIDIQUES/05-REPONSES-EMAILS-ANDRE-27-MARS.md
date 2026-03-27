@@ -360,3 +360,37 @@ Tout est opérationnel.
 
 Cordialement,
 Grégory
+
+---
+
+## EMAIL 16 — Adresses et Colis Ouvert (logique back-end)
+
+Objet : Re: Adresses et Colis Ouvert
+
+Bonjour André,
+
+**1. Modification d'adresse pendant un Colis Ouvert :**
+L'adresse du Colis Ouvert est enregistrée dans la commande initiale (celle qui ouvre le colis). L'étiquette finale utilise cette adresse-là, pas l'adresse par défaut du profil. Si la cliente modifie son profil le mercredi, ça n'affecte pas le colis ouvert du lundi. L'adresse est bien "verrouillée" à la création.
+
+**2. Facturation / Livraison :**
+Le checkout permet actuellement de sélectionner une adresse de livraison parmi les adresses enregistrées. Pour la facturation séparée (cas cadeau), c'est une fonctionnalité qui nécessiterait un champ supplémentaire au checkout. Ce n'est pas encore en place mais c'est facilement ajustable si besoin.
+
+Cordialement,
+Grégory
+
+---
+
+## EMAIL 17 — Anti-cumul Parrainage + Bienvenue
+
+Objet : Re: Module parrainage — anti-cumul
+
+Bonjour André,
+
+**Cumul Bienvenue / Parrainage :**
+La règle de non-cumul est en place. Une seule réduction par commande : si la filleule utilise BIENVENUE5 (5€), elle ne peut pas cumuler avec le code parrainage (et vice-versa). Les champs cagnotte et code promo sont mutuellement exclusifs au checkout (l'un grise l'autre).
+
+**Anti-auto-parrainage :**
+Oui, le système vérifie que le code de parrainage n'appartient pas à l'utilisateur lui-même (comparaison user_id). Pour le cas de comptes différents à la même adresse, c'est techniquement faisable via l'adresse postale mais pas encore implémenté (ça reste rare et détectable en admin).
+
+Cordialement,
+Grégory
