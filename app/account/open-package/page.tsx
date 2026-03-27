@@ -214,7 +214,32 @@ export default function OpenPackagePage() {
 
   if (!hasActivePackage) {
     return (
-      <CreateOpenPackageForm />
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <div className="bg-[#D4AF37] p-3 rounded-full">
+            <Package className="h-8 w-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Mon Colis Ouvert</h1>
+            <p className="text-gray-600 mt-1">Aucun colis ouvert en cours</p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Package className="h-16 w-16 text-gray-300 mb-4" />
+            <p className="text-gray-500 text-center mb-2">
+              Vous n&apos;avez pas de colis ouvert pour le moment.
+            </p>
+            <p className="text-sm text-gray-400 text-center max-w-md mb-4">
+              Pour ouvrir un colis, passez une commande et sélectionnez l&apos;option
+              &quot;Ouvrir un Colis Ouvert&quot; au moment du choix de la livraison.
+            </p>
+            <Button className="bg-[#D4AF37] hover:bg-[#C6A15B]" onClick={() => window.location.href = '/'}>
+              Découvrir la boutique
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
