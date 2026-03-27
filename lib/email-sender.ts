@@ -28,7 +28,7 @@ export async function sendWelcomeEmail(
     const info = await transporter.sendMail({
       from: FROM_EMAIL,
       to,
-      subject: `Bienvenue dans la famille, ${firstName} !`,
+      subject: `Bienvenue dans la KAVERN ! (Ton cadeau de 5 € t'attend à l'intérieur...)`,
       html: emailHtml,
     });
 
@@ -44,20 +44,22 @@ export async function sendOrderConfirmationEmail(
   firstName: string,
   orderNumber: string,
   items: any[],
-  total: number
+  total: number,
+  isOpenPackage: boolean = false
 ): Promise<SendEmailResult> {
   try {
     const emailHtml = await render(OrderConfirmationEmail({
       firstName,
       orderNumber,
       items,
-      total
+      total,
+      isOpenPackage
     }));
 
     const info = await transporter.sendMail({
       from: FROM_EMAIL,
       to,
-      subject: `Merci ${firstName} ! On s'occupe de tout 🎁`,
+      subject: `Youpi ! Ta commande KAVERN est bien validée (N° ${orderNumber})`,
       html: emailHtml,
     });
 
@@ -126,19 +128,21 @@ export async function sendShippingEmail(
   to: string,
   firstName: string,
   trackingNumber: string,
-  trackingUrl?: string
+  trackingUrl?: string,
+  carrierName?: string
 ): Promise<SendEmailResult> {
   try {
     const emailHtml = await render(ShippingEmail({
       firstName,
       trackingNumber,
-      trackingUrl
+      trackingUrl,
+      carrierName
     }));
 
     const info = await transporter.sendMail({
       from: FROM_EMAIL,
       to,
-      subject: `Ça y est ! Ton bonheur est en route 🚚`,
+      subject: `Bonne nouvelle ! Ton colis KAVERN est en route`,
       html: emailHtml,
     });
 
@@ -222,7 +226,7 @@ export async function sendReviewRequestEmail(
     const info = await transporter.sendMail({
       from: FROM_EMAIL,
       to,
-      subject: `Alors, le verdict ? (Et une surprise inside...) ⭐`,
+      subject: `Alors, heureuse ? (Ton avis vaut de l'or... littéralement !)`,
       html: emailHtml,
     });
 
