@@ -31,7 +31,7 @@ export const PackageClosingWarningEmail = ({ firstName }: PackageClosingWarningE
         </Text>
       </Section>
 
-      <Button href={`${process.env.NEXT_PUBLIC_SITE_URL}/nouveautes`} style={button}>
+      <Button href={`${process.env.NEXT_PUBLIC_SITE_URL}/category/nouveautes`} style={button}>
         👀 Je jette un dernier œil aux nouveautés
       </Button>
 

@@ -39,7 +39,7 @@ import { CUSTOM_TEXTS } from '@/lib/texts';
 const STATIC_LINKS = [
   { name: 'Live Shopping et Replay', href: '/live', slug: 'live', hasMegaMenu: false },
   { name: 'Carte cadeau', href: '/carte-cadeau', slug: 'carte-cadeau', hasMegaMenu: false },
-  { name: 'Nouveautés', href: '/nouveautes', slug: 'nouveautes', hasMegaMenu: false },
+  { name: 'Nouveautés', href: '/category/nouveautes', slug: 'nouveautes', hasMegaMenu: false },
   { name: 'Actu', href: '/actualites', slug: 'actualites', hasMegaMenu: false },
 ];
 
