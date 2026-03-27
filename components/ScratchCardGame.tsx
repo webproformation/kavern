@@ -247,9 +247,9 @@ export function ScratchCardGame({ game, onClose, onWin }: ScratchCardGameProps) 
 
               await supabase.from('user_coupons').insert({
                 user_id: user.id,
-                coupon_id: coupon.id,
+                coupon_type_id: coupon.id,
                 code: selectedPrize,
-                source: 'scratch_card_game',
+                source: 'scratch',
                 is_used: false,
                 valid_until: validUntil.toISOString(),
               });

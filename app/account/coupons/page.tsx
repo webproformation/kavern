@@ -30,7 +30,7 @@ interface Coupon {
 interface UserCoupon {
   id: string;
   user_id: string;
-  coupon_id: string;
+  coupon_type_id: string;
   code: string;
   source: string;
   is_used: boolean;
@@ -62,7 +62,7 @@ export default function CouponsPage() {
       // 1. Charger les coupons "gagnés" (Jeux, etc) qui ne sont PAS encore utilisés
       const { data: myWalletCoupons, error: walletError } = await supabase
         .from('user_coupons')
-        .select('*, coupon:coupons(*)')
+        .select('*, coupon:coupon_types(*)')
         .eq('user_id', user.id)
         .eq('is_used', false) // On ne prend que les non utilisés ici
         .order('obtained_at', { ascending: false });
@@ -72,7 +72,7 @@ export default function CouponsPage() {
       // 2. Charger l'historique d'utilisation depuis user_coupons
       const { data: usageHistory, error: usageError } = await supabase
         .from('user_coupons')
-        .select('*, coupon:coupons(*)')
+        .select('*, coupon:coupon_types(*)')
         .eq('user_id', user.id)
         .eq('is_used', true)
         .order('used_at', { ascending: false });
@@ -89,7 +89,7 @@ export default function CouponsPage() {
       const usedList = (usageHistory || []).map((usage: any) => ({
         id: usage.id,
         user_id: usage.user_id,
-        coupon_id: usage.coupon_id,
+        coupon_type_id: usage.coupon_type_id,
         code: usage.coupon?.code || 'CODE',
         source: 'Commande', // Source par défaut pour l'historique
         is_used: true,

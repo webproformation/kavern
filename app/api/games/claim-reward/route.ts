@@ -188,9 +188,9 @@ export async function POST(request: NextRequest) {
       .from('user_coupons')
       .insert({
         user_id: user.id,
-        coupon_id: coupon.id,
+        coupon_type_id: coupon.id,
         code: uniqueCode,
-        source: game_type || 'game',
+        source: game_type === 'scratch' ? 'scratch' : 'wheel',
         is_used: false,
         valid_until: validUntil.toISOString()
       });

@@ -207,7 +207,7 @@ export function GamePopupManager() {
           .from('user_coupons')
           .select('id')
           .eq('user_id', user.id)
-          .eq('coupon_id', coupon.id)
+          .eq('coupon_type_id', coupon.id)
           .maybeSingle();
 
         if (!existingAssignment) {
@@ -217,9 +217,9 @@ export function GamePopupManager() {
 
           await supabase.from('user_coupons').insert({
             user_id: user.id,
-            coupon_id: coupon.id,
+            coupon_type_id: coupon.id,
             code: coupon.code,
-            source: 'game_popup',
+            source: 'wheel',
             is_used: false,
             valid_until: validUntil.toISOString(),
           });

@@ -216,10 +216,10 @@ export default function CheckoutPage() {
     try {
       const { data, error } = await supabase
         .from('gift_cards')
-        .select('id, code, balance, status')
+        .select('id, code, current_balance, status')
         .eq('code', giftCardCode.trim().toUpperCase())
         .eq('status', 'active')
-        .gt('balance', 0)
+        .gt('current_balance', 0)
         .maybeSingle();
 
       if (error || !data) {
@@ -227,7 +227,7 @@ export default function CheckoutPage() {
         return;
       }
 
-      const amountToUse = Math.min(data.balance, totalAfterDiscount);
+      const amountToUse = Math.min(data.current_balance, totalAfterDiscount);
       setGiftCardAmount(amountToUse);
       setGiftCardApplied(true);
       setGiftCardId(data.id);
@@ -347,7 +347,7 @@ export default function CheckoutPage() {
 
       if (giftCardApplied && giftCardId && giftCardAmount > 0) {
         await supabase.from('gift_cards').update({
-          balance: Math.max(0, (await supabase.from('gift_cards').select('balance').eq('id', giftCardId).single()).data?.balance - giftCardAmount),
+          current_balance: Math.max(0, (await supabase.from('gift_cards').select('current_balance').eq('id', giftCardId).single()).data?.current_balance - giftCardAmount),
         }).eq('id', giftCardId);
         await supabase.from('gift_card_transactions').insert({
           gift_card_id: giftCardId,

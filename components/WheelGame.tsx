@@ -158,9 +158,9 @@ export function WheelGame({ game, onClose, onWin }: WheelGameProps) {
 
                 await supabase.from('user_coupons').insert({
                   user_id: user.id,
-                  coupon_id: coupon.id,
+                  coupon_type_id: coupon.id,
                   code: segment.coupon_code,
-                  source: 'wheel_game',
+                  source: 'wheel',
                   is_used: false,
                   valid_until: validUntil.toISOString(),
                 });
