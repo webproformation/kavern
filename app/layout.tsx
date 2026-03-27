@@ -33,15 +33,31 @@ export const metadata: Metadata = {
   },
 };
 
+// MODE MAINTENANCE — Passer à false pour réactiver le site
+const MAINTENANCE_MODE = true;
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  if (MAINTENANCE_MODE) {
+    return (
+      <html lang="fr">
+        <body style={{ margin: 0, padding: 0, backgroundColor: '#000', color: '#D4AF37', fontFamily: 'system-ui, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', textAlign: 'center' }}>
+          <div>
+            <h1 style={{ fontSize: '3rem', fontWeight: 'bold', marginBottom: '1rem', letterSpacing: '0.2em' }}>KAVERN</h1>
+            <p style={{ fontSize: '1.2rem', color: '#999', marginBottom: '2rem' }}>Nous préparons quelque chose d&apos;exceptionnel pour vous.</p>
+            <p style={{ fontSize: '0.9rem', color: '#666' }}>Le site sera bientôt disponible.</p>
+          </div>
+        </body>
+      </html>
+    );
+  }
+
   return (
     <html lang="fr">
       <body className={inter.className}>
-        {/* Ce composant invisible gère le rafraîchissement automatique pour Mamie */}
         <AppLifecycle />
         <LayoutWrapper>{children}</LayoutWrapper>
       </body>
