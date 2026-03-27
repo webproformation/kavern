@@ -56,7 +56,17 @@ Les fonctionnalites suivantes ont ete demandees par email entre le 10/12/2025 et
 | 24 | Bon de preparation fusionne (colis ouverts) | 16/01/2026 | idem | 500 EUR |
 | 25 | Integration Sendcloud (DPD, Mondial Relay, Chronopost) | 23/02/2026 | "Livraison et Sendcloud" | 800 EUR |
 | 26 | Rebranding complet La Boutique de Morgane → KAVERN (38+ fichiers) | fevrier-mars 2026 | Transition KAVERN | 1 500 EUR |
-| | | | **TOTAL** | **~19 200 EUR HT** |
+| 27 | Securite RLS Supabase sur 13+ tables (policies SELECT/INSERT/UPDATE/DELETE) | 27/03/2026 | Session maintenance | 1 500 EUR |
+| 28 | Pages legales completes : CGV (8 articles), Mentions Legales, RGPD, Colis Ouvert | 27/03/2026 | Emails Andre | 1 200 EUR |
+| 29 | Correction checkout multi-paiement (Stripe, PayPal, virement, especes, cartes cadeaux) | 27/03/2026 | Session maintenance | 1 500 EUR |
+| 30 | Page confirmation commande avec confettis + RIB virement + bloc paiement livraison | 27/03/2026 | Session maintenance | 500 EUR |
+| 31 | Generation factures PDF (jsPDF, 4 pages corrigees) | 27/03/2026 | Session maintenance | 500 EUR |
+| 32 | Fix systeme coupons/jeux (roue de la fortune, scratch card, card flip — 7 fichiers) | 27/03/2026 | Session maintenance | 800 EUR |
+| 33 | Fix cartes cadeaux (colonnes DB, checkout) | 27/03/2026 | Session maintenance | 300 EUR |
+| 34 | Fix pepites diamant (fonction RPC Supabase recree) | 27/03/2026 | Session maintenance | 300 EUR |
+| 35 | PWA manifest, sitemap dynamique, robots.txt, meta OpenGraph | mars 2026 | Session maintenance | 500 EUR |
+| 36 | 3 cron jobs (panier abandonne, colis J-1, avis J+7) | mars 2026 | Session maintenance | 800 EUR |
+| | | | **TOTAL** | **~26 800 EUR HT** |
 
 ## Precision
 

@@ -60,7 +60,7 @@ Passe ce delai, des penalites de retard seront appliquees conformement a l'artic
 
 ## 7. Valeur reelle du travail effectue
 
-A titre informatif, la valeur reelle du travail effectue pour ce projet est estimee a **27 700 EUR HT minimum** (cf. document annexe "Inventaire du travail supplementaire"), soit plus de 3 fois le montant facture. Le developpeur a choisi de ne pas facturer ce surplus, ce qui constitue un geste commercial significatif.
+A titre informatif, la valeur reelle du travail effectue pour ce projet est estimee a **35 300 EUR HT minimum** (8 500 EUR factures + 26 800 EUR de travail supplementaire offert, cf. document annexe "Inventaire du travail supplementaire"), soit plus de 4 fois le montant facture. Le developpeur a choisi de ne pas facturer ce surplus, ce qui constitue un geste commercial significatif.
 
 ---
 
