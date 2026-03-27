@@ -32,9 +32,9 @@ export async function POST(request: NextRequest) {
     // Format manuel (avec orderId)
     const { orderId, trackingNumber, trackingUrl } = body;
 
-    if (!orderId || !trackingNumber) {
+    if (!orderId) {
       return NextResponse.json(
-        { error: 'orderId and trackingNumber are required (or use to/data format)' },
+        { error: 'orderId is required' },
         { status: 400 }
       );
     }
@@ -71,8 +71,9 @@ export async function POST(request: NextRequest) {
     const result = await sendShippingEmail(
       email,
       firstName,
-      trackingNumber,
-      trackingUrl
+      trackingNumber || order.tracking_number || 'En attente',
+      trackingUrl || order.tracking_url,
+      order.shipping_method?.name
     );
 
     if (!result.success) {
