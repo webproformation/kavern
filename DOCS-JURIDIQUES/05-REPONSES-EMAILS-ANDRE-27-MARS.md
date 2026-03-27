@@ -326,3 +326,37 @@ Next.js intègre nativement l'optimisation d'images (composant next/image). Les 
 
 Cordialement,
 Grégory
+
+---
+
+## EMAIL 14 — Bug page "Mes Coupons"
+
+Objet : Re: Bug page Mes Coupons
+
+Bonjour André,
+
+✅ Corrigé. Le bug venait d'une incompatibilité entre les noms de colonnes dans la base de données et l'affichage. La page fonctionne maintenant.
+
+Cordialement,
+Grégory
+
+---
+
+## EMAIL 15 — Cartes Cadeaux (mécanique financière)
+
+Objet : Re: Cartes Cadeaux - Vérification mécanique
+
+Bonjour André,
+
+Les 3 points sont opérationnels :
+
+1. **Reliquat automatique** : ✅ Oui, si un client utilise une carte de 50€ pour un panier de 30€, les 20€ restants sont conservés sur le même code. Le solde est mis à jour en temps réel.
+
+2. **Paiement partagé** : ✅ Oui, si le panier dépasse le solde de la carte, le client paye la différence par carte bancaire ou PayPal. Le système déduit d'abord la carte cadeau, puis demande le complément.
+
+3. **Attribution des cartes reçues** : ✅ Oui, quand une cliente choisit "Directement au destinataire", la carte est liée à l'adresse email indiquée. Si la destinataire se connecte ou crée un compte avec cette même adresse, elle retrouve la carte dans son onglet "Cartes reçues".
+
+Tout est opérationnel.
+
+Cordialement,
+Grégory
