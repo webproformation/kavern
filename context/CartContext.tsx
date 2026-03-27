@@ -72,7 +72,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         .abortSignal(abortSignal as any); // Sécurisation contre l'AbortError
 
       if (error) {
-        if (error.name !== 'AbortError') {
+        const isAbort = error.message?.includes('AbortError') || error.details?.includes('AbortError');
+        if (!isAbort) {
           console.error('Error loading cart from Supabase:', error);
         }
         return [];
