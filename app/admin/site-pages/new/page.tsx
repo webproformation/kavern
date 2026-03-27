@@ -336,7 +336,7 @@ export default function NewPageSEO() {
                       canonical_url: e.target.value,
                     }))
                   }
-                  placeholder="https://laboutiquedemorgane.com/page"
+                  placeholder="https://kavern.fr/page"
                 />
               </div>
             </CardContent>

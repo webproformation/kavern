@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_ENVIRONMENT } = process.env;
 
-const base = PAYPAL_ENVIRONMENT === 'sandbox' 
-  ? 'https://api-m.sandbox.paypal.com' 
+const base = PAYPAL_ENVIRONMENT === 'sandbox'
+  ? 'https://api-m.sandbox.paypal.com'
   : 'https://api-m.paypal.com';
 
 const generateAccessToken = async () => {
@@ -20,7 +21,7 @@ const generateAccessToken = async () => {
 
 export async function POST(request: Request) {
   try {
-    const { orderID } = await request.json();
+    const { orderID, dbOrderId } = await request.json();
 
     const accessToken = await generateAccessToken();
     const url = `${base}/v2/checkout/orders/${orderID}/capture`;
@@ -34,6 +35,34 @@ export async function POST(request: Request) {
     });
 
     const data = await response.json();
+
+    if (!response.ok) {
+      return NextResponse.json({ error: data.message || 'Capture failed' }, { status: 400 });
+    }
+
+    // Mettre a jour la commande en DB si dbOrderId est fourni
+    if (dbOrderId && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+      );
+
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({
+          payment_status: 'paid',
+          status: 'processing', // Declenche le trigger stock
+          paid_at: new Date().toISOString(),
+          paypal_order_id: orderID,
+          payment_method: 'PayPal',
+        })
+        .eq('id', dbOrderId);
+
+      if (updateError) {
+        console.error('[PayPal] Error updating order:', updateError);
+      }
+    }
+
     return NextResponse.json(data);
   } catch (error: any) {
     console.error("PayPal Capture Error:", error);

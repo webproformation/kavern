@@ -27,10 +27,10 @@ export const EmailLayout = ({ preview, children }: EmailLayoutProps) => {
         <Container style={container}>
           <Section style={header}>
             <Img
-              src="https://laboutiquedemorgane.com/lbdm-logobdc.png"
+              src="https://kavern.fr/kavern-logo.png"
               width="200"
               height="auto"
-              alt="La Boutique de Morgane"
+              alt="KAVERN"
               style={logo}
             />
           </Section>
@@ -43,7 +43,7 @@ export const EmailLayout = ({ preview, children }: EmailLayoutProps) => {
 
           <Section style={footer}>
             <Text style={footerText}>
-              <strong>La Boutique de Morgane</strong><br />
+              <strong>KAVERN</strong><br />
               1062 Rue d'Armentières<br />
               59850 Nieppe, France
             </Text>
@@ -52,13 +52,13 @@ export const EmailLayout = ({ preview, children }: EmailLayoutProps) => {
             </Text>
             <Text style={footerText}>
               📱 Doudou: <Link href="tel:+33603489662" style={link}>06 03 48 96 62</Link> |
-              Morgane: <Link href="tel:+33641456671" style={link}>06 41 45 66 71</Link>
+              André: <Link href="tel:+33603489662" style={link}>06 03 48 96 62</Link>
             </Text>
             <Text style={footerText}>
               Suivez-nous sur <Link href="https://facebook.com" style={link}>Facebook</Link> et <Link href="https://instagram.com" style={link}>Instagram</Link>
             </Text>
             <Text style={footerTextSmall}>
-              Vous recevez cet e-mail car vous avez un compte sur laboutiqudemorgane.fr<br />
+              Vous recevez cet e-mail car vous avez un compte sur kavern.fr<br />
               <Link href="{{{unsubscribe}}}" style={link}>Se désabonner des e-mails marketing</Link>
             </Text>
           </Section>

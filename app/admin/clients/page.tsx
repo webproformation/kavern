@@ -168,7 +168,6 @@ export default function ClientsPage() {
         return;
       }
 
-      console.log('[ADMIN TOGGLE] Success:', data);
       toast.success(`Statut admin ${!currentStatus ? 'activé' : 'désactivé'}`);
       await loadProfiles();
     } catch (error: any) {
@@ -198,7 +197,6 @@ export default function ClientsPage() {
         return;
       }
 
-      console.log('[BLOCKED TOGGLE] Success:', data);
       toast.success(`Client ${!currentStatus ? 'bloqué' : 'débloqué'}`);
       await loadProfiles();
     } catch (error: any) {
@@ -255,7 +253,6 @@ export default function ClientsPage() {
         return;
       }
 
-      console.log('[SAVE CUSTOMER] Success:', data);
       toast.success('Profil mis à jour');
       setEditMode(false);
       await loadProfiles();
@@ -292,7 +289,6 @@ export default function ClientsPage() {
         return;
       }
 
-      console.log('[DELETE CLIENT] Success:', data);
       toast.success('Client supprimé avec succès');
       await loadProfiles();
       setSelectedCustomer(null);

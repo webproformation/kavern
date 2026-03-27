@@ -38,7 +38,7 @@ export const ClickAndCollectEmail = ({ firstName }: ClickAndCollectEmailProps) =
         </Text>
         <Text style={contactText}>
           Doudou : <a href="tel:+33603489662" style={link}>06 03 48 96 62</a><br />
-          Morgane : <a href="tel:+33641456671" style={link}>06 41 45 66 71</a>
+          André : <a href="tel:+33603489662" style={link}>06 03 48 96 62</a>
         </Text>
       </Section>
 
@@ -51,7 +51,7 @@ export const ClickAndCollectEmail = ({ firstName }: ClickAndCollectEmailProps) =
 
       <Text style={signature}>
         À tout de suite !<br />
-        <strong>Morgane</strong> ✨
+        <strong>L'équipe KAVERN</strong> ✨
       </Text>
     </EmailLayout>
   );

@@ -11,7 +11,7 @@ interface GiftProgressBarProps {
 
 export function GiftProgressBar({ cartTotal, deliveryBatchId }: GiftProgressBarProps) {
   const GIFT_THRESHOLD = 69;
-  const GIFT_NAME = 'Cadeau Surprise de Morgane';
+  const GIFT_NAME = 'Cadeau Surprise KAVERN';
 
   if (cartTotal >= GIFT_THRESHOLD) {
     return (

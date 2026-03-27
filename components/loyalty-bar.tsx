@@ -5,10 +5,9 @@ import { supabase, Profile } from '@/lib/supabase';
 import { Sparkles, Star, Coins } from 'lucide-react';
 
 const LOYALTY_TIERS = [
-  { name: 'Bronze', minPoints: 0, color: '#CD7F32' },
-  { name: 'Argent', minPoints: 500, color: '#C0C0C0' },
-  { name: 'Or', minPoints: 1000, color: '#D4AF37' },
-  { name: 'Platine', minPoints: 2000, color: '#E5E4E2' },
+  { name: 'Esprit Curieux', minPoints: 0, color: '#CD7F32', multiplier: 1 },
+  { name: 'Passionné', minPoints: 500, color: '#C0C0C0', multiplier: 2 },
+  { name: 'Collectionneur', minPoints: 1500, color: '#D4AF37', multiplier: 3 },
 ];
 
 export function LoyaltyBar() {

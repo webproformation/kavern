@@ -69,11 +69,12 @@ export default function CouponsPage() {
 
       if (walletError) throw walletError;
 
-      // 2. Charger l'historique d'utilisation REEL (table coupon_usage)
+      // 2. Charger l'historique d'utilisation depuis user_coupons
       const { data: usageHistory, error: usageError } = await supabase
-        .from('coupon_usage')
+        .from('user_coupons')
         .select('*, coupon:coupons(*)')
         .eq('user_id', user.id)
+        .eq('is_used', true)
         .order('used_at', { ascending: false });
 
       if (usageError) throw usageError;

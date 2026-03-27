@@ -33,8 +33,6 @@ export function useAutoSave<T>(key: string, data: T, onLoad: (data: T) => void) 
 
     const timer = setTimeout(() => {
       localStorage.setItem(key, JSON.stringify(data));
-      // Optionnel : petit indicateur visuel dans la console
-      console.log("Auto-save effectué"); 
     }, 1000);
 
     return () => clearTimeout(timer);

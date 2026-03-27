@@ -102,6 +102,9 @@ export default function EditProductPage() {
   const [variations, setVariations] = useState<Variation[]>([]);
   const [termIds, setTermIds] = useState<Record<string, string>>({});
 
+  // ÉTAT TVA
+  const [tvaRate, setTvaRate] = useState<number>(20);
+
   // ÉTATS POUR LES LOTS (PACKS)
   const [isPack, setIsPack] = useState(false);
   const [packSlots, setPackSlots] = useState<number>(0);
@@ -146,6 +149,9 @@ export default function EditProductPage() {
         setSizeRangeStart(prod.size_range_start);
         setSizeRangeEnd(prod.size_range_end);
         
+        // TVA
+        setTvaRate(prod.tva_rate ?? 20);
+
         // Chargement des données Pack
         setIsPack(prod.is_pack || false);
         setPackSlots(prod.pack_slots || 0);
@@ -193,16 +199,16 @@ export default function EditProductPage() {
     status, isFeatured, isDiamond, hasVariations, showSizes, seoTitle, seoDescription, tags,
     mainImage, galleryImages, selectedCategories, selectedAttributes, relatedProductIds,
     sizeRangeStart, sizeRangeEnd, variations, variationAxes, termIds,
-    isPack, packSlots, packSourceCategoryId
+    isPack, packSlots, packSourceCategoryId, tvaRate
   };
   useAutoSave(`edit_product_${id}`, currentFormData, () => {});
 
   const marginData = useMemo(() => {
-    const saleHT = regularPrice / 1.2;
+    const saleHT = regularPrice / (1 + tvaRate / 100);
     const marginEuro = saleHT - purchasePrice;
     const marginPercent = saleHT > 0 ? (marginEuro / saleHT) * 100 : 0;
     return { euro: marginEuro.toFixed(2), percent: marginPercent.toFixed(1) };
-  }, [purchasePrice, regularPrice]);
+  }, [purchasePrice, regularPrice, tvaRate]);
 
   // Synchronisation des variations
   useEffect(() => {
@@ -243,6 +249,7 @@ export default function EditProductPage() {
         related_product_ids: relatedProductIds,
         size_range_start: showSizes ? sizeRangeStart : null,
         size_range_end: showSizes ? sizeRangeEnd : null,
+        tva_rate: tvaRate,
         is_pack: isPack,
         pack_slots: packSlots,
         pack_source_category_id: packSourceCategoryId,
@@ -430,6 +437,15 @@ export default function EditProductPage() {
                 <div className="space-y-1"><Label className="text-xs font-bold text-[#b8933d] uppercase">Vente TTC (€) *</Label><Input type="number" step="0.01" value={regularPrice} onChange={(e) => setRegularPrice(parseFloat(e.target.value) || 0)} className="font-bold font-mono border-amber-200" /></div>
               </div>
               <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Promo TTC (€)</Label><Input type="number" step="0.01" value={salePrice || ""} onChange={(e) => setSalePrice(e.target.value ? parseFloat(e.target.value) : null)} className="text-red-600 font-mono border-red-100" /></div>
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-gray-500 uppercase">Taux de TVA</Label>
+                <select value={tvaRate} onChange={(e) => setTvaRate(parseFloat(e.target.value))} className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm font-mono">
+                  <option value={20}>20% (standard)</option>
+                  <option value={10}>10% (intermédiaire)</option>
+                  <option value={5.5}>5.5% (réduit - alimentaire)</option>
+                  <option value={0}>0% (exonéré)</option>
+                </select>
+              </div>
               <Separator />
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Stock</Label><Input type="number" value={stockQuantity} onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)} /></div>
@@ -456,14 +472,11 @@ export default function EditProductPage() {
             <CardContent className="p-6 space-y-5">
               <div className="flex items-center justify-between p-3 border rounded-xl bg-gray-50">
                 <div className="space-y-0.5"><Label className="text-gray-900 font-bold">Statut</Label></div>
-                <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger className="w-[130px] bg-white border-gray-200"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Brouillon</SelectItem>
-                    <SelectItem value="publish">Publié</SelectItem>
-                    <SelectItem value="private">Privé (Exclu Live)</SelectItem>
-                  </SelectContent>
-                </Select>
+                <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-[160px] h-10 rounded-md border border-gray-200 bg-white px-3 text-sm">
+                  <option value="draft">Brouillon</option>
+                  <option value="publish">Publié</option>
+                  <option value="private_live">Privé exclu live</option>
+                </select>
               </div>
 
               <div className="flex items-center justify-between p-3 border rounded-xl bg-blue-50/30">

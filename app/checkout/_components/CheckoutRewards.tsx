@@ -38,6 +38,13 @@ interface CheckoutRewardsProps {
   appliedReferral: any;
   handleApplyReferral: () => Promise<void>;
   totalAfterDiscount: number;
+  // Gift card
+  giftCardCode: string;
+  setGiftCardCode: (val: string) => void;
+  giftCardAmount: number;
+  giftCardApplied: boolean;
+  handleApplyGiftCard: () => Promise<void>;
+  giftCardLoading: boolean;
 }
 
 export function CheckoutRewards({
@@ -66,7 +73,13 @@ export function CheckoutRewards({
   setReferralCode,
   appliedReferral,
   handleApplyReferral,
-  totalAfterDiscount
+  totalAfterDiscount,
+  giftCardCode,
+  setGiftCardCode,
+  giftCardAmount,
+  giftCardApplied,
+  handleApplyGiftCard,
+  giftCardLoading,
 }: CheckoutRewardsProps) {
   return (
     <Card className="border-l-4 border-[#C6A15B]">
@@ -354,6 +367,39 @@ export function CheckoutRewards({
               Appliquer
             </Button>
           </div>
+        </div>
+
+        <Separator />
+
+        {/* Carte cadeau */}
+        <div className="space-y-2">
+          <Label htmlFor="giftCard" className="text-base font-semibold flex items-center gap-2">
+            <Gift className="h-4 w-4 text-[#C6A15B]" /> Carte cadeau
+          </Label>
+          <div className="flex gap-2">
+            <Input
+              id="giftCard"
+              value={giftCardCode}
+              onChange={(e) => setGiftCardCode(e.target.value.toUpperCase())}
+              placeholder="GC-XXXX-XXXX-XXXX"
+              disabled={giftCardApplied}
+              className="focus:border-[#C6A15B] focus:ring-[#C6A15B]"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="border-[#C6A15B] text-[#C6A15B] hover:bg-[#C6A15B] hover:text-white"
+              onClick={handleApplyGiftCard}
+              disabled={giftCardApplied || giftCardLoading || !giftCardCode}
+            >
+              {giftCardLoading ? '...' : giftCardApplied ? 'Appliquee' : 'Appliquer'}
+            </Button>
+          </div>
+          {giftCardApplied && giftCardAmount > 0 && (
+            <p className="text-sm text-green-600 flex items-center gap-1 mt-1">
+              <Gift className="h-4 w-4" /> Carte cadeau appliquee : -{giftCardAmount.toFixed(2)} €
+            </p>
+          )}
         </div>
 
         <Separator />

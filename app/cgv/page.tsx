@@ -15,7 +15,7 @@ export default function CGVPage() {
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
               Conditions Générales de Vente
             </h1>
-            <p className="text-xl text-[#C6A15B] font-semibold">La Boutique de Morgane</p>
+            <p className="text-xl text-[#C6A15B] font-semibold">KAVERN</p>
             <p className="text-gray-600 mt-2">Dernière mise à jour : {currentDate}</p>
           </div>
 
@@ -26,15 +26,15 @@ export default function CGVPage() {
             <CardContent className="prose prose-gray max-w-none space-y-3">
               <p>
                 Les présentes Conditions Générales de Vente (CGV) régissent les ventes de produits effectuées
-                sur le site internet laboutiquedemorgane.com.
+                sur le site internet kavern.fr.
               </p>
               <div className="bg-gray-50 p-4 rounded mt-3">
                 <p className="font-semibold mb-2">Vendeur :</p>
                 <ul className="space-y-1 text-sm">
-                  <li>MORGANE DEWANIN - SAS</li>
-                  <li>1062 rue d'Armentières, 59850 Nieppe, France</li>
-                  <li>SIRET : 907 889 802 00027</li>
-                  <li>Email : <a href="mailto:contact@laboutiquedemorgane.com" className="text-[#C6A15B] hover:underline">contact@laboutiquedemorgane.com</a></li>
+                  <li>KAVERN - SAS au capital de 1 000,00 €</li>
+                  <li>1062 Rue d'Armentières, 59850 Nieppe, France</li>
+                  <li>RCS Dunkerque 102 355 443</li>
+                  <li>Email : <a href="mailto:contact@kavern.fr" className="text-[#C6A15B] hover:underline">contact@kavern.fr</a></li>
                 </ul>
               </div>
               <p>
@@ -123,7 +123,14 @@ export default function CGVPage() {
                 <li>PayPal</li>
                 <li>Virement bancaire (sous conditions)</li>
               </ul>
-              <p className="text-sm text-gray-600">
+              <div className="mt-3 p-3 bg-gray-50 rounded text-sm text-gray-700">
+                <p className="font-semibold mb-1">Coordonnées bancaires pour virement :</p>
+                <p>Titulaire : KAVERN</p>
+                <p>IBAN : FR76 1027 8026 8400 0456 0920 369</p>
+                <p>BIC : CMCIFR2A</p>
+                <p>Banque : Crédit Mutuel — CCM Armentières</p>
+              </div>
+              <p className="text-sm text-gray-600 mt-3">
                 Tous les paiements sont sécurisés par Stripe avec cryptage SSL et protocole 3D Secure.
               </p>
             </CardContent>
@@ -172,7 +179,7 @@ export default function CGVPage() {
                 <p className="font-semibold mb-2">8.1 Exercice du droit de rétractation</p>
                 <p className="text-sm text-gray-700">
                   Pour exercer ce droit, vous devez nous notifier votre décision par email à{' '}
-                  <a href="mailto:retour@laboutiquedemorgane.com" className="text-[#C6A15B] hover:underline">retour@laboutiquedemorgane.com</a>
+                  <a href="mailto:retour@kavern.fr" className="text-[#C6A15B] hover:underline">retour@kavern.fr</a>
                 </p>
               </div>
               <div>
@@ -225,9 +232,9 @@ export default function CGVPage() {
             <CardContent className="space-y-2">
               <p>Pour toute réclamation :</p>
               <ul className="space-y-1 text-sm text-gray-700">
-                <li>• Email : <a href="mailto:contact@laboutiquedemorgane.com" className="text-[#C6A15B] hover:underline">contact@laboutiquedemorgane.com</a></li>
-                <li>• Téléphone : +33 6 41 45 66 71 / +33 6 03 48 96 62</li>
-                <li>• Courrier : 1062 rue d'Armentières, 59850 Nieppe, France</li>
+                <li>• Email : <a href="mailto:contact@kavern.fr" className="text-[#C6A15B] hover:underline">contact@kavern.fr</a></li>
+                <li>• Téléphone : +33 6 03 48 96 62</li>
+                <li>• Courrier : 1062 Rue d'Armentières, 59850 Nieppe, France</li>
               </ul>
             </CardContent>
           </Card>

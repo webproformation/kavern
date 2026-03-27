@@ -78,30 +78,12 @@ export default function ColorSwatchSelector({
       if (termsError) throw termsError;
 
       if (allTerms) {
-        console.log('[ColorSwatchSelector] All terms loaded:', allTerms.length);
-        console.log('[ColorSwatchSelector] Sample term:', allTerms[0]);
-
         const validTerms = allTerms.filter(t => t.name && t.name.trim());
-        console.log('[ColorSwatchSelector] Valid terms:', validTerms.length);
 
         const parentTerms = validTerms.filter(t => !t.parent_id);
-        const childTerms = validTerms.filter(t => t.parent_id);
-        console.log('[ColorSwatchSelector] Parent terms (parent_id = null):', parentTerms.length);
-        console.log('[ColorSwatchSelector] Child terms (parent_id != null):', childTerms.length);
-
-        console.log('[ColorSwatchSelector] Parent terms list:', parentTerms.map(p => p.name));
-
-        const grisTerms = validTerms.filter(t => t.name.toLowerCase().includes('gris'));
-        if (grisTerms.length > 0) {
-          console.log('[ColorSwatchSelector] GRIS ANALYSIS:');
-          grisTerms.forEach(t => {
-            console.log(`  - ${t.name}: parent_id = ${t.parent_id || 'NULL'} => ${t.parent_id ? 'CHILD (nuance)' : 'PARENT (main grid)'}`);
-          });
-        }
 
         const families: ColorFamily[] = parentTerms.map(parent => {
           const children = validTerms.filter(child => child.parent_id === parent.id);
-          console.log(`[ColorSwatchSelector] Family "${parent.name}" has ${children.length} children`);
           return {
             id: parent.id,
             name: parent.name,
@@ -110,7 +92,6 @@ export default function ColorSwatchSelector({
           };
         });
 
-        console.log('[ColorSwatchSelector] Total families created:', families.length);
         setColorFamilies(families);
       }
     } catch (error) {
@@ -163,16 +144,6 @@ export default function ColorSwatchSelector({
         </CardContent>
       </Card>
     );
-  }
-
-  if (colorFamilies.length > 0) {
-    console.log('[ColorSwatchSelector RENDER] Colors to display in main grid:', colorFamilies.map(f => f.name));
-    console.log('[ColorSwatchSelector RENDER] Number of colors in main grid:', colorFamilies.length);
-
-    const grisColors = colorFamilies.filter(f => f.name.toLowerCase().includes('gris'));
-    if (grisColors.length > 0) {
-      console.log('[ColorSwatchSelector RENDER] Gris colors in main grid:', grisColors.map(f => f.name));
-    }
   }
 
   return (

@@ -222,7 +222,7 @@ export async function submitGuestbookEntry(data: {
 
     if (!loyaltyError && loyaltyData) {
       const result = typeof loyaltyData === 'string' ? JSON.parse(loyaltyData) : loyaltyData
-      console.log('Loyalty reward added:', result)
+      // Loyalty reward added successfully
     }
   } catch (loyaltyErr) {
     console.error('Error adding loyalty reward for review:', loyaltyErr)

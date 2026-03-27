@@ -62,7 +62,12 @@ export function HiddenDiamondDetector({ currentPage, currentLocation }: HiddenDi
   };
 
   const handleDiamondClick = async (diamondId: string) => {
-    if (!user) return;
+    if (!user) {
+      setRewardMessage('Connectez-vous pour récupérer votre récompense !');
+      setRewardAmount(0);
+      setShowReward(true);
+      return;
+    }
 
     try {
       const { data, error } = await supabase.rpc('add_loyalty_gain', {

@@ -80,42 +80,25 @@ export function CheckoutPayment({
                   <div className="p-4 bg-blue-50 rounded-lg space-y-3">
                     <div>
                       <p className="text-xs font-medium text-blue-800 uppercase">Compte Courant</p>
-                      <p className="text-blue-900 font-semibold">31822952121 - SAS A U MORGANE DEWANIN</p>
+                      <p className="text-blue-900 font-semibold">KAVERN</p>
                     </div>
                     <Separator />
                     <div>
                       <p className="text-xs font-medium text-blue-800 uppercase">IBAN</p>
-                      <p className="text-blue-900 font-mono text-sm break-all">FR76 1350 7000 4331 8229 5212 127</p>
+                      <p className="text-blue-900 font-mono text-sm break-all">FR76 1027 8026 8400 0456 0920 369</p>
                     </div>
                     <div>
                       <p className="text-xs font-medium text-blue-800 uppercase">BIC</p>
-                      <p className="text-blue-900 font-mono text-sm">CCBPFRPPLIL</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <p className="text-xs font-medium text-blue-800 uppercase">Code banque</p>
-                        <p className="text-blue-900 font-mono text-sm">13507</p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-blue-800 uppercase">Code guichet</p>
-                        <p className="text-blue-900 font-mono text-sm">00043</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <p className="text-xs font-medium text-blue-800 uppercase">N° du compte</p>
-                        <p className="text-blue-900 font-mono text-sm">31822952121</p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-blue-800 uppercase">Clé RIB</p>
-                        <p className="text-blue-900 font-mono text-sm">27</p>
-                      </div>
+                      <p className="text-blue-900 font-mono text-sm">CMCIFR2A</p>
                     </div>
                     <Separator />
                     <div>
                       <p className="text-xs font-medium text-blue-800 uppercase">Banque</p>
-                      <p className="text-blue-900 font-semibold">BANQUE POPULAIRE DU NORD</p>
-                      <p className="text-blue-700 text-xs mt-1">Agence: AG CENTRALE</p>
+                      <p className="text-blue-900 font-semibold">Crédit Mutuel — CCM Armentières</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-blue-800 uppercase">Titulaire</p>
+                      <p className="text-blue-900 font-semibold">KAVERN</p>
                     </div>
                   </div>
 

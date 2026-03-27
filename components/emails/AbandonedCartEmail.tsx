@@ -36,7 +36,7 @@ export const AbandonedCartEmail = ({ firstName }: AbandonedCartEmailProps) => {
 
       <Text style={signature}>
         Bisous,<br />
-        <strong>Morgane</strong> ✨
+        <strong>L'équipe KAVERN</strong> ✨
       </Text>
     </EmailLayout>
   );

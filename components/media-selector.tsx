@@ -67,7 +67,6 @@ export function MediaSelector({ currentImageUrl, onSelect, label = "Image" }: Me
 
   const loadProductImages = async () => {
     try {
-      console.log('[MediaSelector] Loading product images...');
       const allUrls: string[] = [];
 
       const { data: productFiles, error: productStorageError } = await supabase.storage
@@ -94,8 +93,6 @@ export function MediaSelector({ currentImageUrl, onSelect, label = "Image" }: Me
           }
         }
       }
-
-      console.log('[MediaSelector] Media storage files:', allUrls.length);
 
       const [productsResult, mediaResult] = await Promise.all([
         supabase
@@ -127,13 +124,8 @@ export function MediaSelector({ currentImageUrl, onSelect, label = "Image" }: Me
 
       const mediaUrls = mediaResult.data?.map(m => m.url).filter(Boolean) || [];
 
-      console.log('[MediaSelector] Product URLs:', productUrls.length);
-      console.log('[MediaSelector] Media URLs:', mediaUrls.length);
-
       allUrls.push(...mediaUrls, ...productUrls);
       const uniqueUrls = Array.from(new Set(allUrls));
-
-      console.log('[MediaSelector] Total unique URLs:', uniqueUrls.length);
 
       setProductImages(uniqueUrls as string[]);
     } catch (error) {

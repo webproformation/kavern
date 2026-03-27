@@ -42,7 +42,11 @@ export default function ProductsTable({
   const [stockFilter, setStockFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [localProducts, setLocalProducts] = useState(products);
-  
+
+  // ÉTAT POUR LA SÉLECTION EN MASSE
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
+
   // ÉTAT POUR LES NOTIFICATIONS DE STOCK
   const [notificationCounts, setNotificationCounts] = useState<Record<string, number>>({});
 
@@ -127,6 +131,64 @@ export default function ProductsTable({
     }
   };
 
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredProducts.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredProducts.map(p => p.id)));
+    }
+  };
+
+  const toggleSelectOne = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkStatusChange = async (newStatus: string) => {
+    if (selectedIds.size === 0) return;
+    setBulkLoading(true);
+    try {
+      const { error } = await supabase
+        .from("products")
+        .update({ status: newStatus })
+        .in("id", Array.from(selectedIds));
+      if (error) throw error;
+      setLocalProducts(prev => prev.map(p => selectedIds.has(p.id) ? { ...p, status: newStatus } : p));
+      setSelectedIds(new Set());
+      toast.success(`${selectedIds.size} produit(s) mis à jour en "${newStatus === "publish" ? "Publié" : newStatus === "private_live" ? "Privé exclu live" : newStatus}"`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erreur lors de la mise à jour en masse");
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Supprimer ${selectedIds.size} produit(s) ?\n\nCette action est irréversible.`)) return;
+    setBulkLoading(true);
+    try {
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .in("id", Array.from(selectedIds));
+      if (error) throw error;
+      setLocalProducts(prev => prev.filter(p => !selectedIds.has(p.id)));
+      toast.success(`${selectedIds.size} produit(s) supprimé(s)`);
+      setSelectedIds(new Set());
+    } catch (err) {
+      console.error(err);
+      toast.error("Erreur lors de la suppression en masse");
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
   const filteredProducts = useMemo(() => {
     return localProducts.filter((product) => {
       const matchesSearch =
@@ -174,6 +236,7 @@ export default function ProductsTable({
                 <SelectItem value="all">Tous les statuts</SelectItem>
                 <SelectItem value="publish">Publié</SelectItem>
                 <SelectItem value="draft">Brouillon</SelectItem>
+                <SelectItem value="private_live">Privé exclu live</SelectItem>
               </SelectContent>
             </Select>
 
@@ -206,9 +269,25 @@ export default function ProductsTable({
         </CardContent>
       </Card>
 
-      {/* Results Count */}
-      <div className="text-sm text-gray-600">
-        {filteredProducts.length} produit(s) trouvé(s)
+      {/* Results Count + Bulk Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="text-sm text-gray-600">
+          {filteredProducts.length} produit(s) trouvé(s)
+          {selectedIds.size > 0 && <span className="ml-2 font-bold text-blue-600">({selectedIds.size} sélectionné(s))</span>}
+        </div>
+        {selectedIds.size > 0 && (
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" disabled={bulkLoading} onClick={() => handleBulkStatusChange("publish")} className="text-green-700 border-green-200 hover:bg-green-50">
+              Mettre en public
+            </Button>
+            <Button size="sm" variant="outline" disabled={bulkLoading} onClick={() => handleBulkStatusChange("private_live")} className="text-purple-700 border-purple-200 hover:bg-purple-50">
+              Mettre en privé live
+            </Button>
+            <Button size="sm" variant="destructive" disabled={bulkLoading} onClick={handleBulkDelete}>
+              <Trash2 className="h-3.5 w-3.5 mr-1" /> Supprimer la sélection
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Products Table - Desktop */}
@@ -224,6 +303,12 @@ export default function ProductsTable({
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={selectedIds.size === filteredProducts.length && filteredProducts.length > 0}
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </TableHead>
                     <TableHead className="w-16">Image</TableHead>
                     <TableHead>ID</TableHead>
                     <TableHead>Nom</TableHead>
@@ -242,6 +327,12 @@ export default function ProductsTable({
                 <TableBody>
                   {filteredProducts.map((product) => (
                     <TableRow key={product.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.has(product.id)}
+                          onCheckedChange={() => toggleSelectOne(product.id)}
+                        />
+                      </TableCell>
                       <TableCell>
                         {product.image_url ? (
                           <img
@@ -323,11 +414,16 @@ export default function ProductsTable({
                           variant={
                             product.status === "publish"
                               ? "default"
+                              : product.status === "private_live"
+                              ? "outline"
                               : "secondary"
                           }
+                          className={product.status === "private_live" ? "border-purple-300 text-purple-700 bg-purple-50" : ""}
                         >
                           {product.status === "publish"
                             ? "Publié"
+                            : product.status === "private_live"
+                            ? "Privé exclu live"
                             : "Brouillon"}
                         </Badge>
                       </TableCell>
@@ -476,10 +572,10 @@ export default function ProductsTable({
 
                     {/* Status */}
                     <Badge
-                      variant={product.status === "publish" ? "default" : "secondary"}
-                      className="text-xs mb-3"
+                      variant={product.status === "publish" ? "default" : product.status === "private_live" ? "outline" : "secondary"}
+                      className={`text-xs mb-3 ${product.status === "private_live" ? "border-purple-300 text-purple-700 bg-purple-50" : ""}`}
                     >
-                      {product.status === "publish" ? "Publié" : "Brouillon"}
+                      {product.status === "publish" ? "Publié" : product.status === "private_live" ? "Privé exclu live" : "Brouillon"}
                     </Badge>
 
                     {/* Actions */}

@@ -157,7 +157,7 @@ export function LiveChat({ liveStreamId }: LiveChatProps) {
                     {getUserDisplayName(msg)}
                     {msg.profiles?.is_admin && (
                       <span className="ml-1 text-xs bg-gradient-to-r from-[#D4AF37] to-[#b8933d] text-white px-2 py-0.5 rounded-full">
-                        Morgane
+                        Admin
                       </span>
                     )}
                   </span>
@@ -183,7 +183,7 @@ export function LiveChat({ liveStreamId }: LiveChatProps) {
               className="w-full bg-gradient-to-r from-[#D4AF37] to-[#b8933d] text-white border-none hover:from-[#b8933d] hover:to-[#D4AF37]"
             >
               <HelpCircle className="w-4 h-4 mr-2" />
-              Morgane, j'hésite !
+              J'hésite !
               <Sparkles className="w-4 h-4 ml-2" />
             </Button>
           </DropdownMenuTrigger>

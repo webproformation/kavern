@@ -38,12 +38,12 @@ export const DiamondFoundEmail = ({ firstName, amount }: DiamondFoundEmailProps)
         Continue de fouiller, d'autres trésors se cachent peut-être... 👀
       </Text>
 
-      <Button href={process.env.NEXT_PUBLIC_SITE_URL || 'https://laboutiqudemorgane.fr'} style={button}>
+      <Button href={process.env.NEXT_PUBLIC_SITE_URL || 'https://kavern.fr'} style={button}>
         Continuer ma chasse au trésor
       </Button>
 
       <Text style={signature}>
-        <strong>Morgane</strong> ✨
+        <strong>L'équipe KAVERN</strong> ✨
       </Text>
     </EmailLayout>
   );

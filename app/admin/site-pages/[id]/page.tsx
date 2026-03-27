@@ -379,7 +379,7 @@ export default function EditPageSEO({ params }: PageProps) {
                       canonical_url: e.target.value,
                     }))
                   }
-                  placeholder="https://laboutiquedemorgane.com/page"
+                  placeholder="https://kavern.fr/page"
                 />
               </div>
             </CardContent>

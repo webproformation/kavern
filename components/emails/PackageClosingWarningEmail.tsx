@@ -43,7 +43,7 @@ export const PackageClosingWarningEmail = ({ firstName }: PackageClosingWarningE
 
       <Text style={signature}>
         À très vite !<br />
-        <strong>Morgane</strong> ✨
+        <strong>L'équipe KAVERN</strong> ✨
       </Text>
     </EmailLayout>
   );

@@ -70,11 +70,11 @@ async function createProduct() {
     status: 'publish',
     is_diamond: true,
     is_featured: true,
-    image_url: '/lbdm-logoboutique.png',
+    image_url: '/kavern-logo.png',
     images: [
-      { url: '/lbdm-logoboutique.png', alt: 'Image principale TEST' },
-      { url: '/lbdm-logobdc.png', alt: 'Image 2 TEST' },
-      { url: '/lbdm-icone.png', alt: 'Image 3 TEST' },
+      { url: '/kavern-logo.png', alt: 'Image principale TEST' },
+      { url: '/kavern-logo.png', alt: 'Image 2 TEST' },
+      { url: '/kavern-icone.png', alt: 'Image 3 TEST' },
       { url: '/image.png', alt: 'Image 4 TEST' }
     ]
   };
@@ -123,11 +123,11 @@ async function createSeoMetadata() {
     entity_type: 'product',
     entity_identifier: PRODUCT_ID,
     product_id: PRODUCT_ID,
-    seo_title: 'TEST PRODUIT GLOBAL - Boutique La Boutique de Morgane',
+    seo_title: 'TEST PRODUIT GLOBAL - KAVERN',
     meta_description: 'Découvrez le TEST PRODUIT GLOBAL avec toutes les fonctionnalités : variations, stock, images multiples, SEO complet. Le produit parfait pour tester toutes les capacités.',
-    og_title: 'TEST PRODUIT GLOBAL - La Boutique de Morgane',
+    og_title: 'TEST PRODUIT GLOBAL - KAVERN',
     og_description: 'Produit de démonstration complet avec toutes les options activées.',
-    og_image: '/lbdm-logoboutique.png',
+    og_image: '/kavern-logo.png',
     is_active: true
   };
 
@@ -158,7 +158,7 @@ async function createVariations() {
       sale_price: 99.99,
       stock_quantity: 50,
       stock_status: 'instock',
-      image_url: '/lbdm-logoboutique.png',
+      image_url: '/kavern-logo.png',
       is_active: true
     },
     {
@@ -169,7 +169,7 @@ async function createVariations() {
       sale_price: 99.99,
       stock_quantity: 100,
       stock_status: 'instock',
-      image_url: '/lbdm-logoboutique.png',
+      image_url: '/kavern-logo.png',
       is_active: true
     },
     {
@@ -180,7 +180,7 @@ async function createVariations() {
       sale_price: 99.99,
       stock_quantity: 75,
       stock_status: 'instock',
-      image_url: '/lbdm-logobdc.png',
+      image_url: '/kavern-logo.png',
       is_active: true
     },
     {
@@ -191,7 +191,7 @@ async function createVariations() {
       sale_price: 99.99,
       stock_quantity: 125,
       stock_status: 'instock',
-      image_url: '/lbdm-logobdc.png',
+      image_url: '/kavern-logo.png',
       is_active: true
     },
     {
@@ -202,7 +202,7 @@ async function createVariations() {
       sale_price: 99.99,
       stock_quantity: 150,
       stock_status: 'instock',
-      image_url: '/lbdm-icone.png',
+      image_url: '/kavern-icone.png',
       is_active: true
     }
   ];

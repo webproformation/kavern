@@ -212,7 +212,7 @@ CREATE TABLE IF NOT EXISTS obs_settings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   stream_key text NOT NULL,
-  stream_server text DEFAULT 'rtmp://live.laboutiquedemorgane.com/live',
+  stream_server text DEFAULT 'rtmp://live.kavern.fr/live',
   video_bitrate integer DEFAULT 2500,
   audio_bitrate integer DEFAULT 128,
   resolution text DEFAULT '1920x1080',

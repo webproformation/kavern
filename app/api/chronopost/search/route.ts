@@ -68,5 +68,43 @@ export async function POST(request: NextRequest) {
 function parseChronopostResponse(xml: string): any[] {
   const points: any[] = [];
 
+  // Extraire chaque bloc <listePointRelais>
+  const blockRegex = /<listePointRelais>([\s\S]*?)<\/listePointRelais>/g;
+  let match;
+
+  while ((match = blockRegex.exec(xml)) !== null) {
+    const block = match[1];
+    const get = (tag: string) => {
+      const m = block.match(new RegExp(`<${tag}>(.*?)</${tag}>`));
+      return m ? m[1].trim() : '';
+    };
+
+    const lat = parseFloat(get('coordGeolocalisationLatitude'));
+    const lng = parseFloat(get('coordGeolocalisationLongitude'));
+
+    if (isNaN(lat) || isNaN(lng)) continue;
+
+    points.push({
+      id: get('identifiantChronopostPointA2PAS'),
+      name: get('nomEnseigne'),
+      address: get('adresse1'),
+      city: get('localite'),
+      postalCode: get('codePostal'),
+      country: 'FR',
+      lat,
+      lng,
+      distance: get('distanceEnMetre') ? parseInt(get('distanceEnMetre')) : null,
+      openingHours: {
+        monday: `${get('horairesOuvertureLundi')} - ${get('horairesFermetureLundi')}`,
+        tuesday: `${get('horairesOuvertureMardi')} - ${get('horairesFermetureMardi')}`,
+        wednesday: `${get('horairesOuvertureMercredi')} - ${get('horairesFermetureMercredi')}`,
+        thursday: `${get('horairesOuvertureJeudi')} - ${get('horairesFermetureJeudi')}`,
+        friday: `${get('horairesOuvertureVendredi')} - ${get('horairesFermetureVendredi')}`,
+        saturday: `${get('horairesOuvertureSamedi')} - ${get('horairesFermetureSamedi')}`,
+        sunday: `${get('horairesOuvertureDimanche')} - ${get('horairesFermetureDimanche')}`,
+      },
+    });
+  }
+
   return points;
 }

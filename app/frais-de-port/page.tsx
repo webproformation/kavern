@@ -168,8 +168,8 @@ export default function FraisDePortPage() {
               <p className="text-gray-700">
                 Pour toute question sur la livraison, n'hésitez pas à nous contacter :
               </p>
-              <a href="mailto:contact@laboutiquedemorgane.com" className="text-[#C6A15B] font-semibold hover:underline">
-                contact@laboutiquedemorgane.com
+              <a href="mailto:contact@kavern.fr" className="text-[#C6A15B] font-semibold hover:underline">
+                contact@kavern.fr
               </a>
             </CardContent>
           </Card>

@@ -3,6 +3,7 @@
 import { X } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface LiveProductOverlayProps {
   product: {
@@ -103,8 +104,10 @@ export function LiveProductOverlay({
               </span>
             </div>
 
-            <button className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
-              Acheter
+            <button
+              onClick={() => window.open(`/product/${product.id}`, '_blank')}
+              className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+              Voir le produit
             </button>
           </div>
         </div>

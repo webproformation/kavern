@@ -10,4 +10,4 @@ export const transporter = nodemailer.createTransport({
   },
 });
 
-export const FROM_EMAIL = process.env.EMAIL_FROM || 'La Boutique de Morgane <noreply@laboutiqudemorgane.fr>';
+export const FROM_EMAIL = process.env.EMAIL_FROM || 'KAVERN <noreply@kavern.fr>';

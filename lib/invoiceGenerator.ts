@@ -69,7 +69,7 @@ export const generateInvoicePDF = async (order: any, invoiceNumber: string) => {
   // 1. LOGO (Pleine largeur comme avant)
   let logoH = 35;
   try {
-    const imgInfo = await loadImage('/lbdm-logobdc.png');
+    const imgInfo = await loadImage('/kavern-logo.png');
     const pdfW = 180;
     logoH = Math.min(pdfW * (imgInfo.height / imgInfo.width), 45);
     doc.addImage(imgInfo.data, 'PNG', 15, 10, pdfW, logoH);
@@ -85,12 +85,12 @@ export const generateInvoicePDF = async (order: any, invoiceNumber: string) => {
 
   doc.setTextColor(blackColor); doc.setFont("helvetica", "normal");
   doc.text([
-    "MORGANE DEWANIN",
-    "1062 rue d'Armentières",
+    "KAVERN",
+    "1062 Rue d'Armentières",
     "59850 Nieppe, France",
-    "Email: contact@laboutiquedemorgane.com",
-    "SIREN: 907 889 802",
-    "TVA: FR16907889802"
+    "Email: contact@kavern.fr",
+    "SIREN: 102 355 443",
+    "TVA: FR37102355443"
   ], 14, currentY + 6);
 
   doc.text([
@@ -197,7 +197,7 @@ export const generateInvoicePDF = async (order: any, invoiceNumber: string) => {
 
   // 6. PIED DE PAGE
   doc.setFontSize(8); doc.setTextColor(150); doc.setFont("helvetica", "normal");
-  doc.text("MORGANE DEWANIN - SAS au capital variable - SIREN 907 889 802 - TVA FR16907889802", 105, 285, { align: "center" });
+  doc.text("KAVERN - SAS au capital de 1 000 € - RCS Dunkerque 102 355 443 - TVA FR37102355443", 105, 285, { align: "center" });
 
   return doc;
 };

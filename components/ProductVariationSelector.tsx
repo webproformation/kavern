@@ -172,11 +172,12 @@ export function ProductVariationSelector({
     <div className="space-y-6">
       {normalizedAttributes.map((attr: any) => {
         
-        // ON GARDE TA LOGIQUE : Couleur si nom contient 'couleur' ou si options dans dico
-        const isColor = attr.cleanName.includes("couleur") || 
-                        attr.cleanName.includes("color") || 
-                        attr.cleanName.includes("pierre") || 
-                        attr.options.some((opt: string) => dbColors[String(opt).toLowerCase().trim()] || Object.keys(fallbackMap).some(k => String(opt).toLowerCase().trim().includes(k)));
+        // Couleur UNIQUEMENT si le nom de l'attribut le dit clairement
+        // Les parfums, tailles, etc. ne doivent PAS afficher des pastilles
+        const isColor = attr.cleanName.includes("couleur") ||
+                        attr.cleanName.includes("color") ||
+                        attr.cleanName.includes("pierre") ||
+                        attr.cleanName.includes("nuance");
 
         return (
           <div key={attr.name} className="space-y-3">

@@ -43,7 +43,14 @@ export function HiddenDiamond({ productId, position, selectedPosition }: HiddenD
   };
 
   const handleDiamondClick = async () => {
-    if (!user || !profile || hasFoundDiamond || isAnimating) return;
+    if (!user || !profile) {
+      toast.info('Connectez-vous pour récupérer votre récompense !', {
+        icon: <Gem className="h-4 w-4 fill-amber-500 text-amber-500" />,
+        duration: 5000,
+      });
+      return;
+    }
+    if (hasFoundDiamond || isAnimating) return;
 
     setIsAnimating(true);
 

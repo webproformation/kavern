@@ -41,23 +41,15 @@ export default function VariationDetailsForm({
   const [showMediaLibrary, setShowMediaLibrary] = useState(false);
   const [currentEditingTerm, setCurrentEditingTerm] = useState<string>('');
 
-  // ON GARDE TES LOGS DE DEBUG ORIGINAUX
   useEffect(() => {
-    console.log('[VariationDetailsForm] selectedTerms changed:', selectedTerms);
-    console.log('[VariationDetailsForm] termIds:', termIds);
-    console.log('[VariationDetailsForm] variations:', variations);
-
     if (selectedTerms.length === 1) {
       setActiveVariation(selectedTerms[0]);
     }
   }, [selectedTerms, termIds, variations]);
 
   if (selectedTerms.length === 0) {
-    console.log('[VariationDetailsForm] No terms selected, not rendering');
     return null;
   }
-
-  console.log('[VariationDetailsForm] Rendering with', selectedTerms.length, 'terms');
 
   const getVariation = (name: string): VariationDetail => {
     const existing = variations.find(v => v.variationName === name);

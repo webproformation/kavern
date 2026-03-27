@@ -55,7 +55,7 @@ export const ShippingEmail = ({
 
       <Text style={signature}>
         Bonne réception et à très vite,<br />
-        <strong>Morgane & Doudou</strong> ✨
+        <strong>L'équipe KAVERN</strong> ✨
       </Text>
     </EmailLayout>
   );

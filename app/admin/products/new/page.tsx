@@ -31,7 +31,9 @@ import {
   ImageIcon,
   Layers,
   Settings2,
-  Tag
+  Tag,
+  Box,
+  LayoutGrid
 } from "lucide-react";
 import Link from "next/link";
 import RichTextEditor from "@/components/RichTextEditor";
@@ -73,6 +75,7 @@ export default function NewProductPage() {
   const [salePrice, setSalePrice] = useState<number | null>(null);
   const [stockQuantity, setStockQuantity] = useState<number>(0);
   const [virtualWeight, setVirtualWeight] = useState<number>(0);
+  const [tvaRate, setTvaRate] = useState<number>(20);
 
   const [status, setStatus] = useState("draft");
   const [isFeatured, setIsFeatured] = useState(false);
@@ -97,16 +100,23 @@ export default function NewProductPage() {
   const [sizeRangeEnd, setSizeRangeEnd] = useState<number | null>(null);
   const [variations, setVariations] = useState<Variation[]>([]);
 
+  // ÉTATS POUR LES LOTS (PACKS)
+  const [isPack, setIsPack] = useState(false);
+  const [packSlots, setPackSlots] = useState<number>(0);
+  const [packSourceCategoryId, setPackSourceCategoryId] = useState<string | null>(null);
+  const [allCategories, setAllCategories] = useState<{id: string, name: string}[]>([]);
+
   // --- AUTO-SAVE ---
   const currentFormData = {
     newProductId, name, slug, sku, shortDescription, description, andreReview, videoUrl,
-    purchasePrice, regularPrice, salePrice, stockQuantity, virtualWeight,
+    purchasePrice, regularPrice, salePrice, stockQuantity, virtualWeight, tvaRate,
     status, isFeatured, isDiamond, hasVariations, showSizes, seoTitle, seoDescription, tags,
     mainImage, galleryImages, selectedCategories, selectedAttributes, relatedProductIds,
-    selectedNuances, nuanceIds, sizeRangeStart, sizeRangeEnd, variations
+    selectedNuances, nuanceIds, sizeRangeStart, sizeRangeEnd, variations,
+    isPack, packSlots, packSourceCategoryId
   };
 
-  useAutoSave(`new_product_creation`, currentFormData, (savedData: any) => {
+  const { clearSavedData } = useAutoSave(`new_product_creation`, currentFormData, (savedData: any) => {
     if (savedData.name !== undefined) setName(savedData.name);
     if (savedData.slug !== undefined) setSlug(savedData.slug);
     if (savedData.sku !== undefined) setSku(savedData.sku);
@@ -119,6 +129,7 @@ export default function NewProductPage() {
     if (savedData.salePrice !== undefined) setSalePrice(savedData.salePrice);
     if (savedData.stockQuantity !== undefined) setStockQuantity(savedData.stockQuantity);
     if (savedData.virtualWeight !== undefined) setVirtualWeight(savedData.virtualWeight);
+    if (savedData.tvaRate !== undefined) setTvaRate(savedData.tvaRate);
     if (savedData.status !== undefined) setStatus(savedData.status);
     if (savedData.isFeatured !== undefined) setIsFeatured(savedData.isFeatured);
     if (savedData.isDiamond !== undefined) setIsDiamond(savedData.isDiamond);
@@ -135,6 +146,9 @@ export default function NewProductPage() {
     if (savedData.selectedNuances !== undefined) setSelectedNuances(savedData.selectedNuances);
     if (savedData.nuanceIds !== undefined) setNuanceIds(savedData.nuanceIds);
     if (savedData.variations !== undefined) setVariations(savedData.variations);
+    if (savedData.isPack !== undefined) setIsPack(savedData.isPack);
+    if (savedData.packSlots !== undefined) setPackSlots(savedData.packSlots);
+    if (savedData.packSourceCategoryId !== undefined) setPackSourceCategoryId(savedData.packSourceCategoryId);
   });
 
   useEffect(() => {
@@ -148,20 +162,25 @@ export default function NewProductPage() {
       const { data } = await supabase.from("products").select("id, name").order("name");
       if (data) setAllProducts(data);
     };
+    const fetchCategories = async () => {
+      const { data } = await supabase.from("categories").select("id, name").order("name");
+      if (data) setAllCategories(data);
+    };
     fetchProducts();
+    fetchCategories();
   }, []);
 
   // --- CALCUL DE LA MARGE RÉELLE (BASÉ SUR LE HT) ---
   const marginData = useMemo(() => {
-    const saleHT = regularPrice / 1.2; // Conversion Vente TTC en HT
+    const saleHT = regularPrice / (1 + tvaRate / 100); // Conversion Vente TTC en HT
     const marginEuro = saleHT - purchasePrice; // Marge nette en euros
     const marginPercent = saleHT > 0 ? (marginEuro / saleHT) * 100 : 0;
-    
+
     return {
       euro: marginEuro.toFixed(2),
       percent: marginPercent.toFixed(1)
     };
-  }, [purchasePrice, regularPrice]);
+  }, [purchasePrice, regularPrice, tvaRate]);
 
   useEffect(() => {
     if (hasVariations) {
@@ -199,14 +218,17 @@ export default function NewProductPage() {
         id: newProductId, name: name.trim(), slug: slug.trim(), sku: sku.trim() || null,
         short_description: shortDescription.substring(0, 150), description, andre_review: andreReview,
         video_url: videoUrl, purchase_price: purchasePrice, regular_price: regularPrice,
-        sale_price: salePrice, stock_quantity: stockQuantity, virtual_weight: virtualWeight,
+        sale_price: salePrice, stock_quantity: stockQuantity, virtual_weight: virtualWeight, tva_rate: tvaRate,
         status, is_featured: isFeatured, is_diamond: isDiamond, has_variations: hasVariations,
         seo_title: seoTitle || name, seo_description: seoDescription || shortDescription,
         tags: tags,
         image_url: mainImage, gallery_images: galleryImages, attributes: finalAttributes,
         related_product_ids: relatedProductIds,
         size_range_start: showSizes ? sizeRangeStart : null,
-        size_range_end: showSizes ? sizeRangeEnd : null
+        size_range_end: showSizes ? sizeRangeEnd : null,
+        is_pack: isPack,
+        pack_slots: isPack ? packSlots : null,
+        pack_source_category_id: isPack ? packSourceCategoryId : null
       });
 
       if (pErr) throw pErr;
@@ -226,6 +248,7 @@ export default function NewProductPage() {
         await supabase.from("product_variations").insert(toInsert);
       }
 
+      clearSavedData();
       toast.success("Nouvelle pépite créée !");
       router.push("/admin/products");
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
@@ -253,6 +276,57 @@ export default function NewProductPage() {
 
       <div className="max-w-7xl mx-auto px-6 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
+          {/* SECTION : CONFIGURATION DU LOT (PACK) */}
+          <Card className="shadow-lg border-2 border-blue-200 bg-blue-50/10 overflow-hidden">
+            <CardHeader className="bg-blue-50 border-b border-blue-100">
+              <div className="flex items-center gap-2">
+                <Box className="h-5 w-5 text-blue-600"/>
+                <CardTitle className="text-lg text-blue-900 uppercase font-black tracking-tighter">Configuration du Lot (Pack)</CardTitle>
+              </div>
+              <CardDescription className="text-blue-700 font-medium italic">
+                Activez cette option pour créer une malle ou un coffret personnalisable par le client.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6 bg-white">
+              <div className="flex items-center justify-between p-4 border-2 border-blue-100 rounded-2xl bg-blue-50/20">
+                <div className="space-y-0.5">
+                  <Label className="text-blue-900 font-black uppercase tracking-widest text-xs">Transformer en lot ?</Label>
+                  <p className="text-[10px] text-blue-600">Le client pourra choisir ses produits un par un.</p>
+                </div>
+                <Switch checked={isPack} onCheckedChange={setIsPack} className="data-[state=checked]:bg-blue-600" />
+              </div>
+
+              {isPack && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-top-2 duration-300">
+                  <div className="space-y-2">
+                    <Label className="font-bold flex items-center gap-2 text-gray-700">
+                      <LayoutGrid className="h-4 w-4 text-blue-500" /> Nombre d&apos;articles (Slots)
+                    </Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={packSlots}
+                      onChange={(e) => setPackSlots(parseInt(e.target.value) || 0)}
+                      placeholder="Ex: 6"
+                      className="h-12 rounded-xl border-blue-100 focus:border-blue-400"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-bold flex items-center gap-2 text-gray-700">
+                      <Package className="h-4 w-4 text-blue-500" /> Catégorie source
+                    </Label>
+                    <select value={packSourceCategoryId || "none"} onChange={(e) => setPackSourceCategoryId(e.target.value === "none" ? null : e.target.value)} className="w-full h-12 rounded-xl border border-blue-100 bg-white px-3 text-sm">
+                      <option value="none">Toute la boutique</option>
+                      {allCategories.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card className="shadow-sm border-none bg-white">
             <CardHeader className="border-b bg-gray-50/50">
               <div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-[#C6A15B]"/><CardTitle className="text-lg">L&apos;Âme du Produit</CardTitle></div>
@@ -322,6 +396,15 @@ export default function NewProductPage() {
                 <div className="space-y-1"><Label className="text-xs font-bold text-[#b8933d] uppercase">Vente TTC (€) *</Label><Input type="number" step="0.01" value={regularPrice} onChange={(e) => setRegularPrice(parseFloat(e.target.value) || 0)} className="font-bold font-mono border-amber-200" /></div>
               </div>
               <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Promo TTC (€)</Label><Input type="number" step="0.01" value={salePrice || ""} onChange={(e) => setSalePrice(e.target.value ? parseFloat(e.target.value) : null)} className="text-red-600 font-mono border-red-100" /></div>
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-gray-500 uppercase">Taux de TVA</Label>
+                <select value={tvaRate} onChange={(e) => setTvaRate(parseFloat(e.target.value))} className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm font-mono">
+                  <option value={20}>20% (standard)</option>
+                  <option value={10}>10% (intermédiaire)</option>
+                  <option value={5.5}>5.5% (réduit - alimentaire)</option>
+                  <option value={0}>0% (exonéré)</option>
+                </select>
+              </div>
               <Separator />
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1"><Label className="text-xs font-bold text-gray-500 uppercase">Stock</Label><Input type="number" value={stockQuantity} onChange={(e) => setStockQuantity(parseInt(e.target.value) || 0)} /></div>
@@ -362,13 +445,11 @@ export default function NewProductPage() {
             <CardContent className="p-6 space-y-5">
               <div className="flex items-center justify-between p-3 border rounded-xl bg-gray-50">
                 <div className="space-y-0.5"><Label className="text-gray-900 font-bold">Statut</Label></div>
-                <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger className="w-[130px] bg-white border-gray-200"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Brouillon</SelectItem>
-                    <SelectItem value="publish">Publié</SelectItem>
-                  </SelectContent>
-                </Select>
+                <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-[160px] h-10 rounded-md border border-gray-200 bg-white px-3 text-sm">
+                  <option value="draft">Brouillon</option>
+                  <option value="publish">Publié</option>
+                  <option value="private_live">Privé exclu live</option>
+                </select>
               </div>
 
               <div className="flex items-center justify-between p-3 border rounded-xl bg-blue-50/30">

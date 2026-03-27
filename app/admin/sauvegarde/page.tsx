@@ -231,7 +231,7 @@ export default function BackupPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `backup-COMPLET-lbdm-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `backup-COMPLET-kavern-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -323,7 +323,7 @@ export default function BackupPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `backup-lbdm-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `backup-kavern-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -394,7 +394,7 @@ export default function BackupPage() {
       const url = window.URL.createObjectURL(zipBlob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `backup-images-lbdm-${new Date().toISOString().split('T')[0]}.zip`;
+      a.download = `backup-images-kavern-${new Date().toISOString().split('T')[0]}.zip`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -543,7 +543,7 @@ export default function BackupPage() {
     try {
       const sitemap: any = {
         generated_at: new Date().toISOString(),
-        base_url: typeof window !== 'undefined' ? window.location.origin : 'https://laboutiquedemorgane.com',
+        base_url: typeof window !== 'undefined' ? window.location.origin : 'https://kavern.fr',
         pages: []
       };
 
@@ -954,7 +954,7 @@ export default function BackupPage() {
               </label>
             </div>
             <p className="text-xs text-gray-600">
-              Formats acceptés : backup-lbdm-*.json ou backup-COMPLET-lbdm-*.json
+              Formats acceptés : backup-kavern-*.json ou backup-COMPLET-kavern-*.json
             </p>
           </div>
         </CardContent>

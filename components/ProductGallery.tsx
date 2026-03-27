@@ -23,7 +23,7 @@ export function ProductGallery({
   onImageClick,
   videoUrl,
 }: ProductGalleryProps) {
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, dragFree: false, watchDrag: true });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
 
@@ -75,6 +75,15 @@ export function ProductGallery({
     onSelect();
     emblaApi.on("select", onSelect);
   }, [emblaApi, onSelect]);
+
+  // Quand une variante est sélectionnée, scroller vers son image
+  useEffect(() => {
+    if (!selectedImageUrl || !emblaApi) return;
+    const idx = allMedia.findIndex(m => m.src === selectedImageUrl);
+    if (idx >= 0 && idx !== selectedIndex) {
+      emblaApi.scrollTo(idx);
+    }
+  }, [selectedImageUrl, emblaApi, allMedia]);
 
   const scrollTo = useCallback(
     (index: number) => emblaApi && emblaApi.scrollTo(index),

@@ -10,9 +10,6 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     
-    // --- DEBUG : Affiche ce que le frontend envoie ---
-    console.log("📦 Body reçu par l'API Stripe:", body);
-
     // On récupère les champs, qu'ils s'appellent 'total' ou 'amount'
     let { orderId, userId, total, amount, metadata } = body;
 

@@ -25,9 +25,7 @@ export default function MediaAdminPage() {
         <CardContent>
           <MediaLibrary
             bucket="media"
-            onSelect={(url) => {
-              console.log('Image sélectionnée:', url);
-            }}
+            onSelect={() => {}}
           />
         </CardContent>
       </Card>
@@ -42,9 +40,7 @@ export default function MediaAdminPage() {
         <CardContent>
           <MediaLibrary
             bucket="category-images"
-            onSelect={(url) => {
-              console.log('Image sélectionnée:', url);
-            }}
+            onSelect={() => {}}
           />
         </CardContent>
       </Card>

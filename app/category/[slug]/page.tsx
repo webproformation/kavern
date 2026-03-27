@@ -75,44 +75,25 @@ export default function CategoryPage() {
       }
       if (!data) return;
 
-      // ══════════════════════════════════════════════════════
-      // 🔍 DEBUG — ouvrez F12 > Console et copiez le résultat
-      // ══════════════════════════════════════════════════════
-      console.group(`📦 [${p.name}] → ${source}`);
-      console.log('Type:', Array.isArray(data) ? `Array(${data.length})` : typeof data);
-      console.log('Contenu:', JSON.stringify(data, null, 2));
-
       if (Array.isArray(data)) {
         data.forEach((item: any, i: number) => {
           if (!item || typeof item !== 'object') return;
-          const keys = Object.keys(item);
-          console.log(`  [${i}] clés: ${keys.join(', ')}`);
 
           if (Array.isArray(item.options)) {
-            console.log(`      ✅ → options:`, item.options);
             item.options.forEach(addValue);
           } else if (item.option != null) {
-            console.log(`      ✅ → option:`, item.option);
             addValue(item.option);
           } else if (Array.isArray(item.term_ids)) {
-            console.log(`      ✅ → term_ids:`, item.term_ids);
             item.term_ids.forEach(addValue);
           } else if (item.value != null) {
-            console.log(`      ✅ → value:`, item.value);
             addValue(item.value);
-          } else {
-            console.warn(`      ❌ Format NON GÉRÉ — clés disponibles: ${keys.join(', ')}`);
           }
         });
       } else if (typeof data === 'object') {
-        console.log('  Clés:', Object.keys(data));
         Object.entries(data).forEach(([k, val]: any) => {
           Array.isArray(val) ? val.forEach(addValue) : addValue(val);
         });
       }
-
-      console.log('  Termes extraits:', [...terms]);
-      console.groupEnd();
     };
 
     processAttributes(p.attributes, 'products.attributes');
@@ -134,8 +115,6 @@ export default function CategoryPage() {
       if (termsData) {
         termsData.forEach(t => { dict[String(t.id).toLowerCase()] = t.name; });
       }
-      console.log(`📚 Dictionnaire chargé: ${Object.keys(dict).length} termes`);
-
       let productsQuery = supabase.from('products').select('*').eq('status', 'publish').order('created_at', { ascending: false });
 
       if (slug !== 'tous') {
@@ -165,8 +144,6 @@ export default function CategoryPage() {
           pMap[p.id] = terms;
           terms.forEach(t => globalSet.add(t));
         });
-
-        console.log('🌍 availableTerms final:', [...globalSet].sort().join(', '));
 
         setAllProducts(finalProducts);
         setProductTermsMap(pMap);

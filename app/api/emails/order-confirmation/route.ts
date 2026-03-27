@@ -52,8 +52,6 @@ export async function POST(request: NextRequest) {
       price: Number(item.price) || 0,
     }));
 
-    console.log('📧 Email confirmation - Items formatés:', items.length, 'articles');
-
     if (items.length === 0) {
       console.warn('⚠️ Email confirmation - AUCUN ARTICLE dans la commande', orderId);
     }

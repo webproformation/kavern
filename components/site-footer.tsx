@@ -11,25 +11,25 @@ import { toast } from 'sonner';
 
 const reassuranceBlocks = [
   {
-    image: 'https://wp.laboutiquedemorgane.com/wp-content/uploads/2025/12/La-boutique-de-Morgane-Le-droit-a-lerreur.png',
+    image: 'https://wp.kavern.fr/wp-content/uploads/2025/12/La-boutique-de-Morgane-Le-droit-a-lerreur.png',
     href: '/le-droit-a-lerreur',
     title: 'Le Droit à l\'Erreur',
     description: 'Ça arrive ! Transformez votre retour en crédit boutique pour craquer sur votre prochain coup de cœur sans attendre.'
   },
   {
-    image: 'https://wp.laboutiquedemorgane.com/wp-content/uploads/2025/12/La-boutique-de-Morgane-Vite-chez-vous.png',
+    image: 'https://wp.kavern.fr/wp-content/uploads/2025/12/La-boutique-de-Morgane-Vite-chez-vous.png',
     href: '/vite-chez-vous',
     title: 'Vite chez vous',
     description: 'Vos pépites emballées avec soin et une expédition rapide. Livraison à prix mini (dès 3,90 €) pour un max de plaisir.'
   },
   {
-    image: 'https://wp.laboutiquedemorgane.com/wp-content/uploads/2025/12/La-boutique-de-Morgane-Transaction-protegees.png',
+    image: 'https://wp.kavern.fr/wp-content/uploads/2025/12/La-boutique-de-Morgane-Transaction-protegees.png',
     href: '/transactions-protegees',
     title: 'Transactions Protégées',
     description: 'Règlement 100 % sécurisé et facilités de paiement (3x, 4x). La tranquillité d\'esprit avant tout.'
   },
   {
-    image: 'https://wp.laboutiquedemorgane.com/wp-content/uploads/2025/12/La-boutique-de-Morgane-Allo-Morgane.png',
+    image: 'https://wp.kavern.fr/wp-content/uploads/2025/12/La-boutique-de-Morgane-Allo-Morgane.png',
     href: '/allo-andre',
     title: 'Allô André ?',
     description: 'Plus qu\'un site, un accompagnement. André vous guide personnellement dans vos choix mode et beauté.'
@@ -163,7 +163,7 @@ export function SiteFooter() {
                 <div className="flex items-start gap-2 justify-center md:justify-start">
                   <MapPin className="h-5 w-5 flex-shrink-0 mt-0.5" />
                   <div className="text-base md:text-sm">
-                    1062 rue d'Armentières<br />
+                    1062 Rue d'Armentières<br />
                     59850 Nieppe<br />
                     France
                   </div>
@@ -197,11 +197,6 @@ export function SiteFooter() {
             <div>
               <h3 className="text-white font-bold text-xl md:text-lg mb-4">Catégories</h3>
               <ul className="space-y-2">
-                <li>
-                  <Link href="/category/nouveautes" className="text-base md:text-sm hover:text-white transition-colors">
-                    Nouveautés
-                  </Link>
-                </li>
                 {dynamicCategories.map((category) => (
                   <li key={category.id}>
                     <Link

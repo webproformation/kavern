@@ -244,20 +244,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [cart, user, loading, syncCartToSupabase]);
 
   const addToCart = (product: any, quantity: number = 1) => {
+    // Vérification du stock disponible
+    const stockQty = product.stock_quantity ?? product.stockQuantity ?? Infinity;
+
     setCart(prevCart => {
       // Pour les packs, la composition définit l'unicité
       const newPackKey = product.isPack ? JSON.stringify(product.packItems) : "";
-      
+
       const existingIndex = prevCart.findIndex(
         item => {
           const itemPackKey = item.isPack ? JSON.stringify(item.packItems) : "";
-          return item.id === product.id && 
-                 item.variationId === product.variationId && 
+          return item.id === product.id &&
+                 item.variationId === product.variationId &&
                  itemPackKey === newPackKey;
         }
       );
 
       if (existingIndex >= 0) {
+        const currentQty = prevCart[existingIndex].quantity;
+        if (currentQty + quantity > stockQty) {
+          toast.error(`Stock insuffisant : ${stockQty} disponible(s)`, { position: 'bottom-right' });
+          return prevCart;
+        }
         const updatedCart = [...prevCart];
         updatedCart[existingIndex].quantity += quantity;
         toast.success('Quantité mise à jour', {
@@ -265,6 +273,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         });
         return updatedCart;
       } else {
+        if (quantity > stockQty) {
+          toast.error(`Stock insuffisant : ${stockQty} disponible(s)`, { position: 'bottom-right' });
+          return prevCart;
+        }
         toast.success('Article ajouté au panier', {
           position: 'bottom-right',
         });

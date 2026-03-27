@@ -79,7 +79,7 @@ export function LiveProgressBar({ liveStreamId, viewerGoal, onChestUnlocked }: L
               {isUnlocked ? (
                 <span className="text-green-400 font-semibold">🎉 Coffre Déverrouillé !</span>
               ) : (
-                <span>Encore <span className="text-[#D4AF37] font-bold">{remaining}</span> Copinettes pour déverrouiller le Coffre de Morgane ! 🎁</span>
+                <span>Encore <span className="text-[#D4AF37] font-bold">{remaining}</span> Copinettes pour déverrouiller le Coffre KAVERN ! 🎁</span>
               )}
             </p>
           </div>

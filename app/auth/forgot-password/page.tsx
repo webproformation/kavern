@@ -46,7 +46,7 @@ export default function ForgotPasswordPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">
-            <img src="/lbdm-icone.png" alt="Logo" className="h-16 w-auto" />
+            <img src="/kavern-icone.png" alt="Logo" className="h-16 w-auto" />
           </div>
           <CardTitle className="text-2xl font-bold text-center">Mot de passe oublié</CardTitle>
           <CardDescription className="text-center">

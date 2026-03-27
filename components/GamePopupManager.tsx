@@ -63,19 +63,16 @@ export function GamePopupManager() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       (window as any).resetGamePopup = () => {
-        console.log('🔄 Resetting game popup state...');
         sessionStorage.removeItem('game-popup-seen-today');
         loadActiveGames();
       };
 
       (window as any).forceShowCardFlip = () => {
-        console.log('🎮 Force showing card flip game...');
         sessionStorage.removeItem('game-popup-seen-today');
         setShowCardFlipGame(true);
       };
 
       (window as any).enableDebugMode = () => {
-        console.log('🐛 DEBUG MODE ACTIVATED - Game will show unconditionally');
         sessionStorage.removeItem('game-popup-seen-today');
         loadActiveGames();
       };
@@ -86,7 +83,6 @@ export function GamePopupManager() {
   const loadActiveGames = async () => {
     try {
       const now = new Date().toISOString();
-      console.log('🎮 [GamePopupManager] Loading active games...', { now, user: !!user });
 
       const { data: scratchData, error: scratchError } = await supabase
         .from('scratch_card_games')
@@ -99,9 +95,7 @@ export function GamePopupManager() {
         .maybeSingle();
 
       if (scratchError) {
-        console.error('❌ Error loading scratch games:', scratchError);
-      } else {
-        console.log('🎴 Scratch game found:', scratchData);
+        console.error('Error loading scratch games:', scratchError);
       }
 
       const { data: wheelData, error: wheelError } = await supabase
@@ -115,9 +109,7 @@ export function GamePopupManager() {
         .maybeSingle();
 
       if (wheelError) {
-        console.error('❌ Error loading wheel games:', wheelError);
-      } else {
-        console.log('🎡 Wheel game found:', wheelData);
+        console.error('Error loading wheel games:', wheelError);
       }
 
       const { data: cardFlipData, error: cardFlipError } = await supabase
@@ -129,24 +121,11 @@ export function GamePopupManager() {
         .maybeSingle();
 
       if (cardFlipError) {
-        console.error('❌ Error loading card flip games:', cardFlipError);
-      } else {
-        console.log('🃏 Card flip game found:', cardFlipData);
-        if (cardFlipData) {
-          console.log('🃏 Game details:', {
-            id: cardFlipData.id,
-            name: cardFlipData.name,
-            is_active: cardFlipData.is_active,
-            start_date: cardFlipData.start_date,
-            end_date: cardFlipData.end_date,
-            now: now
-          });
-        }
+        console.error('Error loading card flip games:', cardFlipError);
       }
 
       const hasSeenToday = debugMode ? null : sessionStorage.getItem('game-popup-seen-today');
       const today = new Date().toDateString();
-      console.log('📅 Session check:', { hasSeenToday, today, shouldShow: hasSeenToday !== today, debugMode });
 
       if (scratchData && (!hasSeenToday || hasSeenToday !== today)) {
         const canPlay = await checkCanPlay('scratch_card', scratchData.id, scratchData.max_plays_per_user);
@@ -163,13 +142,9 @@ export function GamePopupManager() {
           sessionStorage.setItem('game-popup-seen-today', today);
         }
       } else if (cardFlipData && (debugMode || !hasSeenToday || hasSeenToday !== today)) {
-        console.log('🃏 Card flip game active, checking if user can play...');
-
         if (!user) {
-          console.log('⚠️ No user logged in, showing game anyway (will prompt login on click)');
           setCardFlipGame(cardFlipData);
           setTimeout(() => {
-            console.log('🎮 SHOWING CARD FLIP GAME NOW!');
             setShowCardFlipGame(true);
           }, debugMode ? 500 : 2000);
           if (!debugMode) sessionStorage.setItem('game-popup-seen-today', today);
@@ -181,41 +156,18 @@ export function GamePopupManager() {
             .eq('game_id', cardFlipData.id);
 
           const canPlay = debugMode || (plays?.length || 0) < cardFlipData.max_plays_per_user;
-          console.log('✅ User play check:', { plays: plays?.length || 0, max: cardFlipData.max_plays_per_user, canPlay, debugMode });
 
           if (canPlay) {
             setCardFlipGame(cardFlipData);
             setTimeout(() => {
-              console.log('🎮 SHOWING CARD FLIP GAME NOW!');
               setShowCardFlipGame(true);
             }, debugMode ? 500 : 2000);
             if (!debugMode) sessionStorage.setItem('game-popup-seen-today', today);
-          } else {
-            console.log('❌ User has already played max times');
           }
         }
-      } else {
-        if (!cardFlipData) {
-          console.log('❌ No card flip game found in database');
-        } else if (hasSeenToday === today) {
-          console.log('⏩ Game popup already shown today, skipping (use window.enableDebugMode() to force)');
-        }
       }
-
-      console.log('🎮 [GamePopupManager] Summary:', {
-        scratchGame: !!scratchData,
-        wheelGame: !!wheelData,
-        cardFlipGame: !!cardFlipData,
-        hasSeenToday,
-        today,
-        willShow: {
-          scratch: showScratchGame,
-          wheel: showWheelGame,
-          cardFlip: showCardFlipGame
-        }
-      });
     } catch (error) {
-      console.error('❌ Error loading games:', error);
+      console.error('Error loading games:', error);
     }
   };
 

@@ -195,25 +195,23 @@ function OrderConfirmationContent() {
                         <div className="absolute top-0 right-0 p-8 opacity-10"><Landmark className="h-48 w-48 text-white" /></div>
                         <CardContent className="p-6 md:p-8 relative z-10 space-y-6">
                             <div className="flex justify-between items-start">
-                                <div><p className="text-[#D4AF37] text-xs font-bold uppercase tracking-widest mb-1">Bénéficiaire</p><p className="text-lg font-bold">SAS A U MORGANE DEWANIN</p></div>
+                                <div><p className="text-[#D4AF37] text-xs font-bold uppercase tracking-widest mb-1">Bénéficiaire</p><p className="text-lg font-bold">KAVERN</p></div>
                                 <Landmark className="h-8 w-8 text-[#D4AF37]" />
                             </div>
                             <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 border border-white/10">
                                 <div className="flex justify-between items-end mb-1">
                                     <p className="text-[#D4AF37] text-xs font-bold uppercase tracking-widest">IBAN</p>
-                                    <button onClick={() => copyToClipboard("FR76 1350 7000 4331 8229 5212 127")} className="text-xs text-gray-300 hover:text-white flex items-center gap-1 transition-colors"><Copy className="h-3 w-3" /> Copier</button>
+                                    <button onClick={() => copyToClipboard("FR76 1027 8026 8400 0456 0920 369")} className="text-xs text-gray-300 hover:text-white flex items-center gap-1 transition-colors"><Copy className="h-3 w-3" /> Copier</button>
                                 </div>
-                                <p className="font-mono text-lg md:text-xl tracking-wider text-white break-all">FR76 1350 7000 4331 8229 5212 127</p>
+                                <p className="font-mono text-lg md:text-xl tracking-wider text-white break-all">FR76 1027 8026 8400 0456 0920 369</p>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div><p className="text-[#D4AF37] text-xs font-bold uppercase tracking-widest mb-1">Banque</p><p className="text-sm">BANQUE POPULAIRE DU NORD</p><p className="text-xs text-gray-400">Agence : AG CENTRALE</p></div>
-                                <div><p className="text-[#D4AF37] text-xs font-bold uppercase tracking-widest mb-1">BIC</p><p className="font-mono text-sm">CCBPFRPPLIL</p></div>
+                                <div><p className="text-[#D4AF37] text-xs font-bold uppercase tracking-widest mb-1">Banque</p><p className="text-sm">Crédit Mutuel — CCM Armentières</p></div>
+                                <div><p className="text-[#D4AF37] text-xs font-bold uppercase tracking-widest mb-1">BIC</p><p className="font-mono text-sm">CMCIFR2A</p></div>
                             </div>
-                            <div className="border-t border-white/10 pt-4 mt-2 grid grid-cols-4 gap-2 text-center">
-                                <div><p className="text-[10px] text-gray-400 uppercase">Code Bq</p><p className="font-mono text-xs">13507</p></div>
-                                <div><p className="text-[10px] text-gray-400 uppercase">Guichet</p><p className="font-mono text-xs">00043</p></div>
-                                <div><p className="text-[10px] text-gray-400 uppercase">N° Compte</p><p className="font-mono text-xs">31822952121</p></div>
-                                <div><p className="text-[10px] text-gray-400 uppercase">Clé</p><p className="font-mono text-xs">27</p></div>
+                            <div className="border-t border-white/10 pt-4 mt-2 grid grid-cols-2 gap-2 text-center">
+                                <div><p className="text-[10px] text-gray-400 uppercase">Titulaire</p><p className="font-mono text-xs">KAVERN</p></div>
+                                <div><p className="text-[10px] text-gray-400 uppercase">BIC</p><p className="font-mono text-xs">CMCIFR2A</p></div>
                             </div>
                         </CardContent>
                     </Card>
@@ -253,7 +251,7 @@ function OrderConfirmationContent() {
                 <div className="flex items-start gap-3"><MapPin className="h-5 w-5 text-blue-600 mt-1 flex-shrink-0" /><div><p className="font-semibold text-blue-900">Adresse</p><p className="text-blue-800">1062 rue d'Armentières</p><p className="text-blue-800">59850 Nieppe</p></div></div>
                 <Separator className="bg-blue-300" />
                 <div className="space-y-2">
-                  <div className="flex items-center gap-3"><Phone className="h-5 w-5 text-blue-600 flex-shrink-0" /><div><p className="font-semibold text-blue-900">Morgane</p><a href="tel:+33641456671" className="text-blue-700 hover:underline">+33 6 41 45 66 71</a></div></div>
+                  <div className="flex items-center gap-3"><Phone className="h-5 w-5 text-blue-600 flex-shrink-0" /><div><p className="font-semibold text-blue-900">André</p><a href="tel:+33603489662" className="text-blue-700 hover:underline">+33 6 03 48 96 62</a></div></div>
                   <div className="flex items-center gap-3"><Phone className="h-5 w-5 text-blue-600 flex-shrink-0" /><div><p className="font-semibold text-blue-900">André</p><a href="tel:+33603489662" className="text-blue-700 hover:underline">+33 6 03 48 96 62</a></div></div>
                 </div>
                 <Separator className="bg-blue-300" />

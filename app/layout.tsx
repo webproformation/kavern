@@ -7,13 +7,15 @@ import { AppLifecycle } from '@/components/AppLifecycle'; // Nouveau composant
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Kavern',
-  description: 'Des prix mini, des choix en or',
+  title: 'KAVERN - L\'artisanat et l\'inattendu',
+  description: 'Concept Store en ligne - Bougies artisanales, epicerie fine, mode et lives shopping',
+  manifest: '/manifest.json',
   icons: {
     icon: '/kavern-icone.png',
     shortcut: '/kavern-icone.png',
     apple: '/kavern-icone.png',
   },
+  themeColor: '#D4AF37',
 };
 
 export default function RootLayout({

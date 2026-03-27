@@ -60,7 +60,6 @@ const convertToWebP = async (file: File): Promise<Blob> => {
         canvas.toBlob(
           (blob) => {
             if (blob) {
-              console.log(`✅ [WebP] Conversion réussie: ${file.name} (qualité 0.8)`);
               resolve(blob);
             } else {
               reject(new Error('Conversion WebP échouée'));
@@ -110,8 +109,6 @@ export default function MediaLibrary({
   const loadMediaFiles = async () => {
     setLoading(true);
     try {
-      console.log('[MediaLibrary] Loading media files from bucket:', bucket);
-
       // 1. Charger depuis la vue unified_media (filtrer les fichiers vides)
       const { data: dbMedia, error: dbError } = await supabase
         .from('unified_media')
@@ -123,8 +120,6 @@ export default function MediaLibrary({
       if (dbError) {
         console.error('[MediaLibrary] Unified media view error:', dbError);
       }
-      console.log('[MediaLibrary] Unified media loaded:', dbMedia?.length || 0);
-
       // 2. Lister les fichiers depuis le storage
       const folder = bucket === 'media' ? '' : 'categories';
       const { data: storageFiles, error: storageError } = await supabase.storage
@@ -137,8 +132,6 @@ export default function MediaLibrary({
       if (storageError) {
         console.error('[MediaLibrary] Storage error:', storageError);
       }
-      console.log('[MediaLibrary] Storage files loaded:', storageFiles?.length || 0);
-
       // 3. Charger les images depuis les produits/catégories
       let entityImages: string[] = [];
       if (bucket === 'media') {
@@ -169,8 +162,6 @@ export default function MediaLibrary({
           if (c.image_url) entityImages.push(c.image_url);
         });
       }
-      console.log('[MediaLibrary] Entity images loaded:', entityImages.length);
-
       // 4. Combiner toutes les sources
       const urlMap = new Map<string, MediaFile>();
 
@@ -235,7 +226,6 @@ export default function MediaLibrary({
       });
 
       const combinedFiles = Array.from(urlMap.values());
-      console.log(`[MediaLibrary] Loaded ${combinedFiles.length} total media files`);
       setMediaFiles(combinedFiles);
     } catch (error: any) {
       console.error('Error loading media files:', error);
@@ -282,13 +272,10 @@ export default function MediaLibrary({
 
     // TOUJOURS convertir en WebP sauf si déjà en WebP
     if (!file.type.includes('webp')) {
-      console.log(`🔄 [WebP] Conversion de ${file.name} en WebP...`);
-
       try {
         const webpBlob = await convertToWebP(file);
         fileToUpload = webpBlob;
         fileName = file.name.replace(/\.(jpg|jpeg|png|gif|bmp|tiff)$/i, '.webp');
-        console.log(`✅ [WebP] Converti: ${fileName}`);
       } catch (conversionError) {
         throw new Error(`${file.name}: Erreur conversion WebP`);
       }

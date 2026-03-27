@@ -25,12 +25,14 @@ export default function PolitiqueConfidentialitePage() {
             <CardContent className="prose prose-gray max-w-none space-y-4">
               <p>
                 La présente Politique de Confidentialité décrit la manière dont vos données personnelles sont collectées,
-                utilisées et partagées lorsque vous visitez ou effectuez un achat sur laboutiquedemorgane.com (le « Site »).
+                utilisées et partagées lorsque vous visitez ou effectuez un achat sur kavern.fr (le « Site »).
               </p>
               <p className="font-semibold">
-                Responsable du traitement : MORGANE DEWANIN<br/>
-                Adresse : 1062 rue d'Armentières, 59850 Nieppe, France<br/>
-                Email : <a href="mailto:contact@laboutiquedemorgane.com" className="text-[#C6A15B] hover:underline">contact@laboutiquedemorgane.com</a>
+                Responsable du traitement : KAVERN (SAS au capital de 1 000,00 €)<br/>
+                RCS Dunkerque 102 355 443<br/>
+                Président : OLIVARES André Dany<br/>
+                Adresse : 1062 Rue d'Armentières, 59850 Nieppe, France<br/>
+                Email : <a href="mailto:contact@kavern.fr" className="text-[#C6A15B] hover:underline">contact@kavern.fr</a>
               </p>
             </CardContent>
           </Card>
@@ -115,9 +117,9 @@ export default function PolitiqueConfidentialitePage() {
               </ul>
               <div className="bg-blue-50 p-4 rounded-lg mt-4">
                 <p className="font-semibold mb-2">Pour exercer vos droits :</p>
-                <p>Email : <a href="mailto:contact@laboutiquedemorgane.com" className="text-[#C6A15B] hover:underline">contact@laboutiquedemorgane.com</a></p>
-                <p>Téléphone : +33 6 41 45 66 71 / +33 6 03 48 96 62</p>
-                <p>Courrier : 1062 rue d'Armentières, 59850 Nieppe, France</p>
+                <p>Email : <a href="mailto:contact@kavern.fr" className="text-[#C6A15B] hover:underline">contact@kavern.fr</a></p>
+                <p>Téléphone : +33 6 03 48 96 62</p>
+                <p>Courrier : KAVERN, 1062 Rue d'Armentières, 59850 Nieppe, France</p>
               </div>
               <p className="text-sm text-gray-600 mt-4">
                 <strong>Droit de réclamation :</strong> Vous pouvez introduire une réclamation auprès de la CNIL
@@ -167,10 +169,9 @@ export default function PolitiqueConfidentialitePage() {
             </CardHeader>
             <CardContent className="space-y-2">
               <p>Pour toute question concernant cette politique de confidentialité :</p>
-              <p><strong>Email :</strong> <a href="mailto:contact@laboutiquedemorgane.com" className="text-[#C6A15B] hover:underline">contact@laboutiquedemorgane.com</a></p>
-              <p><strong>Téléphone Morgane :</strong> <a href="tel:+33641456671" className="text-[#C6A15B] hover:underline">+33 6 41 45 66 71</a></p>
-              <p><strong>Téléphone André :</strong> <a href="tel:+33603489662" className="text-[#C6A15B] hover:underline">+33 6 03 48 96 62</a></p>
-              <p><strong>Courrier :</strong> 1062 rue d'Armentières, 59850 Nieppe, France</p>
+              <p><strong>Email :</strong> <a href="mailto:contact@kavern.fr" className="text-[#C6A15B] hover:underline">contact@kavern.fr</a></p>
+              <p><strong>Téléphone :</strong> <a href="tel:+33603489662" className="text-[#C6A15B] hover:underline">+33 6 03 48 96 62</a></p>
+              <p><strong>Courrier :</strong> KAVERN, 1062 Rue d'Armentières, 59850 Nieppe, France</p>
             </CardContent>
           </Card>
         </div>

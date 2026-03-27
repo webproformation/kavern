@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Camera, Upload } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 interface ProfilePictureUploadProps {
   currentUrl: string;
@@ -46,14 +47,42 @@ export function ProfilePictureUpload({
     try {
       setIsUploading(true);
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setPreviewUrl(result);
-        onUploadComplete(result);
-        toast.success('Photo de profil mise à jour avec succès');
-      };
-      reader.readAsDataURL(file);
+      // Preview locale immédiate
+      const localPreview = URL.createObjectURL(file);
+      setPreviewUrl(localPreview);
+
+      // Upload vers Supabase Storage
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Vous devez être connecté');
+        return;
+      }
+
+      const ext = file.name.split('.').pop() || 'jpg';
+      const filePath = `avatars/${user.id}.${ext}`;
+
+      // Supprimer l'ancien fichier s'il existe
+      await supabase.storage.from('media').remove([filePath]);
+
+      const { error: uploadError } = await supabase.storage
+        .from('media')
+        .upload(filePath, file, { upsert: true, contentType: file.type });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        toast.error("Erreur lors de l'upload : " + uploadError.message);
+        return;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('media')
+        .getPublicUrl(filePath);
+
+      // Ajouter un timestamp pour forcer le refresh du cache
+      const freshUrl = `${publicUrl}?t=${Date.now()}`;
+      setPreviewUrl(freshUrl);
+      onUploadComplete(freshUrl);
+      toast.success('Photo de profil mise à jour');
     } catch (error) {
       console.error('Error uploading image:', error);
       toast.error("Erreur lors de l'upload de l'image");

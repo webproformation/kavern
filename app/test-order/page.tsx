@@ -19,8 +19,6 @@ export default function TestOrderPage() {
       const couponCode = 'TEST2026';
       const shippingMethodId = '2371a631-c416-45bb-8a8f-97a88a19c915';
 
-      console.log('🚀 SMOKE TEST TUNNEL DE COMMANDE');
-
       const { data: product, error: productError } = await supabase
         .from('products')
         .select('*')
@@ -30,8 +28,6 @@ export default function TestOrderPage() {
       if (productError || !product) {
         throw new Error('Produit test non trouvé');
       }
-
-      console.log('✅ Produit:', product.name);
 
       const { data: coupon, error: couponError } = await supabase
         .from('coupons')
@@ -43,8 +39,6 @@ export default function TestOrderPage() {
         throw new Error('Coupon non trouvé');
       }
 
-      console.log('✅ Coupon:', coupon.code);
-
       const { data: shippingMethod, error: shippingError } = await supabase
         .from('shipping_methods')
         .select('*')
@@ -55,8 +49,6 @@ export default function TestOrderPage() {
         throw new Error('Méthode de livraison non trouvée');
       }
 
-      console.log('✅ Livraison:', shippingMethod.name);
-
       const quantity = 2;
       const itemPrice = parseFloat(product.sale_price || product.regular_price);
       const subtotal = itemPrice * quantity;
@@ -64,12 +56,6 @@ export default function TestOrderPage() {
       const subtotalAfterDiscount = subtotal - discountAmount;
       const shippingCost = parseFloat(shippingMethod.cost);
       const totalFinal = subtotalAfterDiscount + shippingCost;
-
-      console.log('🧮 Calculs:');
-      console.log('  Subtotal:', subtotal);
-      console.log('  Discount:', discountAmount);
-      console.log('  Shipping:', shippingCost);
-      console.log('  TOTAL:', totalFinal);
 
       const orderNumber = `TEST-${Date.now()}`;
       const orderData = {
@@ -100,8 +86,6 @@ export default function TestOrderPage() {
         throw new Error(`Erreur création commande: ${orderError.message}`);
       }
 
-      console.log('✅ Commande créée:', order.order_number);
-
       const itemData = {
         order_id: order.id,
         product_name: product.name,
@@ -120,8 +104,6 @@ export default function TestOrderPage() {
       if (itemError) {
         throw new Error(`Erreur création item: ${itemError.message}`);
       }
-
-      console.log('✅ Item créé:', orderItem.product_name);
 
       const testResult = {
         success: true,

@@ -153,15 +153,15 @@ export default function OrderConfirmationPage() {
                 <CardContent className="space-y-2 text-sm text-blue-900">
                   <div className="grid grid-cols-2 gap-2">
                     <span className="font-semibold">Titulaire :</span>
-                    <span>MORGANE DEWANIN</span>
+                    <span>KAVERN</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <span className="font-semibold">IBAN :</span>
-                    <span className="font-mono">FR76 1234 5678 9012 3456 7890 123</span>
+                    <span className="font-mono">FR76 1027 8026 8400 0456 0920 369</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <span className="font-semibold">BIC :</span>
-                    <span className="font-mono">ABCDEFGH123</span>
+                    <span className="font-mono">CMCIFR2A</span>
                   </div>
                   <Separator className="my-3" />
                   <Alert className="bg-blue-100 border-blue-300">

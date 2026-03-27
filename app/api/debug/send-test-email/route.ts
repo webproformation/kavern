@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'mail.laboutiquedemorgane.com',
+      host: process.env.SMTP_HOST || 'mail.kavern.fr',
       port: Number(process.env.SMTP_PORT || 587),
       secure: false,
       auth: {
@@ -30,11 +30,11 @@ export async function POST(request: NextRequest) {
     const mailOptions = {
       from: process.env.EMAIL_FROM,
       to,
-      subject: 'Test Technique - La Boutique de Morgane',
+      subject: 'Test Technique - KAVERN',
       text: 'Ceci est un test de configuration SMTP réussi depuis le site.',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #d4af37;">Test SMTP - La Boutique de Morgane</h2>
+          <h2 style="color: #d4af37;">Test SMTP - KAVERN</h2>
           <p>Ceci est un test de configuration SMTP réussi depuis le site.</p>
           <hr style="border: 1px solid #d4af37;">
           <p style="color: #666; font-size: 12px;">Configuration testée le ${new Date().toLocaleString('fr-FR')}</p>

@@ -194,7 +194,7 @@ export default function LiveTestPage() {
             id: liveId,
             title: `Live Test ${new Date().toLocaleString('fr-FR')}`,
             status: 'live',
-            started_at: new Date().toISOString()
+            actual_start: new Date().toISOString()
           })
           .select()
           .single();
@@ -236,7 +236,7 @@ export default function LiveTestPage() {
           .from('live_streams')
           .update({
             status: 'ended',
-            ended_at: new Date().toISOString()
+            actual_end: new Date().toISOString()
           })
           .eq('id', liveStreamId);
       }
@@ -332,7 +332,7 @@ export default function LiveTestPage() {
 
     const adminUser: FakeUser = {
       id: 'admin',
-      name: 'Morgane (Vous)',
+      name: 'Admin',
       avatar: '👑',
       color: '#D4AF37'
     };
@@ -392,8 +392,6 @@ export default function LiveTestPage() {
         toast.error('Erreur lors de la duplication du produit');
         return;
       }
-
-      console.log('[Frontend] Calling API to add product to live...');
 
       const apiResponse = await fetch('/api/live/add-product', {
         method: 'POST',

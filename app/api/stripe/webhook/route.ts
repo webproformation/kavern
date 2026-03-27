@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
           .from('orders')
           .update({
             payment_status: 'paid',
-            status: 'confirmed', // ou 'processing' selon votre logique métier
+            status: 'processing', // Déclenche le trigger tr_order_stock_reduction
             paid_at: new Date().toISOString(),
             stripe_payment_intent: session.payment_intent as string,
             payment_method_id: paymentMethodId, // <--- ON AJOUTE CECI
@@ -70,8 +70,6 @@ export async function POST(request: NextRequest) {
         if (updateError) {
           console.error('Error updating order payment status:', updateError);
         } else {
-          console.log(`Order ${orderId} marked as paid (Method ID: ${paymentMethodId})`);
-
           // ... (Le reste du code reste identique : Emails, Cashback, Coupons) ...
           
           const { data: orderDetails } = await supabase
@@ -83,7 +81,12 @@ export async function POST(request: NextRequest) {
           if (orderDetails) {
             // ... (Logique coupons utilisés) ...
             if (orderDetails.coupon_code && orderDetails.user_id) {
-               await supabase.rpc('mark_coupon_as_used', { p_code: orderDetails.coupon_code, p_user_id: orderDetails.user_id, p_order_id: orderId });
+               // Marquer le coupon comme utilise directement (pas de RPC)
+               await supabase.from('user_coupons')
+                 .update({ is_used: true, used_at: new Date().toISOString(), order_id: orderId })
+                 .eq('user_id', orderDetails.user_id)
+                 .eq('is_used', false)
+                 .ilike('coupon_code', orderDetails.coupon_code);
             }
 
             // ... (Envoi Email) ...
@@ -117,7 +120,6 @@ export async function POST(request: NextRequest) {
 
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        console.log('PaymentIntent succeeded:', paymentIntent.id);
         break;
       }
 
@@ -128,7 +130,7 @@ export async function POST(request: NextRequest) {
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        break;
     }
 
     return NextResponse.json({ received: true });

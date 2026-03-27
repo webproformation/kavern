@@ -25,6 +25,7 @@ interface ProductCardProps {
     is_featured?: boolean;
     is_diamond?: boolean;
     attributes?: any;
+    product_variations?: Array<{ stock_quantity?: number | null }>;
   };
   showAddToCart?: boolean;
 }
@@ -37,7 +38,7 @@ export function ProductCard({ product, showAddToCart = false }: ProductCardProps
     ...(product.gallery_images || [])
   ].filter(Boolean) as string[];
 
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, dragFree: false, watchDrag: true });
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const scrollPrev = useCallback((e: React.MouseEvent) => {
@@ -67,8 +68,12 @@ export function ProductCard({ product, showAddToCart = false }: ProductCardProps
 
   const displayPrice = product.sale_price || product.regular_price || 0;
   const hasDiscount = product.sale_price && product.sale_price < (product.regular_price || 0);
-  const isInStock = !product.stock_quantity || product.stock_quantity > 0;
-  const isLowStock = product.stock_quantity && product.stock_quantity > 0 && product.stock_quantity <= 5;
+  // Pour les produits à variantes, sommer le stock des variantes
+  const totalStock = product.is_variable_product && product.product_variations?.length
+    ? product.product_variations.reduce((sum, v) => sum + (v.stock_quantity ?? 0), 0)
+    : product.stock_quantity;
+  const isInStock = totalStock === null || totalStock === undefined || totalStock > 0;
+  const isLowStock = totalStock != null && totalStock > 0 && totalStock <= 5;
 
   const highlights = product.attributes?.["Mise en avant"] || [];
 
@@ -76,7 +81,8 @@ export function ProductCard({ product, showAddToCart = false }: ProductCardProps
     e.preventDefault();
     e.stopPropagation();
 
-    if (product.is_variable_product) {
+    // Rediriger si produit à variantes (flag OU variantes réelles)
+    if (product.is_variable_product || (product.product_variations && product.product_variations.length > 0)) {
       window.location.href = `/product/${product.slug}`;
       return;
     }

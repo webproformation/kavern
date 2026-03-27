@@ -32,7 +32,7 @@ BEGIN
     -- URL de base de l'application
     api_url := current_setting('app.settings.api_url', true);
     IF api_url IS NULL OR api_url = '' THEN
-      api_url := 'https://laboutiquedemorgane.com';
+      api_url := 'https://kavern.fr';
     END IF;
 
     -- Appel à l'API d'envoi d'emails (asynchrone, ne bloque pas l'insertion)
@@ -83,7 +83,7 @@ BEGIN
   -- URL de base de l'application
   api_url := current_setting('app.settings.api_url', true);
   IF api_url IS NULL OR api_url = '' THEN
-    api_url := 'https://laboutiquedemorgane.com';
+    api_url := 'https://kavern.fr';
   END IF;
 
   -- Si le statut passe à "shipped" (expédié)

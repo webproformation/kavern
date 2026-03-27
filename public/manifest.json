@@ -1,0 +1,25 @@
+{
+  "name": "KAVERN - L'artisanat et l'inattendu",
+  "short_name": "KAVERN",
+  "description": "Concept Store en ligne - Bougies artisanales, mode, epicerie fine et lives shopping",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#D4AF37",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/kavern-icone.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/kavern-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["shopping", "lifestyle"],
+  "lang": "fr"
+}

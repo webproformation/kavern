@@ -32,7 +32,7 @@ export default function CartesCadeauxPage() {
       name: `Carte Cadeau ${amount}€`,
       slug: 'carte-cadeau',
       price: amount.toString(),
-      image: { sourceUrl: '/lbdm-logobdc.png' },
+      image: { sourceUrl: '/kavern-logo.png' },
       giftCardData: {
         amount,
         fromName,

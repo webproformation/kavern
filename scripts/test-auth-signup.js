@@ -30,7 +30,7 @@ async function testSignup() {
   console.log('\n🧪 TEST SIGNUP');
   console.log('===============');
 
-  const testEmail = `test-${Date.now()}@laboutiquedemorgane.com`;
+  const testEmail = `test-${Date.now()}@kavern.fr`;
   const testPassword = 'TestPassword123!';
 
   console.log('📧 Email:', testEmail);

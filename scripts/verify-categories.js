@@ -57,7 +57,7 @@ const EXPECTED_STRUCTURE = [
       { name: 'Chaussures' }
     ]}
   ]},
-  { name: 'Les looks de Morgane', parent: null, order: 3 },
+  { name: 'Les looks KAVERN', parent: null, order: 3 },
   { name: 'Maison', parent: null, order: 4, children: [
     { name: 'Bougies' },
     { name: 'Diffuseurs et mikados' },

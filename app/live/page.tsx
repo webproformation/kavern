@@ -156,7 +156,7 @@ export default function LivePage() {
   if (currentLive) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black">
-        <LiveTickerBanner text={currentLive.ticker_text || 'Bienvenue dans le live de Morgane ! 💎'} />
+        <LiveTickerBanner text={currentLive.ticker_text || 'Bienvenue dans le live KAVERN ! 💎'} />
 
         <div className="container mx-auto px-4 py-6">
           <div className="grid lg:grid-cols-3 gap-6">
@@ -231,7 +231,7 @@ export default function LivePage() {
           <PageHeader
             icon={Video}
             title="Live Shopping & Replay"
-            description="Rejoignez Morgane en direct pour découvrir nos nouveautés et profiter d'offres exclusives"
+            description="Rejoignez-nous en direct pour découvrir nos nouveautés et profiter d'offres exclusives"
           />
 
           {upcomingLives.length > 0 && (
@@ -386,7 +386,7 @@ export default function LivePage() {
                 </li>
                 <li className="flex items-start gap-3">
                   <Sparkles className="w-5 h-5 text-[#C6A15B] flex-shrink-0 mt-0.5" />
-                  <p>Posez vos questions à Morgane en direct</p>
+                  <p>Posez vos questions en direct</p>
                 </li>
                 <li className="flex items-start gap-3">
                   <Sparkles className="w-5 h-5 text-[#C6A15B] flex-shrink-0 mt-0.5" />

@@ -16,7 +16,7 @@ export const WelcomeEmail = ({ firstName }: WelcomeEmailProps) => {
       </Text>
 
       <Text style={paragraph}>
-        Ça y est, tu fais officiellement partie de la <strong>Team Morgane</strong> !
+        Ça y est, tu fais officiellement partie de la <strong>Team KAVERN</strong> !
         On est trop contents de t'accueillir ici.
       </Text>
 

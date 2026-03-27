@@ -7,9 +7,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('[SEND-EMAIL] Début de traitement...');
     const { orderId, pdfBase64, filename } = await request.json();
-    console.log('[SEND-EMAIL] OrderId reçu:', orderId);
 
     if (!orderId || !pdfBase64) {
       console.error('[SEND-EMAIL] Données manquantes');
@@ -18,7 +16,6 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log('[SEND-EMAIL] Récupération de la commande...');
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .select("*")
@@ -35,9 +32,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Commande non trouvée" }, { status: 404 });
     }
 
-    console.log('[SEND-EMAIL] Commande trouvée:', order.order_number);
-
-    console.log('[SEND-EMAIL] Récupération du profil utilisateur...');
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("email, first_name, last_name")
@@ -60,15 +54,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Format email invalide" }, { status: 400 });
     }
 
-    console.log('[SEND-EMAIL] Email destinataire:', profile.email);
-
-    console.log('[SEND-EMAIL] Récupération des items de commande...');
     const { data: orderItems } = await supabase
       .from("order_items")
       .select("*")
       .eq("order_id", orderId);
-
-    console.log('[SEND-EMAIL] Items trouvés:', orderItems?.length || 0);
 
     // Enrichir les items avec les infos produit
     const enrichedItems = await Promise.all(
@@ -102,14 +91,6 @@ export async function POST(request: NextRequest) {
       })
     );
 
-    console.log('[SEND-EMAIL] Configuration SMTP:', {
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      user: process.env.SMTP_USER ? '***' : 'MANQUANT',
-      pass: process.env.SMTP_PASS ? '***' : 'MANQUANT',
-      from: process.env.EMAIL_FROM ? '***' : 'MANQUANT'
-    });
-
     const missingVars: string[] = [];
     if (!process.env.SMTP_HOST) missingVars.push('SMTP_HOST');
     if (!process.env.SMTP_PORT) missingVars.push('SMTP_PORT');
@@ -126,7 +107,7 @@ export async function POST(request: NextRequest) {
     }
 
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'mail.laboutiquedemorgane.com',
+      host: process.env.SMTP_HOST || 'mail.kavern.fr',
       port: parseInt(process.env.SMTP_PORT || "587"),
       secure: false,
       auth: {
@@ -139,10 +120,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log('[SEND-EMAIL] Test de connexion SMTP...');
     try {
       await transporter.verify();
-      console.log('[SEND-EMAIL] Connexion SMTP OK');
     } catch (smtpError: any) {
       console.error('[SEND-EMAIL] Erreur connexion SMTP:', smtpError.message);
       return NextResponse.json({
@@ -168,7 +147,7 @@ export async function POST(request: NextRequest) {
           <!-- En-tête avec logo -->
           <tr>
             <td style="padding: 0; text-align: center; background-color: #000000;">
-              <img src="${process.env.NEXT_PUBLIC_SITE_URL || 'https://laboutiquedemorgane.com'}/lbdm-logobdc.png" alt="La Boutique de Morgane" style="width: 100%; height: auto; display: block; max-height: 200px; object-fit: cover;" />
+              <img src="${process.env.NEXT_PUBLIC_SITE_URL || 'https://kavern.fr'}/kavern-logo.png" alt="KAVERN" style="width: 100%; height: auto; display: block; max-height: 200px; object-fit: cover;" />
             </td>
           </tr>
 
@@ -250,14 +229,14 @@ export async function POST(request: NextRequest) {
                 <tr>
                   <td style="color: #666666; font-size: 14px;">📧 Email :</td>
                   <td style="color: #d4af37; font-size: 14px; font-weight: 600;">
-                    <a href="mailto:contact@laboutiquedemorgane.com" style="color: #d4af37; text-decoration: none;">
-                      contact@laboutiquedemorgane.com
+                    <a href="mailto:contact@kavern.fr" style="color: #d4af37; text-decoration: none;">
+                      contact@kavern.fr
                     </a>
                   </td>
                 </tr>
                 <tr>
-                  <td style="color: #666666; font-size: 14px;">📞 Morgane :</td>
-                  <td style="color: #666666; font-size: 14px;">+33 6 41 45 66 71</td>
+                  <td style="color: #666666; font-size: 14px;">📞 André :</td>
+                  <td style="color: #666666; font-size: 14px;">+33 6 03 48 96 62</td>
                 </tr>
                 <tr>
                   <td style="color: #666666; font-size: 14px;">📞 André :</td>
@@ -271,19 +250,19 @@ export async function POST(request: NextRequest) {
           <tr>
             <td style="background-color: #333333; padding: 25px 30px; text-align: center;">
               <p style="margin: 0 0 8px 0; color: #ffffff; font-size: 14px; font-weight: 600;">
-                MORGANE DEWANIN - SAS
+                KAVERN - SAS au capital de 1 000 €
               </p>
               <p style="margin: 0 0 8px 0; color: #cccccc; font-size: 12px;">
-                1062 rue d'Armentières, 59850 Nieppe, France
+                1062 Rue d'Armentières, 59850 Nieppe, France
               </p>
               <p style="margin: 0 0 8px 0; color: #cccccc; font-size: 11px;">
-                SIREN : 907 889 802 | SIRET : 907 889 802 00027
+                RCS Dunkerque 102 355 443 | SIRET : 102 355 443 00015
               </p>
               <p style="margin: 0; color: #cccccc; font-size: 11px;">
-                TVA : FR16907889802 | APE : 4641Z
+                TVA : FR37102355443 | APE : 4791A
               </p>
               <p style="margin: 15px 0 0 0; color: #999999; font-size: 10px; font-style: italic;">
-                Shopping en live depuis 2020
+                kavern-france.fr
               </p>
             </td>
           </tr>
@@ -297,7 +276,6 @@ export async function POST(request: NextRequest) {
     `;
 
     if (order.newsletter_consent && process.env.BREVO_API_KEY) {
-      console.log('[SEND-EMAIL] Inscription à la newsletter Brevo...');
       try {
         const brevoResponse = await fetch('https://api.brevo.com/v3/contacts', {
           method: 'POST',
@@ -316,10 +294,8 @@ export async function POST(request: NextRequest) {
           })
         });
 
-        if (brevoResponse.ok) {
-          console.log('[SEND-EMAIL] Contact ajouté à Brevo avec succès');
-        } else if (brevoResponse.status === 409) {
-          console.log('[SEND-EMAIL] Contact déjà présent dans Brevo (409), on continue');
+        if (brevoResponse.ok || brevoResponse.status === 409) {
+          // Contact added or already exists
         } else {
           const brevoError = await brevoResponse.text();
           console.warn('[SEND-EMAIL] Erreur Brevo (non bloquante):', brevoResponse.status, brevoError);
@@ -329,11 +305,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('[SEND-EMAIL] Envoi de l\'email...');
     const mailOptions = {
-      from: process.env.EMAIL_FROM || '"La Boutique de Morgane" <email@laboutiquedemorgane.com>',
+      from: process.env.EMAIL_FROM || '"KAVERN" <contact@kavern.fr>',
       to: profile.email,
-      subject: `Confirmation de votre commande #${order.order_number} - La Boutique de Morgane`,
+      subject: `Confirmation de votre commande #${order.order_number} - KAVERN`,
       html: htmlEmail,
       attachments: [
         {
@@ -345,7 +320,6 @@ export async function POST(request: NextRequest) {
     };
 
     const mailResult = await transporter.sendMail(mailOptions);
-    console.log('[SEND-EMAIL] Email envoyé avec succès, messageId:', mailResult.messageId);
 
     return NextResponse.json({
       success: true,

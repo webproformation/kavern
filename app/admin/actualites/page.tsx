@@ -168,7 +168,7 @@ export default function ActualitesAdminPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-black">Le Carnet de Morgane</h1>
+          <h1 className="text-3xl font-bold text-black">Le Carnet KAVERN</h1>
           <p className="text-gray-600 mt-2">
             Gérez vos articles et actualités
           </p>

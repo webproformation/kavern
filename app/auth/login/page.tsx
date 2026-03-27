@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
@@ -12,7 +12,7 @@ import { Loader2, Mail, Lock, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { PasswordInput } from '@/components/PasswordInput';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { signIn, user, loading: authLoading } = useAuth();
@@ -35,13 +35,7 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
-    console.log('\n========== TENTATIVE DE CONNEXION ==========');
-    console.log('Email:', email);
-    console.log('URL Supabase:', process.env.NEXT_PUBLIC_SUPABASE_URL);
-    console.log('Timestamp:', new Date().toISOString());
-    console.log('=========================================\n');
-
-    if (!email || !password) {
+if (!email || !password) {
       setError('Veuillez remplir tous les champs');
       setLoading(false);
       return;
@@ -50,14 +44,7 @@ export default function LoginPage() {
     const { error: signInError } = await signIn(email, password);
 
     if (signInError) {
-      console.error('\n========== ERREUR AUTHENTIFICATION ==========');
-      console.error('Message:', signInError.message);
-      console.error('Status:', (signInError as any).status);
-      console.error('Code:', (signInError as any).code);
-      console.error('Détails complets:', JSON.stringify(signInError, null, 2));
-      console.error('=========================================\n');
-
-      const errorMsg = signInError.message === 'Invalid login credentials'
+const errorMsg = signInError.message === 'Invalid login credentials'
         ? 'Email ou mot de passe incorrect'
         : signInError.message || 'Erreur lors de la connexion';
 
@@ -66,11 +53,7 @@ export default function LoginPage() {
       return;
     }
 
-    console.log('\n========== CONNEXION RÉUSSIE ==========');
-    console.log('Redirection vers:', redirect);
-    console.log('=========================================\n');
-
-    toast.success('Connexion réussie!');
+toast.success('Connexion réussie!');
     router.push(redirect);
   };
 
@@ -172,5 +155,13 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-[#D4AF37]" /></div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

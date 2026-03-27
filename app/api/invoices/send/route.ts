@@ -100,7 +100,7 @@ export async function POST(req: Request) {
       </head>
       <body>
         <div class="container">
-          <img src="https://laboutiquedemorgane.com/lbdm-logobdc.png" alt="La Boutique de Morgane" class="banner" style="max-height: 150px; object-fit: contain; background: black;">
+          <img src="https://kavern.fr/kavern-logo.png" alt="KAVERN" class="banner" style="max-height: 150px; object-fit: contain; background: black;">
           
           <div class="content">
             <h1 class="h1">Bonjour ${invoice.customer_name} 👋</h1>
@@ -138,10 +138,10 @@ export async function POST(req: Request) {
           <div class="contact-section">
             <div class="contact-title">Une question ? Nous sommes là pour vous aider !</div>
             <div class="contact-item">
-              ✉️ Email : <a href="mailto:contact@laboutiquedemorgane.com" class="contact-link">contact@laboutiquedemorgane.com</a>
+              ✉️ Email : <a href="mailto:contact@kavern.fr" class="contact-link">contact@kavern.fr</a>
             </div>
             <div class="contact-item">
-              📞 Morgane : +33 6 41 45 66 71
+              📞 André : +33 6 03 48 96 62
             </div>
             <div class="contact-item">
               📞 André : +33 6 03 48 96 62
@@ -149,14 +149,14 @@ export async function POST(req: Request) {
           </div>
 
           <div class="footer">
-            <div class="footer-title">MORGANE DEWANIN - SAS</div>
-            <div>1062 rue d'Armentières, 59850 Nieppe, France</div>
+            <div class="footer-title">KAVERN - SAS au capital de 1 000 €</div>
+            <div>1062 Rue d'Armentières, 59850 Nieppe, France</div>
             <div style="margin-top: 10px;">
-              SIREN : 907 889 802 | SIRET : 907 889 802 00027<br>
-              TVA : FR16907889802 | APE : 4641Z
+              RCS Dunkerque 102 355 443 | SIRET : 102 355 443 00015<br>
+              TVA : FR37102355443 | APE : 4791A
             </div>
             <div style="margin-top: 15px; font-style: italic;">
-              Shopping en live depuis 2020
+              kavern-france.fr
             </div>
           </div>
         </div>
@@ -166,7 +166,7 @@ export async function POST(req: Request) {
 
     // 7. ENVOI
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || '"La Boutique de Morgane" <contact@laboutiquedemorgane.com>',
+      from: process.env.EMAIL_FROM || '"KAVERN" <contact@kavern.fr>',
       to: clientEmail,
       subject: `Votre facture ${invoice.invoice_number} est disponible`,
       html: emailHtml,

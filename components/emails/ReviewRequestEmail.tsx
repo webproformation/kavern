@@ -50,7 +50,7 @@ export const ReviewRequestEmail = ({ firstName }: ReviewRequestEmailProps) => {
 
       <Text style={signature}>
         Merci d'être là,<br />
-        <strong>Morgane & Doudou</strong> ✨
+        <strong>L'équipe KAVERN</strong> ✨
       </Text>
     </EmailLayout>
   );

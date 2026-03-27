@@ -300,8 +300,8 @@ export default function LooksPage() {
     <div className="container mx-auto px-4 py-8">
       <PageHeader
         icon={Sparkles}
-        title="Les Looks de Morgane"
-        description="Découvrez les coups de cœur et suggestions de style sélectionnés personnellement par Morgane"
+        title="Les Looks KAVERN"
+        description="Découvrez les coups de cœur et suggestions de style sélectionnés par l'équipe KAVERN"
       />
 
       {!categoryFound && (
@@ -317,7 +317,7 @@ export default function LooksPage() {
           <p className="text-gray-600 mb-6">
             {categoryFound
               ? 'Aucun produit dans cette sélection pour le moment. Revenez bientôt !'
-              : 'Cette section sera bientôt disponible avec les looks sélectionnés par Morgane.'}
+              : 'Cette section sera bientôt disponible avec les looks sélectionnés par KAVERN.'}
           </p>
           <Button asChild className="bg-[#C6A15B] hover:bg-[#B8934D] text-white">
             <Link href="/">Découvrir tous nos produits</Link>

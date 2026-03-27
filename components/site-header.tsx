@@ -40,6 +40,7 @@ const STATIC_LINKS = [
   { name: 'Live Shopping et Replay', href: '/live', slug: 'live', hasMegaMenu: false },
   { name: 'Carte cadeau', href: '/carte-cadeau', slug: 'carte-cadeau', hasMegaMenu: false },
   { name: 'Nouveautés', href: '/nouveautes', slug: 'nouveautes', hasMegaMenu: false },
+  { name: 'Actu', href: '/actualites', slug: 'actualites', hasMegaMenu: false },
 ];
 
 interface NavigationItem {
@@ -223,7 +224,7 @@ export function SiteHeader() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setSearchModalOpen(true)}
-                className="hidden md:flex text-gray-900 hover:text-[#D4AF37] hover:bg-transparent"
+                className="flex text-gray-900 hover:text-[#D4AF37] hover:bg-transparent"
               >
                 <Search className="h-5 w-5" />
               </Button>

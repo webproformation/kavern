@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 
 export async function POST(request: NextRequest) {
-  console.log('Requête reçue sur Mondial Relay Search');
-
   try {
     const body = await request.json();
     const { postalCode, city } = body;

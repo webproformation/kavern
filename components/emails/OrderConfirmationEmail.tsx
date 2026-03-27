@@ -91,7 +91,7 @@ export const OrderConfirmationEmail = ({
 
       <Text style={signature}>
         Gros bisous,<br />
-        <strong>La Boutique de Morgane</strong> ✨
+        <strong>KAVERN</strong> ✨
       </Text>
     </EmailLayout>
   );

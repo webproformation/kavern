@@ -99,7 +99,7 @@ export function ChestDrawing({ liveStreamId, isUnlocked, isAdmin }: ChestDrawing
           <Gift className="w-16 h-16 mx-auto text-gray-600" />
         </div>
         <h3 className="text-white font-bold text-xl mb-2">
-          Coffre de Morgane
+          Coffre KAVERN
         </h3>
         <p className="text-gray-400">
           Le coffre est verrouillé... Pour le moment ! 🔒
@@ -180,7 +180,7 @@ export function ChestDrawing({ liveStreamId, isUnlocked, isAdmin }: ChestDrawing
 
             <div className="bg-gradient-to-r from-[#D4AF37]/10 to-[#b8933d]/10 rounded-lg p-4">
               <p className="text-sm text-gray-700">
-                Morgane va te contacter pour te remettre ton cadeau ! 💝
+                On va te contacter pour te remettre ton cadeau ! 💝
               </p>
             </div>
           </div>

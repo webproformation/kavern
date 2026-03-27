@@ -33,8 +33,6 @@ export function useUserCoupons(userId: string | undefined) {
   // C'est cette fonction qui fait le travail de déplacement vers "Utilisés"
   const markCouponAsUsed = async (userCouponId: string, orderId: string) => {
     try {
-      console.log('Marquage du coupon comme utilisé:', userCouponId);
-      
       const { error } = await supabase
         .from('user_coupons')
         .update({ 

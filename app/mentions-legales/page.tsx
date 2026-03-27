@@ -18,7 +18,7 @@ export default function MentionsLegalesPage() {
             <CardContent className="prose prose-gray max-w-none">
               <p>
                 Conformément aux dispositions de la loi n° 2004-575 du 21 juin 2004 pour la confiance
-                dans l'économie numérique, il est précisé aux utilisateurs du site laboutiquedemorgane.com
+                dans l'économie numérique, il est précisé aux utilisateurs du site kavern.fr
                 l'identité des différents intervenants dans le cadre de sa réalisation et de son suivi.
               </p>
             </CardContent>
@@ -29,17 +29,21 @@ export default function MentionsLegalesPage() {
               <CardTitle>Éditeur du site</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <p><strong>Raison sociale :</strong> MORGANE DEWANIN</p>
-              <p><strong>Forme juridique :</strong> SAS (Société par Actions Simplifiée)</p>
-              <p><strong>Adresse :</strong> 1062 rue d'Armentières, 59850 Nieppe, France</p>
-              <p><strong>Téléphone Morgane :</strong> <a href="tel:+33641456671" className="text-[#C6A15B] hover:underline">+33 6 41 45 66 71</a></p>
-              <p><strong>Téléphone André :</strong> <a href="tel:+33603489662" className="text-[#C6A15B] hover:underline">+33 6 03 48 96 62</a></p>
-              <p><strong>Email :</strong> <a href="mailto:contact@laboutiquedemorgane.com" className="text-[#C6A15B] hover:underline">contact@laboutiquedemorgane.com</a></p>
-              <p><strong>SIREN :</strong> 907 889 802</p>
-              <p><strong>SIRET :</strong> 907 889 802 00027</p>
-              <p><strong>N° TVA intracommunautaire :</strong> FR16907889802</p>
-              <p><strong>Date de création :</strong> 06 décembre 2021</p>
-              <p><strong>Code APE :</strong> 4641Z - Commerce de gros (commerce interentreprises) de textiles</p>
+              <p><strong>Dénomination sociale :</strong> KAVERN</p>
+              <p><strong>Forme juridique :</strong> SAS (Société par actions simplifiée à associé unique)</p>
+              <p><strong>Capital social :</strong> 1 000,00 Euros</p>
+              <p><strong>Siège social :</strong> 1062 Rue d'Armentières, 59850 Nieppe, France</p>
+              <p><strong>RCS :</strong> 102 355 443 R.C.S. Dunkerque</p>
+              <p><strong>SIRET :</strong> 102 355 443 00015</p>
+              <p><strong>SIREN :</strong> 102 355 443</p>
+              <p><strong>N° TVA intracommunautaire :</strong> FR37102355443</p>
+              <p><strong>Code APE :</strong> 4791A — Vente à distance sur catalogue général</p>
+              <p><strong>EUID :</strong> FR5902.102355443</p>
+              <p><strong>Président :</strong> OLIVARES André Dany</p>
+              <p><strong>Date de création :</strong> 16 mars 2026</p>
+              <p><strong>Domaine :</strong> kavern-france.fr</p>
+              <p><strong>Téléphone :</strong> <a href="tel:+33603489662" className="text-[#C6A15B] hover:underline">+33 6 03 48 96 62</a></p>
+              <p><strong>Email :</strong> <a href="mailto:contact@kavern.fr" className="text-[#C6A15B] hover:underline">contact@kavern.fr</a></p>
             </CardContent>
           </Card>
 
@@ -48,8 +52,8 @@ export default function MentionsLegalesPage() {
               <CardTitle>Directeur de publication</CardTitle>
             </CardHeader>
             <CardContent>
-              <p>Morgane DEWANIN</p>
-              <p>Email : <a href="mailto:contact@laboutiquedemorgane.com" className="text-[#C6A15B] hover:underline">contact@laboutiquedemorgane.com</a></p>
+              <p>OLIVARES André Dany</p>
+              <p>Email : <a href="mailto:contact@kavern.fr" className="text-[#C6A15B] hover:underline">contact@kavern.fr</a></p>
             </CardContent>
           </Card>
 
@@ -59,16 +63,9 @@ export default function MentionsLegalesPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="font-semibold mb-2">Hébergement Web</p>
-                <p>O2SWITCH</p>
-                <p>Chemin des Pardiaux, 63000 Clermont-Ferrand, France</p>
-                <p>Téléphone : 04 44 44 60 40</p>
-                <p>Site web : <a href="https://www.o2switch.fr" target="_blank" rel="noopener noreferrer" className="text-[#C6A15B] hover:underline">www.o2switch.fr</a></p>
-              </div>
-              <div>
-                <p className="font-semibold mb-2">Infrastructure & Déploiement</p>
+                <p className="font-semibold mb-2">Hébergeur</p>
                 <p>Vercel Inc.</p>
-                <p>c/o EDPO, Avenue Huart Hamoir 71, 1030 Brussels, Belgium</p>
+                <p>440 N Barranca Ave #4133, Covina, CA 91723, USA</p>
                 <p>Email : <a href="mailto:privacy@vercel.com" className="text-[#C6A15B] hover:underline">privacy@vercel.com</a></p>
                 <p>Site web : <a href="https://vercel.com" target="_blank" rel="noopener noreferrer" className="text-[#C6A15B] hover:underline">vercel.com</a></p>
               </div>

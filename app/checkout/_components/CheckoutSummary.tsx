@@ -97,7 +97,7 @@ export function CheckoutSummary({
                 onCheckedChange={(c) => setNewsletterConsent(c as boolean)} 
               />
               <label htmlFor="newsletter" className="text-sm leading-tight cursor-pointer">
-                Je souhaite recevoir les offres et actualités de La Boutique de Morgane
+                Je souhaite recevoir les offres et actualités de KAVERN
               </label>
             </div>
             <div className="flex items-start space-x-2">

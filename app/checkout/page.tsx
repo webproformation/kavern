@@ -92,6 +92,13 @@ export default function CheckoutPage() {
   const [appliedReferral, setAppliedReferral] = useState<any>(null);
   const [referralDiscount, setReferralDiscount] = useState(0);
 
+  // --- CARTE CADEAU ---
+  const [giftCardCode, setGiftCardCode] = useState('');
+  const [giftCardAmount, setGiftCardAmount] = useState(0);
+  const [giftCardApplied, setGiftCardApplied] = useState(false);
+  const [giftCardLoading, setGiftCardLoading] = useState(false);
+  const [giftCardId, setGiftCardId] = useState<string | null>(null);
+
   // --- OPTIONS ---
   const [addToOpenPackage, setAddToOpenPackage] = useState(false);
   const [notes, setNotes] = useState('');
@@ -181,7 +188,7 @@ export default function CheckoutPage() {
 
   const totalBeforeDiscount = subtotal + shippingCost + insuranceCost + paymentFee;
   const totalAfterDiscount = Math.max(0, totalBeforeDiscount - (Number(discountAmount) || 0) - (Number(referralDiscount) || 0));
-  const totalAfterWallet = Math.max(0, totalAfterDiscount - (Number(walletAmountToUse) || 0) - (Number(loyaltyAmountToUse) || 0));
+  const totalAfterWallet = Math.max(0, totalAfterDiscount - (Number(walletAmountToUse) || 0) - (Number(loyaltyAmountToUse) || 0) - (Number(giftCardAmount) || 0));
   const tvaAmount = totalAfterWallet * TVA_RATE / (1 + TVA_RATE);
   const totalHT = totalAfterWallet - tvaAmount;
 
@@ -201,10 +208,96 @@ export default function CheckoutPage() {
     toast.success('Code parrainage appliqué ! -5€');
   };
 
-  const handlePayPalSuccess = (orderId: string) => {
-    clearCart();
-    toast.success('Paiement PayPal réussi !');
-    router.push(`/checkout/confirmation?paypal=${orderId}`);
+  const handleApplyGiftCard = async () => {
+    if (!giftCardCode.trim()) return;
+    setGiftCardLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('gift_cards')
+        .select('id, code, balance, status')
+        .eq('code', giftCardCode.trim().toUpperCase())
+        .eq('status', 'active')
+        .gt('balance', 0)
+        .maybeSingle();
+
+      if (error || !data) {
+        toast.error('Carte cadeau invalide, expirée ou solde épuisé');
+        return;
+      }
+
+      const amountToUse = Math.min(data.balance, totalAfterDiscount);
+      setGiftCardAmount(amountToUse);
+      setGiftCardApplied(true);
+      setGiftCardId(data.id);
+      toast.success(`Carte cadeau appliquée ! -${amountToUse.toFixed(2)} €`);
+    } catch (err) {
+      toast.error('Erreur lors de la vérification');
+    } finally {
+      setGiftCardLoading(false);
+    }
+  };
+
+  const handlePayPalSuccess = async (paypalOrderId: string) => {
+    try {
+      // Creer la commande en DB (meme logique que handleSubmit)
+      const orderNumber = `CMD-${Date.now()}`;
+      const itemsForTrigger = cart.map(item => ({
+        product_id: item.id,
+        quantity: item.quantity || 1,
+        variation_id: item.variationId || null,
+      }));
+
+      const selectedAddress = addresses.find(a => a.id === selectedAddressId);
+
+      const orderData = {
+        user_id: user!.id,
+        order_number: orderNumber,
+        status: 'processing', // Directement processing pour declencher le trigger stock
+        items: itemsForTrigger,
+        payment_status: 'paid',
+        paid_at: new Date().toISOString(),
+        subtotal: subtotal.toFixed(2),
+        shipping_cost: shippingCost.toFixed(2),
+        tax_amount: tvaAmount.toFixed(2),
+        discount_amount: (Number(discountAmount) + Number(referralDiscount)).toFixed(2),
+        wallet_amount_used: (Number(walletAmountToUse) + Number(loyaltyAmountToUse)).toFixed(2),
+        total: totalAfterWallet.toFixed(2),
+        shipping_address: selectedAddress || null,
+        shipping_street: selectedAddress?.address_line1 || '',
+        shipping_phone: selectedAddress?.phone || '',
+        shipping_method_id: selectedShippingMethodId || null,
+        payment_method_id: selectedPaymentMethodId,
+        relay_point_data: relayPointData,
+        coupon_code: couponCode || null,
+        notes: notes || null,
+        newsletter_consent: newsletterConsent,
+        rgpd_consent: rgpdConsent,
+        paypal_order_id: paypalOrderId,
+        payment_method: 'PayPal',
+      };
+
+      const { data: newOrder, error: orderError } = await supabase.from('orders').insert([orderData]).select().single();
+      if (orderError) throw orderError;
+
+      const orderItems = cart.map(item => ({
+        order_id: newOrder.id,
+        product_name: item.name || 'Produit',
+        product_slug: item.slug || '',
+        product_image: item.image?.sourceUrl || item.variationImage?.sourceUrl || '',
+        price: String(item.price || 0),
+        quantity: item.quantity || 1,
+        variation_data: item.isPack ? { isPack: true, packItems: item.packItems, attributes: item.selectedAttributes } : (item.selectedAttributes || null),
+      }));
+
+      await supabase.from('order_items').insert(orderItems);
+
+      clearCart();
+      toast.success('Paiement PayPal reussi !');
+      router.push(`/order-confirmation/${newOrder.id}`);
+    } catch (err: any) {
+      console.error('[PayPal] Erreur creation commande:', err);
+      toast.error('Paiement recu mais erreur de creation commande. Contactez le support.');
+    }
   };
 
   const handlePayPalError = (error: any) => {
@@ -233,10 +326,18 @@ export default function CheckoutPage() {
     try {
       const orderNumber = `CMD-${Date.now()}`;
 
+      // Préparer les items pour le trigger de décrémentation stock
+      const itemsForTrigger = cart.map(item => ({
+        product_id: item.id,
+        quantity: item.quantity || 1,
+        variation_id: item.variationId || null,
+      }));
+
       const orderData = {
         user_id: user.id,
         order_number: orderNumber,
         status: 'pending',
+        items: itemsForTrigger,
         payment_status: 'pending',
         subtotal: subtotal.toFixed(2),
         shipping_cost: shippingCost.toFixed(2),
@@ -310,6 +411,19 @@ export default function CheckoutPage() {
       }
 
       if (selectedUserCouponId) await markCouponAsUsed(selectedUserCouponId, newOrder.id);
+
+      // Deduire le solde de la carte cadeau
+      if (giftCardApplied && giftCardId && giftCardAmount > 0) {
+        await supabase.from('gift_cards').update({
+          balance: Math.max(0, (await supabase.from('gift_cards').select('balance').eq('id', giftCardId).single()).data?.balance - giftCardAmount),
+        }).eq('id', giftCardId);
+        await supabase.from('gift_card_transactions').insert({
+          gift_card_id: giftCardId,
+          order_id: newOrder.id,
+          amount: giftCardAmount,
+          type: 'usage',
+        });
+      }
 
       if (selectedPaymentMethod?.code === 'stripe' && totalAfterWallet > 0) {
         setCreatedOrderId(newOrder.id);
@@ -453,6 +567,12 @@ export default function CheckoutPage() {
               appliedReferral={appliedReferral}
               handleApplyReferral={handleApplyReferral}
               totalAfterDiscount={totalAfterDiscount}
+              giftCardCode={giftCardCode}
+              setGiftCardCode={setGiftCardCode}
+              giftCardAmount={giftCardAmount}
+              giftCardApplied={giftCardApplied}
+              handleApplyGiftCard={handleApplyGiftCard}
+              giftCardLoading={giftCardLoading}
             />
 
             <CheckoutSummary 

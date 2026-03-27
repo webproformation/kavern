@@ -29,7 +29,7 @@ export default function OBSSettingsPage() {
   const [settings, setSettings] = useState<OBSSettings>({
     id: '',
     stream_key: '',
-    stream_server: 'rtmp://live.laboutiquedemorgane.com/live',
+    stream_server: 'rtmp://live.kavern.fr/live',
     video_bitrate: 2500,
     audio_bitrate: 128,
     resolution: '1920x1080',
@@ -127,7 +127,7 @@ export default function OBSSettingsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'obs-profile-lbdm.json';
+    a.download = 'obs-profile-kavern.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

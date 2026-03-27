@@ -8,7 +8,7 @@ export interface EmailOptions {
 }
 
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'mail.laboutiquedemorgane.com',
+  host: process.env.SMTP_HOST || 'mail.kavern.fr',
   port: parseInt(process.env.SMTP_PORT || '587'),
   secure: false,
   auth: {
@@ -24,7 +24,7 @@ const transporter = nodemailer.createTransport({
 export async function sendEmail(options: EmailOptions) {
   try {
     const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM || 'La Boutique de Morgane <email@laboutiquedemorgane.com>',
+      from: process.env.EMAIL_FROM || 'KAVERN <contact@kavern.fr>',
       to: options.to,
       subject: options.subject,
       text: options.text,
@@ -74,7 +74,7 @@ export async function sendOrderConfirmationEmail(
             <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
               <tr>
                 <td style="padding: 0; text-align: center; background-color: #000000;">
-                  <img src="${process.env.NEXT_PUBLIC_SITE_URL || 'https://laboutiquedemorgane.com'}/lbdm-logobdc.png" alt="La Boutique de Morgane" style="width: 100%; height: auto; display: block; max-height: 200px; object-fit: cover;" />
+                  <img src="${process.env.NEXT_PUBLIC_SITE_URL || 'https://kavern.fr'}/kavern-logo.png" alt="KAVERN" style="width: 100%; height: auto; display: block; max-height: 200px; object-fit: cover;" />
                 </td>
               </tr>
               <tr>
@@ -120,10 +120,10 @@ export async function sendOrderConfirmationEmail(
               <tr>
                 <td style="background-color: #f8f8f8; padding: 20px 30px; text-align: center;">
                   <p style="color: #999999; margin: 0; font-size: 12px;">
-                    © ${new Date().getFullYear()} La Boutique de Morgane - Tous droits réservés
+                    © ${new Date().getFullYear()} KAVERN - Tous droits réservés
                   </p>
                   <p style="color: #999999; margin: 10px 0 0 0; font-size: 12px;">
-                    Pour toute question, contactez-nous à <a href="mailto:email@laboutiquedemorgane.com" style="color: #666666;">email@laboutiquedemorgane.com</a>
+                    Pour toute question, contactez-nous à <a href="mailto:contact@kavern.fr" style="color: #666666;">contact@kavern.fr</a>
                   </p>
                 </td>
               </tr>
@@ -152,7 +152,7 @@ export async function sendOrderConfirmationEmail(
 
     Votre commande sera traitée dans les plus brefs délais.
 
-    La Boutique de Morgane
+    KAVERN
   `;
 
   return sendEmail({

@@ -43,7 +43,7 @@ export const PasswordResetEmail = ({ resetLink }: PasswordResetEmailProps) => {
 
       <Text style={signature}>
         Bisous,<br />
-        <strong>La Team Morgane</strong> ✨
+        <strong>La Team KAVERN</strong> ✨
       </Text>
     </EmailLayout>
   );

@@ -205,7 +205,7 @@ export default function LooksManagementPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Les Looks de Morgane</h1>
+          <h1 className="text-3xl font-bold mb-2">Les Looks KAVERN</h1>
           <p className="text-gray-600">{looks.length} looks créés</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -254,7 +254,7 @@ export default function LooksManagementPage() {
               </div>
 
               <div>
-                <Label htmlFor="advice">Conseil de Morgane</Label>
+                <Label htmlFor="advice">Conseil KAVERN</Label>
                 <Textarea
                   id="advice"
                   value={formData.morgane_advice}

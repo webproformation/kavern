@@ -44,21 +44,21 @@ export function DashboardStats() {
   const statsData = [
     {
       icon: Diamond,
-      value: stats?.diamonds_found || 0,
+      value: stats?.diamonds_found || '',
       label: 'Diamants dénichés',
       color: 'text-[#D4AF37]',
       bgColor: 'bg-[#D4AF37]/10',
     },
     {
       icon: MessageCircleHeart,
-      value: stats?.reviews_validated || 0,
+      value: stats?.reviews_validated || '',
       label: 'Mots doux reçus',
       color: 'text-pink-500',
       bgColor: 'bg-pink-500/10',
     },
     {
       icon: Package,
-      value: stats?.packages_sent || 0,
+      value: stats?.packages_sent || '',
       label: 'Colis chouchoutés et expédiés',
       color: 'text-emerald-500',
       bgColor: 'bg-emerald-500/10',

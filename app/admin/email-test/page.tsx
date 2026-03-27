@@ -87,7 +87,7 @@ export default function EmailTestPage() {
           <CardContent className="space-y-3 text-sm">
             <div>
               <span className="font-semibold">Serveur:</span>{' '}
-              <span className="text-gray-600">laboutiquedemorgane.com</span>
+              <span className="text-gray-600">kavern.fr</span>
             </div>
             <div>
               <span className="font-semibold">Port:</span>{' '}
@@ -95,11 +95,11 @@ export default function EmailTestPage() {
             </div>
             <div>
               <span className="font-semibold">Utilisateur:</span>{' '}
-              <span className="text-gray-600">email@laboutiquedemorgane.com</span>
+              <span className="text-gray-600">contact@kavern.fr</span>
             </div>
             <div>
               <span className="font-semibold">De:</span>{' '}
-              <span className="text-gray-600">La Boutique de Morgane</span>
+              <span className="text-gray-600">KAVERN</span>
             </div>
           </CardContent>
         </Card>

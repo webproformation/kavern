@@ -35,8 +35,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[API /live/add-product] Step 1: Insert with minimal data (cache workaround)...');
-
     const { data: insertedRow, error: insertError } = await supabaseAdmin
       .from('live_shared_products')
       .insert({
@@ -58,8 +56,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[API /live/add-product] Step 2: Update with full data...');
-
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 2);
 
@@ -79,8 +75,6 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error('[API /live/add-product] Update failed:', updateError);
-    } else {
-      console.log('[API /live/add-product] Success:', updatedData);
     }
 
     return NextResponse.json({

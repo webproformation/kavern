@@ -224,8 +224,8 @@ async function main() {
           entity_type: 'product',
           entity_identifier: productData.slug,
           product_id: product.id,
-          seo_title: `${productData.name} - La Boutique de Morgane`,
-          meta_description: `Découvrez ${productData.name.toLowerCase()} sur La Boutique de Morgane. Qualité premium et livraison rapide.`,
+          seo_title: `${productData.name} - KAVERN`,
+          meta_description: `Découvrez ${productData.name.toLowerCase()} sur KAVERN. Qualité premium et livraison rapide.`,
           is_active: true,
         });
 

@@ -27,6 +27,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 interface NavSection {
   title: string;
@@ -123,12 +127,29 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const { profile, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<string[]>([
     "Tableau de bord",
     "Boutique",
   ]);
   const pathname = usePathname();
+
+  // Protection admin — redirect si pas admin
+  useEffect(() => {
+    if (!authLoading && (!profile || !profile.is_admin)) {
+      router.replace('/');
+    }
+  }, [profile, authLoading, router]);
+
+  if (authLoading) {
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>;
+  }
+
+  if (!profile?.is_admin) {
+    return <div className="min-h-screen flex items-center justify-center"><p className="text-gray-500">Acces refuse</p></div>;
+  }
 
   const toggleSection = (title: string) => {
     setExpandedSections((prev) => {
@@ -148,7 +169,7 @@ export default function AdminLayout({
     <div className="min-h-screen bg-gray-50">
       {/* Mobile header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-blue-900 text-white flex items-center justify-between px-3 z-50 shadow-lg">
-        <h1 className="text-base font-bold truncate flex-1">Admin - LBDM</h1>
+        <h1 className="text-base font-bold truncate flex-1">Admin - KAVERN</h1>
         <Button
           variant="ghost"
           size="icon"
@@ -177,7 +198,7 @@ export default function AdminLayout({
               <span className="text-sm">Accueil du site</span>
             </Link>
           </div>
-          <h1 className="text-xl font-bold">La Boutique de Morgane</h1>
+          <h1 className="text-xl font-bold">KAVERN</h1>
           <p className="text-sm text-blue-200 mt-1">Administration</p>
         </div>
 

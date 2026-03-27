@@ -27,13 +27,6 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    console.log('Stripe checkout request received:', {
-      orderId: body.orderId,
-      userId: body.userId,
-      itemsCount: body.items?.length,
-      total: body.total,
-      hasShipping: !!body.shipping_cost
-    });
 
     const {
       orderId,
@@ -53,11 +46,9 @@ export async function POST(request: NextRequest) {
     }
 
     const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    console.log('Using origin for redirects:', origin);
 
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map((item: any) => {
       const priceInCents = Math.round(parseFloat(item.price) * 100);
-      console.log(`Item: ${item.name}, Price: ${item.price}€ = ${priceInCents} cents, Qty: ${item.quantity}`);
 
       return {
         price_data: {
@@ -75,7 +66,6 @@ export async function POST(request: NextRequest) {
 
     if (shipping_cost && parseFloat(shipping_cost) > 0) {
       const shippingInCents = Math.round(parseFloat(shipping_cost) * 100);
-      console.log(`Adding shipping: ${shipping_cost}€ = ${shippingInCents} cents`);
 
       lineItems.push({
         price_data: {
@@ -104,21 +94,7 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    console.log('Creating Stripe session with params:', {
-      mode: sessionParams.mode,
-      itemsCount: lineItems.length,
-      success_url: sessionParams.success_url,
-      cancel_url: sessionParams.cancel_url,
-      customer_email: sessionParams.customer_email
-    });
-
     const session = await stripe.checkout.sessions.create(sessionParams);
-
-    console.log('Stripe session created successfully:', {
-      sessionId: session.id,
-      paymentIntent: session.payment_intent,
-      url: session.url
-    });
 
     const { error: updateError } = await supabase
       .from('orders')
@@ -130,8 +106,6 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error('Error updating order with Stripe session:', updateError);
-    } else {
-      console.log('Order updated with Stripe session ID:', orderId);
     }
 
     return NextResponse.json({
