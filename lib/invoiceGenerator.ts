@@ -63,8 +63,9 @@ const formatVariationLines = (data: any): string[] => {
 export const generateInvoicePDF = async (order: any, invoiceNumber: string) => {
   // @ts-ignore
   const doc = new jsPDF();
-  const primaryColor = "#D4AF37"; 
-  const blackColor = "#000000";
+  const primaryColor: [number, number, number] = [212, 175, 55];
+  const blackColor: [number, number, number] = [0, 0, 0];
+  const greenColor: [number, number, number] = [0, 150, 0];
   
   // 1. LOGO (Pleine largeur comme avant)
   let logoH = 35;
@@ -79,11 +80,11 @@ export const generateInvoicePDF = async (order: any, invoiceNumber: string) => {
 
   // 2. BLOCS VENDEUR & FACTURE
   doc.setFontSize(10);
-  doc.setTextColor(primaryColor); doc.setFont("helvetica", "bold");
+  doc.setTextColor(...primaryColor); doc.setFont("helvetica", "bold");
   doc.text("Informations Vendeur", 14, currentY);
   doc.text("FACTURE", 110, currentY);
 
-  doc.setTextColor(blackColor); doc.setFont("helvetica", "normal");
+  doc.setTextColor(...blackColor); doc.setFont("helvetica", "normal");
   doc.text([
     "KAVERN",
     "1062 Rue d'Armentières",
@@ -100,9 +101,9 @@ export const generateInvoicePDF = async (order: any, invoiceNumber: string) => {
 
   // 3. ADRESSE DE LIVRAISON
   currentY += 40;
-  doc.setTextColor(primaryColor); doc.setFont("helvetica", "bold");
+  doc.setTextColor(...primaryColor); doc.setFont("helvetica", "bold");
   doc.text("Adresse de Livraison", 110, currentY);
-  doc.setTextColor(blackColor); doc.setFont("helvetica", "normal");
+  doc.setTextColor(...blackColor); doc.setFont("helvetica", "normal");
   
   const ship = order.relay_point_data || order.shipping_address || {};
   let addrLines = [];
@@ -163,14 +164,14 @@ export const generateInvoicePDF = async (order: any, invoiceNumber: string) => {
   let finalY = doc.lastAutoTable.finalY + 10;
   
   // Affichage du mode de paiement
-  doc.setFontSize(9); doc.setTextColor(blackColor);
+  doc.setFontSize(9); doc.setTextColor(...blackColor);
   let payMethod = order.payment_method_name || order.payment_method || 'Carte Bancaire';
   // Nettoyage si c'est un ID brut
   if (payMethod.includes('_')) payMethod = payMethod.replace(/_/g, ' ').toUpperCase();
   doc.text(`Mode de paiement : ${payMethod}`, 14, finalY);
 
-  const drawTotal = (label: string, val: string, y: number, color = blackColor, bold = false) => {
-    doc.setFontSize(10); doc.setTextColor(color);
+  const drawTotal = (label: string, val: string, y: number, color: [number, number, number] = blackColor, bold = false) => {
+    doc.setFontSize(10); doc.setTextColor(...color);
     doc.setFont("helvetica", bold ? "bold" : "normal");
     doc.text(label, 140, y);
     doc.text(val, 195, y, { align: 'right' });
@@ -189,7 +190,7 @@ export const generateInvoicePDF = async (order: any, invoiceNumber: string) => {
   drawTotal("Livraison :", `${shipCost.toFixed(2)} €`, finalY += 6);
   
   if (insurance > 0) drawTotal("Assurance :", `${insurance.toFixed(2)} €`, finalY += 6);
-  if (discount > 0) drawTotal("Réduction :", `-${discount.toFixed(2)} €`, finalY += 6, [0, 150, 0]);
+  if (discount > 0) drawTotal("Réduction :", `-${discount.toFixed(2)} €`, finalY += 6, greenColor);
   if (wallet > 0) drawTotal("Cagnotte :", `-${wallet.toFixed(2)} €`, finalY += 6, primaryColor);
   
   doc.setDrawColor(200); doc.line(130, finalY + 2, 195, finalY + 2);

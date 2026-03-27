@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
     doc.setTextColor(212, 175, 55);
     doc.setFontSize(22);
     doc.setFont("helvetica", "bold");
-    doc.text("LA BOUTIQUE DE MORGANE", 105, 20, { align: "center" });
-    
+    doc.text("KAVERN", 105, 20, { align: "center" });
+
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(255, 255, 255);
