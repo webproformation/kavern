@@ -18,8 +18,9 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient();
 
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
+    // 3-5 jours après livraison (statut "delivered" ou "shipped" depuis 4j)
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
 
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
@@ -27,9 +28,9 @@ export async function POST(request: NextRequest) {
         *,
         profiles(email, first_name)
       `)
-      .eq('status', 'shipped')
-      .gte('shipped_at', eightDaysAgo.toISOString())
-      .lt('shipped_at', sevenDaysAgo.toISOString())
+      .in('status', ['delivered', 'shipped'])
+      .gte('shipped_at', fiveDaysAgo.toISOString())
+      .lt('shipped_at', threeDaysAgo.toISOString())
       .is('review_email_sent', false);
 
     if (ordersError) {
@@ -49,6 +50,20 @@ export async function POST(request: NextRequest) {
       const firstName = profile?.first_name || 'Client';
 
       if (!email) continue;
+
+      // Vérifier si la cliente a déjà posté un avis pour cette commande
+      const { data: existingReview } = await supabase
+        .from('reviews')
+        .select('id')
+        .eq('user_id', order.user_id)
+        .eq('order_id', order.id)
+        .maybeSingle();
+
+      if (existingReview) {
+        // Marquer comme envoyé pour ne pas revérifier
+        await supabase.from('orders').update({ review_email_sent: true }).eq('id', order.id);
+        continue;
+      }
 
       const result = await sendReviewRequestEmail(email, firstName);
 

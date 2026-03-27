@@ -112,6 +112,7 @@ export function CheckoutRewards({
                 <Checkbox
                   id="useWallet"
                   checked={useWallet}
+                  disabled={!!discountAmount || !!couponCode}
                   onCheckedChange={(checked) => {
                     setUseWallet(checked as boolean);
                     if (!checked) {
@@ -197,7 +198,7 @@ export function CheckoutRewards({
                 <Checkbox
                   id="useLoyalty"
                   checked={useLoyalty}
-                  disabled={discountAmount > 0 || referralDiscount > 0}
+                  disabled={!!discountAmount || !!referralDiscount || !!couponCode}
                   onCheckedChange={(checked) => {
                     setUseLoyalty(checked as boolean);
                     if (!checked) {
@@ -349,20 +350,21 @@ export function CheckoutRewards({
         {/* Code promo manuel */}
         <div className="space-y-2">
           <Label htmlFor="coupon" className="text-base font-semibold">Code promo</Label>
+          <p className="text-xs text-gray-500">Une seule réduction par commande (code promo OU cagnotte, non cumulables).</p>
           <div className="flex gap-2">
             <Input
               id="coupon"
-              disabled={useLoyalty}
+              disabled={useWallet || useLoyalty}
               value={couponCode}
               onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-              placeholder="Entrez votre code"
+              placeholder={useWallet || useLoyalty ? "Non cumulable avec la cagnotte" : "Entrez votre code"}
               className="focus:border-[#C6A15B] focus:ring-[#C6A15B]"
             />
             <Button
               type="button"
               variant="outline"
               className="border-[#C6A15B] text-[#C6A15B] hover:bg-[#C6A15B] hover:text-white"
-              disabled={useLoyalty}
+              disabled={useWallet || useLoyalty}
             >
               Appliquer
             </Button>

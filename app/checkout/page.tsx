@@ -367,7 +367,7 @@ export default function CheckoutPage() {
     if (!user) { toast.error('Vous devez être connecté'); router.push('/auth/login'); return; }
     if (cart.length === 0) { toast.error('Votre panier est vide'); return; }
     if (subtotal < MIN_ORDER_AMOUNT) { toast.error(`Le montant minimum de commande est de ${MIN_ORDER_AMOUNT}€.`); return; }
-    if (totalAfterDiscount < MIN_ORDER_AMOUNT && !isGiftCardPayment) { toast.error(`Le montant minimum après réductions doit être de ${MIN_ORDER_AMOUNT}€.`); return; }
+    if (totalAfterWallet < MIN_ORDER_AMOUNT && totalAfterWallet > 0 && !isGiftCardPayment) { toast.error(`Le montant net à payer doit être d'au moins ${MIN_ORDER_AMOUNT}€. Ajoutez un article pour atteindre ce seuil.`); return; }
     if (!selectedPaymentMethodId) { toast.error('Veuillez sélectionner un mode de paiement'); return; }
     
     if (!addToOpenPackage && !isStorePickup) {
