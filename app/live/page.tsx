@@ -382,7 +382,7 @@ export default function LivePage() {
                 </li>
                 <li className="flex items-start gap-3">
                   <Sparkles className="w-5 h-5 text-[#C6A15B] flex-shrink-0 mt-0.5" />
-                  <p>Profitez d'offres exclusives réservées aux participants</p>
+                  <p>Profitez d&apos;offres exclusives réservées aux participants</p>
                 </li>
                 <li className="flex items-start gap-3">
                   <Sparkles className="w-5 h-5 text-[#C6A15B] flex-shrink-0 mt-0.5" />
@@ -394,11 +394,57 @@ export default function LivePage() {
                 </li>
                 <li className="flex items-start gap-3">
                   <Sparkles className="w-5 h-5 text-[#C6A15B] flex-shrink-0 mt-0.5" />
-                  <p>Profitez d'une ambiance conviviale et chaleureuse</p>
+                  <p>Profitez d&apos;une ambiance conviviale et chaleureuse</p>
                 </li>
               </ul>
             </CardContent>
           </Card>
+
+          {/* BLOC SEO — Texte optimisé pour le référencement */}
+          <div className="mt-12 space-y-8 text-gray-700">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Une expérience de shopping interactive et gourmande</h2>
+              <p className="leading-relaxed">
+                Faire son shopping pendant un live n&apos;a jamais été aussi simple. Profitez de notre fonction Direct-to-Cart
+                qui vous permet d&apos;ajouter les créations présentées par André directement à votre panier, sans jamais quitter
+                la vidéo. Interagissez en temps réel via le chat, posez vos questions sur les parfums de Grasse, les textures
+                de nos savons ou les saveurs de nos terrines, et vibrez au rythme des découvertes en direct !
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Le Coffre de la Kavern : Un défi communautaire passionnant</h2>
+              <p className="leading-relaxed">
+                L&apos;une des grandes animations de notre boutique est la Jauge Vivante. Ensemble, faites grimper l&apos;énergie
+                du live en participant et en partageant le direct. À chaque palier d&apos;audience franchi, vous vous rapprochez
+                de l&apos;ouverture du Coffre de la Kavern, déclenchant des surprises exclusives, des cadeaux et des tirages
+                au sort pour récompenser votre fidélité !
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Replays intelligents : Retrouvez vos pépites à la demande</h2>
+              <p className="leading-relaxed">
+                Vous avez manqué notre dernier rendez-vous ? Retrouvez tous nos replays organisés par chapitres. Notre système
+                de navigation vous permet de sauter directement au produit qui vous intéresse pour en voir la présentation
+                détaillée, vous offrant un gain de temps précieux. C&apos;est l&apos;outil idéal pour revoir les explications
+                d&apos;André et composer votre Colis Ouvert à votre rythme.
+              </p>
+            </div>
+
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Achetez en toute sérénité lors de nos Lives</h3>
+              <ul className="space-y-3 text-sm">
+                <li><strong>Droit à l&apos;erreur (14 jours) :</strong> Un article ne vous convient pas ? Vous disposez de 14 jours
+                  après réception pour nous le retourner et demander un avoir ou un remboursement.</li>
+                <li><strong>Garantie Sérénité Livraison :</strong> Votre commande est sous notre responsabilité.
+                  En cas de perte, notre garantie assure un renvoi ou un remboursement rapide.</li>
+                <li><strong>Hygiène &amp; Sécurité :</strong> Pour des raisons d&apos;hygiène et de protection de la santé,
+                  les cosmétiques dont l&apos;opercule a été retiré ainsi que les produits d&apos;épicerie fine ouverts
+                  ne peuvent faire l&apos;objet d&apos;un droit de rétractation.</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </div>

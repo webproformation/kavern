@@ -17,6 +17,7 @@ export default function AdminGuestbookPage() {
   const [responses, setResponses] = useState<Record<string, string>>({})
 
   const handleApprove = async (id: string) => {
+    // 1. Approuver l'avis
     const { error } = await supabase
       .from('guestbook_entries')
       .update({ status: 'approved' })
@@ -28,7 +29,57 @@ export default function AdminGuestbookPage() {
       return
     }
 
-    toast.success('Avis approuvé')
+    // 2. Créditer 0.20€ sur la cagnotte de l'auteur
+    const entry = entries.find((e: any) => e.id === id)
+    if (entry?.user_id) {
+      // Vérifier qu'on n'a pas déjà crédité pour cet avis
+      const { data: existing } = await supabase
+        .from('loyalty_euro_transactions')
+        .select('id')
+        .eq('user_id', entry.user_id)
+        .eq('type', 'review_reward')
+        .eq('reference_id', id)
+        .maybeSingle()
+
+      if (!existing) {
+        // Insérer la transaction fidélité
+        await supabase.from('loyalty_euro_transactions').insert({
+          user_id: entry.user_id,
+          type: 'review_reward',
+          amount: 0.20,
+          description: 'Avis approuvé sur le Livre d\'Or',
+          reference_id: id
+        })
+
+        // Mettre à jour le solde cagnotte
+        await supabase.rpc('increment_loyalty_euros', {
+          p_user_id: entry.user_id,
+          p_amount: 0.20
+        }).then(({ error: rpcError }) => {
+          if (rpcError) {
+            // Fallback: mise à jour directe
+            supabase.from('profiles')
+              .select('loyalty_euros')
+              .eq('id', entry.user_id)
+              .single()
+              .then(({ data: profile }) => {
+                if (profile) {
+                  supabase.from('profiles')
+                    .update({ loyalty_euros: (profile.loyalty_euros || 0) + 0.20 })
+                    .eq('id', entry.user_id)
+                }
+              })
+          }
+        })
+
+        toast.success('Avis approuvé + 0,20 € crédités sur la cagnotte !')
+      } else {
+        toast.success('Avis approuvé (cagnotte déjà créditée)')
+      }
+    } else {
+      toast.success('Avis approuvé')
+    }
+
     refetch()
   }
 
