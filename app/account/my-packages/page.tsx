@@ -176,12 +176,6 @@ export default function MyPackagesPage() {
               </p>
             </div>
           </div>
-          <Link href="/account/open-package">
-            <Button className="bg-[#D4AF37] hover:bg-[#C6A15B]">
-              <Package className="h-4 w-4 mr-2" />
-              Ouvrir un nouveau colis
-            </Button>
-          </Link>
         </div>
       </div>
 
@@ -190,11 +184,15 @@ export default function MyPackagesPage() {
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Package className="h-16 w-16 text-gray-300 mb-4" />
             <p className="text-gray-500 text-center mb-4">
-              Vous n'avez pas de colis ouvert pour le moment
+              Vous n&apos;avez pas de colis ouvert pour le moment.
             </p>
-            <Link href="/account/open-package">
+            <p className="text-sm text-gray-400 text-center max-w-md">
+              Pour ouvrir un colis, passez une commande et sélectionnez l&apos;option
+              &quot;Ouvrir un Colis Ouvert&quot; au moment du choix de la livraison.
+            </p>
+            <Link href="/" className="mt-4">
               <Button className="bg-[#D4AF37] hover:bg-[#C6A15B]">
-                Ouvrir un colis
+                Découvrir la boutique
               </Button>
             </Link>
           </CardContent>
@@ -305,6 +303,58 @@ export default function MyPackagesPage() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Jauge de poids */}
+                    {pkg.status === 'active' && (
+                      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-600">Poids estimé du colis</span>
+                          <span className="text-sm font-bold text-gray-900">
+                            {(() => {
+                              const totalWeight = orders.reduce((sum, o) => {
+                                const itemsWeight = (o.order?.order_items || []).reduce((s: number, item: any) => s + ((item.weight || 0.3) * item.quantity), 0);
+                                return sum + itemsWeight;
+                              }, 0);
+                              return `${totalWeight.toFixed(1)} kg / 10 kg`;
+                            })()}
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-3">
+                          <div
+                            className={`h-3 rounded-full transition-all ${
+                              orders.reduce((sum, o) => sum + (o.order?.order_items || []).reduce((s: number, item: any) => s + ((item.weight || 0.3) * item.quantity), 0), 0) > 8
+                                ? 'bg-red-500' : 'bg-[#D4AF37]'
+                            }`}
+                            style={{
+                              width: `${Math.min(100, (orders.reduce((sum, o) => sum + (o.order?.order_items || []).reduce((s: number, item: any) => s + ((item.weight || 0.3) * item.quantity), 0), 0) / 10) * 100)}%`
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">Maximum 10 kg pour un voyage en toute sécurité</p>
+                      </div>
+                    )}
+
+                    {/* Bouton Clôturer */}
+                    {pkg.status === 'active' && (
+                      <div className="mb-6 flex justify-center">
+                        <Button
+                          className="bg-[#D4AF37] hover:bg-[#C6A15B] text-white px-8"
+                          onClick={async () => {
+                            if (!confirm('Clôturer ce colis et lancer l\'expédition ?')) return;
+                            const { error } = await supabase
+                              .from('open_packages')
+                              .update({ status: 'closed', closed_at: new Date().toISOString() })
+                              .eq('id', pkg.id);
+                            if (error) { toast.error('Erreur lors de la clôture'); return; }
+                            toast.success('Colis clôturé ! André va préparer votre expédition.');
+                            loadPackages();
+                          }}
+                        >
+                          <Truck className="h-4 w-4 mr-2" />
+                          Clôturer et expédier maintenant
+                        </Button>
+                      </div>
+                    )}
 
                     {orders.length > 0 && (
                       <div className="border-t pt-6">
