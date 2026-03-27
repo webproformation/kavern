@@ -11,29 +11,25 @@ import { toast } from 'sonner';
 
 const reassuranceBlocks = [
   {
-    icon: '❤️',
-    iconBg: 'bg-red-50',
+    svgPath: 'M3 10h4v11H3zM17 10h4v11h-4zM7 3h10l2 7H5z',
     href: '/le-droit-a-lerreur',
     title: 'Le Droit à l\'Erreur',
     description: 'Ça arrive ! Transformez votre retour en crédit boutique pour craquer sur votre prochain coup de cœur sans attendre.'
   },
   {
-    icon: '🚀',
-    iconBg: 'bg-blue-50',
+    svgPath: 'M1 3h15l1 7H0zM3 12h11v2H3zM5 16h7v2H5zM20 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z',
     href: '/vite-chez-vous',
     title: 'Vite chez vous',
     description: 'Vos pépites emballées avec soin et une expédition rapide. Livraison à prix mini (dès 4,90 €) pour un max de plaisir.'
   },
   {
-    icon: '🔒',
-    iconBg: 'bg-yellow-50',
+    svgPath: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z',
     href: '/transactions-protegees',
     title: 'Transactions Protégées',
     description: 'Règlement 100 % sécurisé et facilités de paiement (3x, 4x). La tranquillité d\'esprit avant tout.'
   },
   {
-    icon: '📞',
-    iconBg: 'bg-green-50',
+    svgPath: 'M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z',
     href: '/allo-andre',
     title: 'Allô André ?',
     description: 'Plus qu\'un site, un accompagnement. André vous guide personnellement dans vos choix mode et beauté.'
@@ -134,8 +130,12 @@ export function SiteFooter() {
                 className="group block"
               >
                 <div className="bg-white rounded-lg overflow-hidden transition-transform duration-300 hover:scale-105">
-                  <div className={`h-32 overflow-hidden flex items-center justify-center ${(block as any).iconBg || 'bg-gray-50'} rounded-lg`}>
-                    <span className="text-5xl transition-transform duration-300 group-hover:scale-125">{(block as any).icon}</span>
+                  <div className="h-32 overflow-hidden flex items-center justify-center">
+                    <div className="w-20 h-20 rounded-full bg-[#D4AF37]/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+                      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d={(block as any).svgPath} />
+                      </svg>
+                    </div>
                   </div>
                   <div className="p-6 text-center">
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
