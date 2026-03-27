@@ -239,6 +239,87 @@ export default function CheckoutPage() {
     }
   };
 
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    try {
+      // Vérifier le coupon en base
+      const { data: coupon, error } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', couponCode.trim().toUpperCase())
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (error || !coupon) {
+        toast.error('Code promo invalide ou expiré');
+        return;
+      }
+
+      // Vérifier la date de validité
+      if (coupon.valid_until && new Date(coupon.valid_until) < new Date()) {
+        toast.error('Ce code promo a expiré');
+        return;
+      }
+
+      // Vérifier le nombre d'utilisations max
+      if (coupon.max_uses && coupon.uses_count >= coupon.max_uses) {
+        toast.error('Ce code promo a atteint son nombre maximal d\'utilisations');
+        return;
+      }
+
+      // Vérifier le montant minimum d'achat
+      if (coupon.min_purchase && subtotal < coupon.min_purchase) {
+        toast.error(`Montant minimum requis : ${coupon.min_purchase}€`);
+        return;
+      }
+
+      // Anti-fraude BIENVENUE : vérifier si l'utilisateur a déjà utilisé ce code
+      if (coupon.code === 'BIENVENUE5' && user) {
+        const { data: previousUse } = await supabase
+          .from('orders')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('coupon_code', 'BIENVENUE5')
+          .maybeSingle();
+
+        if (previousUse) {
+          toast.error('Vous avez déjà utilisé le code BIENVENUE5');
+          return;
+        }
+
+        // Anti-fraude : vérifier par adresse de livraison ou téléphone
+        const selectedAddr = addresses.find(a => a.id === selectedAddressId);
+        if (selectedAddr) {
+          const { data: addrUse } = await supabase
+            .from('orders')
+            .select('id')
+            .eq('coupon_code', 'BIENVENUE5')
+            .or(`shipping_phone.eq.${selectedAddr.phone},shipping_street.eq.${selectedAddr.address_line1}`)
+            .maybeSingle();
+
+          if (addrUse) {
+            toast.error('Ce code de bienvenue a déjà été utilisé avec cette adresse ou ce téléphone');
+            return;
+          }
+        }
+      }
+
+      // Calculer la réduction
+      let discount = 0;
+      if (coupon.discount_type === 'fixed') {
+        discount = Math.min(coupon.discount_value, subtotal);
+      } else if (coupon.discount_type === 'percentage') {
+        discount = subtotal * (coupon.discount_value / 100);
+      }
+
+      setDiscountAmount(discount);
+      setAppliedCoupon(coupon);
+      toast.success(`Code promo appliqué ! -${discount.toFixed(2)}€`);
+    } catch (err) {
+      toast.error('Erreur lors de la vérification du code');
+    }
+  };
+
   const handlePayPalSuccess = async (paypalOrderId: string) => {
     try {
       // Creer la commande en DB (meme logique que handleSubmit)
@@ -586,6 +667,7 @@ export default function CheckoutPage() {
               giftCardApplied={giftCardApplied}
               handleApplyGiftCard={handleApplyGiftCard}
               giftCardLoading={giftCardLoading}
+              handleApplyCoupon={handleApplyCoupon}
             />
 
             <CheckoutSummary 

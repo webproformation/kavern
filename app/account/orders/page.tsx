@@ -59,6 +59,8 @@ export default function OrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ORDERS_PER_PAGE = 10;
 
   useEffect(() => {
     if (user) {
@@ -178,13 +180,16 @@ export default function OrdersPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {orders.map((order) => (
+          {orders.slice((currentPage - 1) * ORDERS_PER_PAGE, currentPage * ORDERS_PER_PAGE).map((order) => (
             <Card key={order.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle className="text-lg">
+                    <CardTitle className="text-lg flex items-center gap-2">
                       Commande #{order.order_number}
+                      {order.is_open_package && (
+                        <Badge className="bg-green-100 text-green-800 border-green-200 text-[10px]">Colis Ouvert</Badge>
+                      )}
                     </CardTitle>
                     <CardDescription className="flex items-center gap-2 mt-1">
                       <Calendar className="h-4 w-4" />
@@ -205,13 +210,25 @@ export default function OrdersPage() {
                         {(Number(order.total) || 0).toFixed(2)}€
                         </span>
                     </div>
-                    {/* Affichage du moyen de paiement */}
                     <div className="text-sm text-gray-500 ml-7">
                         Via {order.payment_method?.name || 'CB / Stripe'}
                     </div>
                   </div>
-                  
+
                   <div className="flex gap-2">
+                    {order.tracking_url && (order.status === 'shipped' || order.status === 'delivered') && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                        asChild
+                      >
+                        <a href={order.tracking_url} target="_blank" rel="noopener noreferrer">
+                          <Truck className="h-4 w-4" />
+                          <span className="hidden sm:inline">Suivre</span>
+                        </a>
+                      </Button>
+                    )}
                     <Button
                         variant="outline"
                         size="sm"
@@ -239,6 +256,31 @@ export default function OrdersPage() {
               </CardContent>
             </Card>
           ))}
+
+          {/* Pagination */}
+          {orders.length > ORDERS_PER_PAGE && (
+            <div className="flex items-center justify-center gap-2 pt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(p => p - 1)}
+              >
+                Précédent
+              </Button>
+              <span className="text-sm text-gray-600">
+                Page {currentPage} / {Math.ceil(orders.length / ORDERS_PER_PAGE)}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage >= Math.ceil(orders.length / ORDERS_PER_PAGE)}
+                onClick={() => setCurrentPage(p => p + 1)}
+              >
+                Suivant
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

@@ -45,6 +45,7 @@ interface CheckoutRewardsProps {
   giftCardApplied: boolean;
   handleApplyGiftCard: () => Promise<void>;
   giftCardLoading: boolean;
+  handleApplyCoupon: () => Promise<void>;
 }
 
 export function CheckoutRewards({
@@ -80,6 +81,7 @@ export function CheckoutRewards({
   giftCardApplied,
   handleApplyGiftCard,
   giftCardLoading,
+  handleApplyCoupon,
 }: CheckoutRewardsProps) {
   return (
     <Card className="border-l-4 border-[#C6A15B]">
@@ -364,7 +366,8 @@ export function CheckoutRewards({
               type="button"
               variant="outline"
               className="border-[#C6A15B] text-[#C6A15B] hover:bg-[#C6A15B] hover:text-white"
-              disabled={useWallet || useLoyalty}
+              disabled={useWallet || useLoyalty || !couponCode.trim()}
+              onClick={handleApplyCoupon}
             >
               Appliquer
             </Button>

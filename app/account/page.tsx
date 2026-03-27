@@ -304,14 +304,18 @@ export default function AccountPage() {
               <Label className="font-bold uppercase text-[10px] tracking-widest text-gray-400">Date de naissance</Label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input 
-                  type="date" 
-                  value={birthDate} 
-                  onChange={(e) => setBirthDate(e.target.value)} 
-                  max={getTodayDate()} 
-                  className="pl-10 rounded-xl border-gray-200" 
+                <Input
+                  type="date"
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(e.target.value)}
+                  max={getTodayDate()}
+                  disabled={!!profile?.birth_date}
+                  className={`pl-10 rounded-xl border-gray-200 ${profile?.birth_date ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 />
               </div>
+              {profile?.birth_date && (
+                <p className="text-xs text-gray-400 italic">Cette information ne peut pas être modifiée.</p>
+              )}
             </div>
             
             <Button 
