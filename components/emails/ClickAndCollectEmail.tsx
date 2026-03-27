@@ -37,7 +37,6 @@ export const ClickAndCollectEmail = ({ firstName }: ClickAndCollectEmailProps) =
           Le Mercredi sur RDV de 9h à 19h
         </Text>
         <Text style={contactText}>
-          Doudou : <a href="tel:+33603489662" style={link}>06 03 48 96 62</a><br />
           André : <a href="tel:+33603489662" style={link}>06 03 48 96 62</a>
         </Text>
       </Section>

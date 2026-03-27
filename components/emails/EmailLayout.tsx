@@ -48,17 +48,16 @@ export const EmailLayout = ({ preview, children }: EmailLayoutProps) => {
               59850 Nieppe, France
             </Text>
             <Text style={footerText}>
-              📧 <Link href="mailto:laboutiquededoudou@gmail.com" style={link}>laboutiquededoudou@gmail.com</Link>
+              📧 <Link href="mailto:contact@kavern-france.fr" style={link}>contact@kavern-france.fr</Link>
             </Text>
             <Text style={footerText}>
-              📱 Doudou: <Link href="tel:+33603489662" style={link}>06 03 48 96 62</Link> |
-              André: <Link href="tel:+33603489662" style={link}>06 03 48 96 62</Link>
+              📱 André : <Link href="tel:+33603489662" style={link}>06 03 48 96 62</Link>
             </Text>
             <Text style={footerText}>
-              Suivez-nous sur <Link href="https://facebook.com" style={link}>Facebook</Link> et <Link href="https://instagram.com" style={link}>Instagram</Link>
+              Suivez-nous sur <Link href="https://www.facebook.com/people/KAVERN/" style={link}>Facebook</Link> et <Link href="https://www.tiktok.com/@kavern_france" style={link}>TikTok</Link>
             </Text>
             <Text style={footerTextSmall}>
-              Vous recevez cet e-mail car vous avez un compte sur kavern.fr<br />
+              Vous recevez cet e-mail car vous avez un compte sur kavern-france.fr<br />
               <Link href="{{{unsubscribe}}}" style={link}>Se désabonner des e-mails marketing</Link>
             </Text>
           </Section>

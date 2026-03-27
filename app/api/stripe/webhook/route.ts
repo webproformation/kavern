@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabase } from '@/lib/supabase';
-import { sendOrderConfirmationEmail } from '@/lib/mail';
+// Email envoyé via API route interne
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-12-15.clover',
@@ -90,16 +90,18 @@ export async function POST(request: NextRequest) {
             }
 
             // ... (Envoi Email) ...
+            // Envoi email confirmation via API route interne
             if (orderDetails.profiles?.email) {
-                // Logique envoi email...
-                const items = orderDetails.order_items?.map((item: any) => ({ name: item.products?.name, quantity: item.quantity, price: item.price })) || [];
-                await sendOrderConfirmationEmail(orderDetails.profiles.email, {
-                    orderId: orderDetails.order_number || orderId,
-                    customerName: `${orderDetails.profiles.first_name} ${orderDetails.profiles.last_name}`,
-                    items,
-                    total: orderDetails.total_amount,
-                    shippingAddress: '...' 
-                });
+                try {
+                  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://kavern.vercel.app';
+                  await fetch(`${siteUrl}/api/emails/order-confirmation`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderId })
+                  });
+                } catch (emailErr) {
+                  console.error('Email sending failed (non-blocking):', emailErr);
+                }
             }
 
             // ... (Logique Cashback & Coupons Croisés - inchangée) ...

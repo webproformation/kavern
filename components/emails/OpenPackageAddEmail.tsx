@@ -26,7 +26,7 @@ export const OpenPackageAddEmail = ({
       </Text>
 
       <Text style={paragraph}>
-        Doudou a tout regroupé dans le même casier.
+        André a tout regroupé dans le même carton.
       </Text>
 
       <Section style={reminderBox}>
