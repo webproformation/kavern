@@ -5,10 +5,31 @@ import { useProductsStore } from "@/stores/products-store";
 import ProductsTable from "./products-table";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, Download } from "lucide-react";
 
 export default function ProductsClientWrapper() {
   const { products, categories, loading, error, fetchProducts, fetchCategories } = useProductsStore();
+
+  const exportInventoryCSV = () => {
+    const rows: string[] = ['Nom;Variante;UGS;Quantite;Prix Vente TTC;Prix Achat HT'];
+    products.forEach((p: any) => {
+      if (p.product_variations?.length > 0) {
+        p.product_variations.forEach((v: any) => {
+          const varLabel = Object.entries(v.attributes || {}).map(([k, val]: any) => `${val?.name || val}`).join(' / ');
+          rows.push(`"${p.name}";"${varLabel}";"${v.sku || ''}";"${v.stock_quantity ?? ''}";"${v.price || v.regular_price || ''}";"${p.purchase_price_ht || ''}"`);
+        });
+      } else {
+        rows.push(`"${p.name}";"";"${p.sku || ''}";"${p.stock_quantity ?? ''}";"${p.sale_price || p.regular_price || ''}";"${p.purchase_price_ht || ''}"`);
+      }
+    });
+    const blob = new Blob(['\ufeff' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `inventaire-kavern-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     fetchProducts();
@@ -52,6 +73,14 @@ export default function ProductsClientWrapper() {
           </p>
         </div>
         <div className="hidden md:flex gap-2">
+          <Button
+            onClick={exportInventoryCSV}
+            variant="outline"
+            className="border-green-300 text-green-700 hover:bg-green-50"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
           <Button
             onClick={() => fetchProducts()}
             variant="outline"

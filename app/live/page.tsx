@@ -351,7 +351,7 @@ export default function LivePage() {
                 <div className="space-y-2">
                   <Button asChild className="w-full" variant="outline">
                     <a
-                      href="https://www.facebook.com/p/La-boutique-de-Morgane-100057420760713/"
+                      href="https://www.facebook.com/people/KAVERN/"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -360,7 +360,7 @@ export default function LivePage() {
                   </Button>
                   <Button asChild className="w-full" variant="outline">
                     <a
-                      href="https://www.tiktok.com/@laboutiquedemorgane"
+                      href="https://www.tiktok.com/@kavern_france"
                       target="_blank"
                       rel="noopener noreferrer"
                     >

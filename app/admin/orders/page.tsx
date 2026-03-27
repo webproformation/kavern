@@ -180,6 +180,25 @@ export default function OrdersPage() {
     }
   };
 
+  const exportComptableCSV = () => {
+    const rows: string[] = ['Date;N° Commande;Montant HT;Montant TVA;Montant TTC;Statut Paiement'];
+    const paidOrders = orders.filter(o => ['paid', 'completed', 'succeeded'].includes(o.payment_status));
+    paidOrders.forEach((o: Order) => {
+      const total = Number(o.total) || 0;
+      const tva = Number(o.tax_amount) || 0;
+      const ht = total - tva;
+      const date = new Date(o.created_at).toLocaleDateString('fr-FR');
+      rows.push(`"${date}";"${o.order_number}";"${ht.toFixed(2)}";"${tva.toFixed(2)}";"${total.toFixed(2)}";"${paymentStatusLabels[o.payment_status] || o.payment_status}"`);
+    });
+    const blob = new Blob(['\ufeff' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `export-comptable-kavern-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
       const matchesSearch =
@@ -413,14 +432,24 @@ export default function OrdersPage() {
             {filteredOrders.length} commande(s) trouvée(s) sur {orders.length} au total
           </p>
         </div>
-        <Button
-          onClick={loadOrders}
-          variant="outline"
-          className="border-[#D4AF37] hover:bg-[#D4AF37] hover:text-white"
-        >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Actualiser
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={exportComptableCSV}
+            variant="outline"
+            className="border-green-300 text-green-700 hover:bg-green-50"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export Comptable
+          </Button>
+          <Button
+            onClick={loadOrders}
+            variant="outline"
+            className="border-[#D4AF37] hover:bg-[#D4AF37] hover:text-white"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Actualiser
+          </Button>
+        </div>
       </div>
 
       <Card>
