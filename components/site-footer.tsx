@@ -11,13 +11,13 @@ import { toast } from 'sonner';
 
 const reassuranceBlocks = [
   {
-    svgPath: 'M3 10h4v11H3zM17 10h4v11h-4zM7 3h10l2 7H5z',
+    svgPath: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15',
     href: '/le-droit-a-lerreur',
     title: 'Le Droit à l\'Erreur',
     description: 'Ça arrive ! Transformez votre retour en crédit boutique pour craquer sur votre prochain coup de cœur sans attendre.'
   },
   {
-    svgPath: 'M1 3h15l1 7H0zM3 12h11v2H3zM5 16h7v2H5zM20 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z',
+    svgPath: 'M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0',
     href: '/vite-chez-vous',
     title: 'Vite chez vous',
     description: 'Vos pépites emballées avec soin et une expédition rapide. Livraison à prix mini (dès 4,90 €) pour un max de plaisir.'
