@@ -46,7 +46,8 @@ interface OrderItem {
 interface PaymentMethod {
   id: string;
   name: string;
-  code: string;
+  code?: string;
+  provider?: string;
   type: string;
   icon: string;
 }
@@ -82,17 +83,13 @@ function OrderConfirmationContent() {
 
   useEffect(() => {
     if (!loading && order && paymentMethod) {
-        const isBankTransfer = paymentMethod.code === 'bank_transfer' || paymentMethod.code === 'virement' || paymentMethod.provider === 'bank_transfer';
-        const isCashOnDelivery = paymentMethod.code === 'cash_on_delivery' || paymentMethod.provider === 'cash_on_delivery';
-        if (!isBankTransfer && !isCashOnDelivery && (redirectStatus === 'succeeded' || order.payment_status === 'paid' || paymentMethod.code === 'paypal' || paymentMethod.provider === 'paypal')) {
-            const jsConfetti = new JSConfetti();
-            jsConfetti.addConfetti({
-                emojis: ['🛍️', '✨', '💳', '🎉'],
-                confettiNumber: 60,
-            });
-        }
+        const jsConfetti = new JSConfetti();
+        jsConfetti.addConfetti({
+            emojis: ['🛍️', '✨', '💳', '🎉'],
+            confettiNumber: 60,
+        });
     }
-  }, [loading, order, paymentMethod, redirectStatus]);
+  }, [loading, order, paymentMethod]);
 
   async function loadOrderDetails(id: string) {
     try {
@@ -234,8 +231,31 @@ function OrderConfirmationContent() {
       );
     }
 
+    // PAIEMENT À LA LIVRAISON
+    if (paymentMethod.code === 'cash_on_delivery' || paymentMethod.provider === 'cash_on_delivery') {
+      return (
+        <Card className="border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-white shadow-lg mb-6">
+          <CardHeader className="bg-gradient-to-r from-amber-100 to-amber-50 border-b border-amber-200">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-amber-500 rounded-full"><CheckCircle className="h-8 w-8 text-white" /></div>
+              <div><CardTitle className="text-2xl text-amber-900">Commande Confirmée !</CardTitle><p className="text-amber-700 text-sm mt-1">Paiement à la livraison</p></div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-4">
+            <div className="bg-amber-100 border border-amber-300 rounded-lg p-4">
+              <p className="text-amber-900 font-medium flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                Le montant de <strong>{(typeof order.total === 'number' ? order.total : parseFloat(order.total)).toFixed(2)} €</strong> sera à régler au livreur lors de la réception de votre colis.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-amber-800 bg-amber-50 px-4 py-3 rounded-lg border border-amber-200"><Mail className="h-4 w-4 flex-shrink-0" /><span>Un email de confirmation vous a été envoyé</span></div>
+          </CardContent>
+        </Card>
+      );
+    }
+
     // BOUTIQUE
-    if (paymentMethod.code === 'store_pickup_payment' || paymentMethod.type === 'store') {
+    if (paymentMethod.code === 'store_pickup_payment' || paymentMethod.provider === 'store_pickup_payment' || paymentMethod.type === 'store') {
       return (
         <Card className="border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-white shadow-lg mb-6">
           <CardHeader className="bg-gradient-to-r from-blue-100 to-blue-50 border-b border-blue-200">

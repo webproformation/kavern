@@ -295,7 +295,7 @@ export default function CheckoutPage() {
 
       clearCart();
       toast.success('Paiement PayPal reussi !');
-      router.push(`/order-confirmation/${newOrder.id}`);
+      router.push(`/checkout/confirmation?order_id=${newOrder.id}`);
     } catch (err: any) {
       console.error('[PayPal] Erreur creation commande:', err);
       toast.error('Paiement recu mais erreur de creation commande. Contactez le support.');
