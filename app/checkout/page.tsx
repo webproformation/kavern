@@ -390,6 +390,32 @@ export default function CheckoutPage() {
 
   const runPostOrderTasks = async (orderId: string, orderNumber: string) => {
     try {
+      // Envoyer l'email de confirmation de commande
+      if (profile?.email) {
+        const orderItems = cart.map(item => ({
+          image_url: item.image?.sourceUrl || null,
+          product_name: item.name,
+          sku: item.sku,
+          variation_details: item.selectedAttributes,
+          quantity: item.quantity,
+          price: parseFloat(item.variationPrice || item.price) || 0
+        }));
+
+        fetch('/api/emails/order-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId,
+            email: profile.email,
+            firstName: profile.first_name || 'Client',
+            orderNumber,
+            items: orderItems,
+            total: totalAfterWallet,
+            isOpenPackage: addToOpenPackage
+          })
+        }).catch(() => {});
+      }
+
       if (addToOpenPackage && openPackage) {
         await supabase.from('open_package_orders').insert([{ open_package_id: openPackage.id, order_id: orderId, is_paid: false }]);
       }

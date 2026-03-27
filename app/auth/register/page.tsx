@@ -80,6 +80,13 @@ export default function RegisterPage() {
       return;
     }
 
+    // Envoyer l'email de bienvenue (best-effort, ne bloque pas)
+    fetch('/api/emails/welcome', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, firstName })
+    }).catch(() => {});
+
     toast.success('Compte créé ! Vérifie tes e-mails pour confirmer.');
     router.push('/account');
   };

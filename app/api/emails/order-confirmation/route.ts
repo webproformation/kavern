@@ -61,7 +61,8 @@ export async function POST(request: NextRequest) {
       firstName,
       order.order_number,
       items,
-      Number(order.total_amount || order.total || 0)
+      Number(order.total_amount || order.total || 0),
+      order.is_open_package || false
     );
 
     if (!result.success) {

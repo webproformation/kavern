@@ -238,8 +238,21 @@ export default function OrdersPage() {
         setSelectedOrder({ ...selectedOrder, status: newStatus });
       }
 
+      // Envoyer l'email d'expédition automatiquement
+      if (newStatus === 'shipped') {
+        await supabase.from("orders").update({
+          shipped_at: new Date().toISOString()
+        }).eq("id", orderId);
+
+        fetch('/api/emails/shipping', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId })
+        }).catch(() => {});
+      }
+
       const label = statusLabels[newStatus] || newStatus;
-      toast.success(`Statut mis à jour : ${label}`);
+      toast.success(`Statut mis à jour : ${label}${newStatus === 'shipped' ? ' — Email d\'expédition envoyé' : ''}`);
     } catch (error) {
       console.error("Error updating status:", error);
       toast.error("Erreur lors de la mise à jour");
