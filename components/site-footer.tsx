@@ -11,25 +11,29 @@ import { toast } from 'sonner';
 
 const reassuranceBlocks = [
   {
-    image: 'https://wp.kavern.fr/wp-content/uploads/2025/12/La-boutique-de-Morgane-Le-droit-a-lerreur.png',
+    icon: '❤️',
+    iconBg: 'bg-red-50',
     href: '/le-droit-a-lerreur',
     title: 'Le Droit à l\'Erreur',
     description: 'Ça arrive ! Transformez votre retour en crédit boutique pour craquer sur votre prochain coup de cœur sans attendre.'
   },
   {
-    image: 'https://wp.kavern.fr/wp-content/uploads/2025/12/La-boutique-de-Morgane-Vite-chez-vous.png',
+    icon: '🚀',
+    iconBg: 'bg-blue-50',
     href: '/vite-chez-vous',
     title: 'Vite chez vous',
-    description: 'Vos pépites emballées avec soin et une expédition rapide. Livraison à prix mini (dès 3,90 €) pour un max de plaisir.'
+    description: 'Vos pépites emballées avec soin et une expédition rapide. Livraison à prix mini (dès 4,90 €) pour un max de plaisir.'
   },
   {
-    image: 'https://wp.kavern.fr/wp-content/uploads/2025/12/La-boutique-de-Morgane-Transaction-protegees.png',
+    icon: '🔒',
+    iconBg: 'bg-yellow-50',
     href: '/transactions-protegees',
     title: 'Transactions Protégées',
     description: 'Règlement 100 % sécurisé et facilités de paiement (3x, 4x). La tranquillité d\'esprit avant tout.'
   },
   {
-    image: 'https://wp.kavern.fr/wp-content/uploads/2025/12/La-boutique-de-Morgane-Allo-Morgane.png',
+    icon: '📞',
+    iconBg: 'bg-green-50',
     href: '/allo-andre',
     title: 'Allô André ?',
     description: 'Plus qu\'un site, un accompagnement. André vous guide personnellement dans vos choix mode et beauté.'
@@ -130,12 +134,8 @@ export function SiteFooter() {
                 className="group block"
               >
                 <div className="bg-white rounded-lg overflow-hidden transition-transform duration-300 hover:scale-105">
-                  <div className="h-32 overflow-hidden flex items-center justify-center">
-                    <img
-                      src={block.image}
-                      alt={block.title}
-                      className="h-24 w-auto object-contain transition-transform duration-300 group-hover:scale-110"
-                    />
+                  <div className={`h-32 overflow-hidden flex items-center justify-center ${(block as any).iconBg || 'bg-gray-50'} rounded-lg`}>
+                    <span className="text-5xl transition-transform duration-300 group-hover:scale-125">{(block as any).icon}</span>
                   </div>
                   <div className="p-6 text-center">
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
