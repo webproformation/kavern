@@ -17,14 +17,9 @@ interface Coupon {
   code: string;
   discount_type: string;
   discount_value: number;
-  min_purchase: number | null;
-  max_uses: number | null;
-  uses_count: number | null;
-  valid_from: string | null;
+  description?: string;
   valid_until: string | null;
   is_active: boolean;
-  created_at: string;
-  description?: string;
 }
 
 interface UserCoupon {
@@ -59,12 +54,25 @@ export default function CouponsPage() {
     try {
       if (!user) return;
 
+      // Mapper les colonnes coupon_types vers le format attendu
+      const mapCouponType = (item: any) => {
+        if (item?.coupon_types) {
+          item.coupon = {
+            ...item.coupon_types,
+            discount_type: item.coupon_types.type === 'discount_amount' ? 'fixed' : item.coupon_types.type === 'discount_percentage' ? 'percentage' : item.coupon_types.type,
+            discount_value: item.coupon_types.value,
+          };
+          delete item.coupon_types;
+        }
+        return item;
+      };
+
       // 1. Charger les coupons "gagnés" (Jeux, etc) qui ne sont PAS encore utilisés
       const { data: myWalletCoupons, error: walletError } = await supabase
         .from('user_coupons')
-        .select('*, coupon:coupon_types(*)')
+        .select('*, coupon_types(*)')
         .eq('user_id', user.id)
-        .eq('is_used', false) // On ne prend que les non utilisés ici
+        .eq('is_used', false)
         .order('obtained_at', { ascending: false });
 
       if (walletError) throw walletError;
@@ -72,7 +80,7 @@ export default function CouponsPage() {
       // 2. Charger l'historique d'utilisation depuis user_coupons
       const { data: usageHistory, error: usageError } = await supabase
         .from('user_coupons')
-        .select('*, coupon:coupon_types(*)')
+        .select('*, coupon_types(*)')
         .eq('user_id', user.id)
         .eq('is_used', true)
         .order('used_at', { ascending: false });
@@ -82,21 +90,22 @@ export default function CouponsPage() {
       // --- TRAITEMENT DES DONNEES ---
 
       // Liste des disponibles (ceux du wallet)
-      const availableList = (myWalletCoupons as any) || [];
+      const availableList = (myWalletCoupons || []).map(mapCouponType);
       setUserCoupons(availableList);
 
-      // Liste des utilisés (on transforme usageHistory pour qu'il ressemble à UserCoupon)
-      const usedList = (usageHistory || []).map((usage: any) => ({
+      // Liste des utilisés
+      const mappedUsage = (usageHistory || []).map(mapCouponType);
+      const usedList = mappedUsage.map((usage: any) => ({
         id: usage.id,
         user_id: usage.user_id,
         coupon_type_id: usage.coupon_type_id,
-        code: usage.coupon?.code || 'CODE',
-        source: 'Commande', // Source par défaut pour l'historique
+        code: usage.coupon?.code || usage.code || 'CODE',
+        source: usage.source || 'Commande',
         is_used: true,
         used_at: usage.used_at,
         order_id: usage.order_id,
-        obtained_at: usage.used_at, // Date approx
-        valid_until: usage.coupon?.valid_until,
+        obtained_at: usage.obtained_at || usage.used_at,
+        valid_until: usage.coupon?.valid_until || usage.valid_until,
         coupon: usage.coupon
       }));
       setUsedUserCoupons(usedList);

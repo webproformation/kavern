@@ -16,13 +16,25 @@ export function useUserCoupons(userId: string | undefined) {
       // On ne charge que les coupons NON utilisés pour le checkout
       const { data, error } = await supabase
         .from('user_coupons')
-        .select('*, coupon:coupon_types(*)')
+        .select('*, coupon_types(*)')
         .eq('user_id', userId)
-        .eq('is_used', false) // Important
+        .eq('is_used', false)
         .order('obtained_at', { ascending: false });
 
       if (error) throw error;
-      setCoupons(data || []);
+
+      // Mapper coupon_types vers le format coupon attendu
+      const mapped = (data || []).map((item: any) => {
+        if (item.coupon_types) {
+          item.coupon = {
+            ...item.coupon_types,
+            discount_type: item.coupon_types.type === 'discount_amount' ? 'fixed' : item.coupon_types.type === 'discount_percentage' ? 'percentage' : item.coupon_types.type,
+            discount_value: item.coupon_types.value,
+          };
+        }
+        return item;
+      });
+      setCoupons(mapped);
     } catch (error) {
       console.error('Erreur chargement coupons:', error);
     } finally {
