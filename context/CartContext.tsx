@@ -213,7 +213,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
           setTimeout(() => {
             syncCartToSupabase(mergedCart, hasMerged || mergedCart.length > 0);
           }, 500);
-          localStorage.removeItem('cart');
+          // Ne supprimer le localStorage que si on a bien chargé depuis Supabase
+          if (supabaseCart.length > 0 || mergedCart.length > 0) {
+            localStorage.removeItem('cart');
+          }
         }
       } else {
         const localCart = loadCartFromLocalStorage();
@@ -227,10 +230,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     initCart();
 
-    return () => {
-      abortController.abort(); // Annule la requête en cours si le composant est démonté
+    // Recharger le panier quand le téléphone se réveille (visibilitychange)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && user) {
+        loadCartFromSupabase().then(supabaseCart => {
+          if (supabaseCart.length > 0) {
+            setCart(supabaseCart);
+          }
+        });
+      }
     };
-  }, [user, syncCartToSupabase]); // J'ai ajouté syncCartToSupabase aux dépendances pour être propre
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      abortController.abort();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user, syncCartToSupabase]);
 
   useEffect(() => {
     if (loading) return;
