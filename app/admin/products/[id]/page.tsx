@@ -35,7 +35,8 @@ import {
   Tag,
   EyeOff,
   Box,
-  LayoutGrid
+  LayoutGrid,
+  ChevronDown
 } from "lucide-react";
 import Link from "next/link";
 import RichTextEditor from "@/components/RichTextEditor";
@@ -113,6 +114,15 @@ export default function EditProductPage() {
   const [sizeRangeStart, setSizeRangeStart] = useState<number | null>(null);
   const [sizeRangeEnd, setSizeRangeEnd] = useState<number | null>(null);
 
+  // BADGE MARKETING
+  const [marketingBadge, setMarketingBadge] = useState<string>("");
+
+  // SECTIONS REPLIABLES
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    pack: true, general: true, pricing: true, suggested: false, variations: true, seo: false, options: false
+  });
+  const toggleSection = (key: string) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
+
   // --- CHARGEMENT ---
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -151,6 +161,9 @@ export default function EditProductPage() {
         
         // TVA
         setTvaRate(prod.tva_rate ?? 20);
+
+        // Badge marketing
+        setMarketingBadge(prod.marketing_badge || "");
 
         // Chargement des données Pack
         setIsPack(prod.is_pack || false);
@@ -250,6 +263,7 @@ export default function EditProductPage() {
         size_range_start: showSizes ? sizeRangeStart : null,
         size_range_end: showSizes ? sizeRangeEnd : null,
         tva_rate: tvaRate,
+        marketing_badge: marketingBadge || null,
         is_pack: isPack,
         pack_slots: packSlots,
         pack_source_category_id: packSourceCategoryId,
@@ -368,10 +382,13 @@ export default function EditProductPage() {
           </Card>
 
           <Card className="shadow-sm border-none bg-white">
-            <CardHeader className="border-b bg-gray-50/50">
-              <div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-[#C6A15B]"/><CardTitle className="text-lg">L&apos;Âme du Produit</CardTitle></div>
+            <CardHeader className="border-b bg-gray-50/50 cursor-pointer select-none" onClick={() => toggleSection('general')}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-[#C6A15B]"/><CardTitle className="text-lg">L&apos;Âme du Produit</CardTitle></div>
+                <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${openSections.general ? 'rotate-180' : ''}`} />
+              </div>
             </CardHeader>
-            <CardContent className="p-6 space-y-6">
+            {openSections.general && <CardContent className="p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 space-y-2"><Label>Nom de la pépite *</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
                 <div className="space-y-2"><Label className="text-[#b8933d] font-bold">Référence (SKU)</Label><Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="EX: MAC-BAIN-01" className="border-amber-100" /></div>
@@ -386,7 +403,7 @@ export default function EditProductPage() {
                 <Label className="text-[#b8933d] font-bold flex items-center gap-2 uppercase tracking-tighter"><Heart className="h-4 w-4 fill-[#b8933d]" /> L&apos;avis d&apos;André</Label>
                 <Textarea value={andreReview} onChange={(e) => setAndreReview(e.target.value)} rows={4} className="bg-white border-none italic shadow-inner" />
               </div>
-            </CardContent>
+            </CardContent>}
           </Card>
 
           <Card className="shadow-sm border-none bg-white">
@@ -455,8 +472,13 @@ export default function EditProductPage() {
           </Card>
 
           <Card className="shadow-sm border-none bg-white">
-            <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="text-lg flex items-center gap-2 text-green-600"><Globe className="h-5 w-5" /> SEO & Tags</CardTitle></CardHeader>
-            <CardContent className="p-6 space-y-4">
+            <CardHeader className="bg-gray-50/50 border-b cursor-pointer select-none" onClick={() => toggleSection('seo')}>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2 text-green-600"><Globe className="h-5 w-5" /> SEO & Tags</CardTitle>
+                <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${openSections.seo ? 'rotate-180' : ''}`} />
+              </div>
+            </CardHeader>
+            {openSections.seo && <CardContent className="p-6 space-y-4">
               <div><Label>Titre Google</Label><Input value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} /></div>
               <div><Label>Description Google</Label><Textarea value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} rows={3} /></div>
               <Separator className="my-2" />
@@ -464,12 +486,17 @@ export default function EditProductPage() {
                 <Label className="flex items-center gap-2 text-[#b8933d] font-bold"><Tag className="h-4 w-4" /> Mots-clés (Tags)</Label>
                 <Input placeholder="vintage, doré, été..." value={tags.join(", ")} onChange={(e) => setTags(e.target.value.split(",").map(t => t.trim()).filter(t => t !== ""))} />
               </div>
-            </CardContent>
+            </CardContent>}
           </Card>
 
           <Card className="shadow-sm border-none bg-white">
-            <CardHeader className="bg-gray-50/50 border-b"><CardTitle className="text-lg flex items-center gap-2 text-gray-600"><Settings2 className="h-5 w-5"/> Options</CardTitle></CardHeader>
-            <CardContent className="p-6 space-y-5">
+            <CardHeader className="bg-gray-50/50 border-b cursor-pointer select-none" onClick={() => toggleSection('options')}>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2 text-gray-600"><Settings2 className="h-5 w-5"/> Options</CardTitle>
+                <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${openSections.options ? 'rotate-180' : ''}`} />
+              </div>
+            </CardHeader>
+            {openSections.options && <CardContent className="p-6 space-y-5">
               <div className="flex items-center justify-between p-3 border rounded-xl bg-gray-50">
                 <div className="space-y-0.5"><Label className="text-gray-900 font-bold">Statut</Label></div>
                 <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-[160px] h-10 rounded-md border border-gray-200 bg-white px-3 text-sm">
@@ -487,7 +514,20 @@ export default function EditProductPage() {
                 <div className="flex items-center gap-2"><Checkbox id="f" checked={isFeatured} onCheckedChange={(c) => setIsFeatured(!!c)}/><Label htmlFor="f" className="cursor-pointer">⭐ Mettre en Vedette</Label></div>
                 <div className="flex items-center gap-2"><Checkbox id="d" checked={isDiamond} onCheckedChange={(c) => setIsDiamond(!!c)}/><Label htmlFor="d" className="cursor-pointer">💎 Produit Diamant</Label></div>
               </div>
-            </CardContent>
+
+              <Separator className="my-2" />
+              <div className="space-y-2">
+                <Label className="font-bold flex items-center gap-2"><Tag className="h-4 w-4 text-[#C6A15B]" /> Badge Marketing</Label>
+                <select value={marketingBadge} onChange={(e) => setMarketingBadge(e.target.value)} className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm">
+                  <option value="">Aucun</option>
+                  <option value="edition-limitee">Édition limitée</option>
+                  <option value="coup-de-coeur">Coup de cœur</option>
+                  <option value="best-seller">Best-seller</option>
+                  <option value="exclu-live">Exclu Live</option>
+                  <option value="nouveau">Nouveau</option>
+                </select>
+              </div>
+            </CardContent>}
           </Card>
         </div>
       </div>

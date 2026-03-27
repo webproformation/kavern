@@ -141,6 +141,23 @@ export function ProductCard({ product, showAddToCart = false }: ProductCardProps
               {text}
             </Badge>
           ))}
+          {product.marketing_badge && (
+            <Badge className={`border-none text-[9px] px-1.5 py-0 uppercase font-bold ${
+              product.marketing_badge === 'edition-limitee' ? 'bg-purple-600 text-white' :
+              product.marketing_badge === 'coup-de-coeur' ? 'bg-red-500 text-white' :
+              product.marketing_badge === 'best-seller' ? 'bg-orange-500 text-white' :
+              product.marketing_badge === 'exclu-live' ? 'bg-blue-600 text-white' :
+              product.marketing_badge === 'nouveau' ? 'bg-green-600 text-white' :
+              'bg-gray-600 text-white'
+            }`}>
+              {product.marketing_badge === 'edition-limitee' ? 'Édition limitée' :
+               product.marketing_badge === 'coup-de-coeur' ? 'Coup de cœur' :
+               product.marketing_badge === 'best-seller' ? 'Best-seller' :
+               product.marketing_badge === 'exclu-live' ? 'Exclu Live' :
+               product.marketing_badge === 'nouveau' ? 'Nouveau' :
+               product.marketing_badge}
+            </Badge>
+          )}
         </div>
 
         {/* Wishlist Button */}
