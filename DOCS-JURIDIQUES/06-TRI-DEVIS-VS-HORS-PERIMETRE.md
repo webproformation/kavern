@@ -102,19 +102,39 @@ Le devis KAVERN (202603-10000081) couvrait le rebranding + ajustements.
 | Livraisons & Retours | 5 jours | 2 500 € |
 | Sécurité financière | 2.5 jours | 1 300 € |
 | Sauvegardes | 1 jour | 500 € |
-| **TOTAL NOUVELLES DEMANDES** | **~29.5 jours** | **~15 000 €** |
+
+### Catégorie 8 : Live Shopping — Tirage au sort "Coffre de la Kavern"
+*Système de jeu interactif en temps réel pendant les lives — 100% hors périmètre.*
+
+| # | Demande | Estimation | Valeur marché |
+|---|---------|-----------|---------------|
+| 22 | Tirage au sort parmi les connectés au live (IDs actifs) | 2 jours | 1 000 € |
+| 23 | Animation particules/tourbillon de prénoms (Canvas/Three.js) | 3 jours | 1 500 € |
+| 24 | Timer 30s + bouton "Relancer" dans admin live | 1 jour | 500 € |
+| 25 | Texte SEO complet page Live (H1/H2/H3 + réassurance) | 0.5 jour | 300 € |
+
+### Catégorie 9 : CRM Avancé / RGPD
+*Au-delà d'une liste clients standard.*
+
+| # | Demande | Estimation | Valeur marché |
+|---|---------|-----------|---------------|
+| 26 | Fiche client 360° (colis ouvert + cagnottes + historique) | 1 jour | 500 € |
+| 27 | Bouton RGPD anonymisation (droit à l'oubli + conservation 10 ans) | 2 jours | 1 000 € |
+
+| **TOTAL NOUVELLES DEMANDES** | **~39 jours** | **~19 800 €** |
+|---|---|---|
 
 ### Cumul total du travail hors périmètre
 
 | | Montant |
 |---|---------|
 | Travail supplémentaire déjà réalisé gratuitement (doc 02) | 26 800 € |
-| Nouvelles demandes du 27/03/2026 | 15 000 € |
-| **TOTAL travail hors contrat** | **~41 800 €** |
+| Nouvelles demandes du 27/03/2026 | 19 800 € |
+| **TOTAL travail hors contrat** | **~46 600 €** |
 | Montant total facturé (2 devis) | 8 500 € |
 | Montant impayé | 2 850 € |
 
-Le client demande **41 800 € de travail supplémentaire** tout en ayant **2 850 € d'impayés**.
+Le client demande **46 600 € de travail supplémentaire** tout en ayant **2 850 € d'impayés**.
 
 ---
 
