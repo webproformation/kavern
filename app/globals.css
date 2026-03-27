@@ -32,9 +32,9 @@
     --radius: 0.75rem;
 
     /* Custom Brand Colors */
-    --morgane-black: 0 0% 0%;
-    --morgane-gold: 43 74% 58%; /* Hex: #D4AF37 equivalent range */
-    --morgane-pink: 351 100% 86%;
+    --kavern-black: 0 0% 0%;
+    --kavern-gold: 43 74% 58%; /* Hex: #D4AF37 */
+    --kavern-pink: 351 100% 86%;
   }
 
   * {

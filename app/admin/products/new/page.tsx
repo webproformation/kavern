@@ -80,6 +80,7 @@ export default function NewProductPage() {
   const [status, setStatus] = useState("draft");
   const [isFeatured, setIsFeatured] = useState(false);
   const [isDiamond, setIsDiamond] = useState(false);
+  const [marketingBadge, setMarketingBadge] = useState<string>("");
   const [hasVariations, setHasVariations] = useState(false);
   const [showSizes, setShowSizes] = useState(false);
   const [seoTitle, setSeoTitle] = useState("");
@@ -219,7 +220,7 @@ export default function NewProductPage() {
         short_description: shortDescription.substring(0, 150), description, andre_review: andreReview,
         video_url: videoUrl, purchase_price: purchasePrice, regular_price: regularPrice,
         sale_price: salePrice, stock_quantity: stockQuantity, virtual_weight: virtualWeight, tva_rate: tvaRate,
-        status, is_featured: isFeatured, is_diamond: isDiamond, has_variations: hasVariations,
+        status, is_featured: isFeatured, is_diamond: isDiamond, marketing_badge: marketingBadge || null, has_variations: hasVariations,
         seo_title: seoTitle || name, seo_description: seoDescription || shortDescription,
         tags: tags,
         image_url: mainImage, gallery_images: galleryImages, attributes: finalAttributes,
@@ -463,6 +464,18 @@ export default function NewProductPage() {
               <div className="space-y-4 pt-2">
                 <div className="flex items-center gap-2"><Checkbox id="f" checked={isFeatured} onCheckedChange={(c) => setIsFeatured(!!c)}/><Label htmlFor="f">⭐ Mettre en Vedette</Label></div>
                 <div className="flex items-center gap-2"><Checkbox id="d" checked={isDiamond} onCheckedChange={(c) => setIsDiamond(!!c)}/><Label htmlFor="d">💎 Produit Diamant</Label></div>
+              </div>
+              <Separator className="my-2" />
+              <div className="space-y-2">
+                <Label className="font-bold">Badge Marketing</Label>
+                <select value={marketingBadge} onChange={(e) => setMarketingBadge(e.target.value)} className="w-full h-10 rounded-md border border-gray-200 bg-white px-3 text-sm">
+                  <option value="">Aucun</option>
+                  <option value="edition-limitee">Édition limitée</option>
+                  <option value="coup-de-coeur">Coup de cœur</option>
+                  <option value="best-seller">Best-seller</option>
+                  <option value="exclu-live">Exclu Live</option>
+                  <option value="nouveau">Nouveau</option>
+                </select>
               </div>
             </CardContent>
           </Card>

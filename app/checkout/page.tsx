@@ -426,6 +426,13 @@ export default function CheckoutPage() {
 
       if (selectedUserCouponId) await markCouponAsUsed(selectedUserCouponId, orderId);
 
+      // Incrémenter uses_count du coupon manuel (BIENVENUE5, etc.)
+      if (appliedCoupon?.id) {
+        await supabase.from('coupons').update({
+          uses_count: (appliedCoupon.uses_count || 0) + 1
+        }).eq('id', appliedCoupon.id);
+      }
+
       if (giftCardApplied && giftCardId && giftCardAmount > 0) {
         await supabase.from('gift_cards').update({
           current_balance: Math.max(0, (await supabase.from('gift_cards').select('current_balance').eq('id', giftCardId).single()).data?.current_balance - giftCardAmount),
