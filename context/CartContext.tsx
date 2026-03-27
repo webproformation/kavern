@@ -22,7 +22,9 @@ interface CartItem {
   isPack?: boolean;
   packItems?: any[] | null;
   // Clé unique pour éviter le warning React "two children with the same key"
-  cartItemId?: string; 
+  cartItemId?: string;
+  // Stock max disponible pour bloquer le dépassement
+  stockQuantity?: number;
 }
 
 interface CartContextType {
@@ -296,7 +298,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
           // DONNÉES DU PACK
           isPack: product.isPack || false,
           packItems: product.packItems || null,
-          cartItemId: uuidv4(), // Génération de la clé unique pour React
+          cartItemId: uuidv4(),
+          stockQuantity: stockQty === Infinity ? undefined : stockQty,
         };
         return [...prevCart, newItem];
       }
@@ -331,8 +334,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setCart(prevCart => {
       return prevCart.map(item => {
         const itemId = item.variationId ? `${item.id}-${item.variationId}` : item.id;
-        // On check le cartItemId (nouvelle méthode) ou l'itemId composite (ancienne méthode)
         if (item.cartItemId === cartItemId || itemId === cartItemId) {
+          // Bloquer au stock disponible
+          if (item.stockQuantity != null && quantity > item.stockQuantity) {
+            toast.error(`Stock insuffisant : ${item.stockQuantity} disponible(s)`, { position: 'bottom-right' });
+            return item;
+          }
           return { ...item, quantity };
         }
         return item;

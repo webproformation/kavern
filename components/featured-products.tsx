@@ -58,11 +58,11 @@ export function FeaturedProducts() {
       try {
         const { data, error } = await supabase
           .from('products')
-          .select('*')
+          .select('*, product_variations(*)')
           .eq('is_featured', true)
           .eq('status', 'publish')
           .order('created_at', { ascending: false })
-          .limit(15); // On en prend un peu plus pour le slider
+          .limit(15);
 
         if (error) throw error;
         setProducts(data || []);

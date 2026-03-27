@@ -215,11 +215,11 @@ export function ProductCard({ product, showAddToCart = false }: ProductCardProps
         {showAddToCart && (
           <Button
             onClick={handleAddToCart}
-            disabled={!isInStock}
+            disabled={!isInStock && !product.is_variable_product}
             className="w-full bg-[#b8933d] hover:bg-[#D4AF37] text-white font-bold rounded-lg transition-all text-[11px] h-8 mt-auto"
           >
             {product.is_variable_product ? (
-              CUSTOM_TEXTS.buttons.chooseOptions
+              "Choisir ma pépite"
             ) : (
               <><ShoppingCart className="h-3 w-3 mr-1.5" />{CUSTOM_TEXTS.buttons.addToCart}</>
             )}
