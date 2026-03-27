@@ -517,12 +517,16 @@ export default function ShippingMethodsPage() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    const autoCode = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+                    setFormData({ ...formData, name, ...(editingMethod ? {} : { code: autoCode }) });
+                  }}
                   placeholder="Ex: Mondial Relay"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="code">Code technique *</Label>
+                <Label htmlFor="code">Code technique * {!editingMethod && <span className="text-xs text-gray-400">(auto-genere depuis le nom)</span>}</Label>
                 <Input
                   id="code"
                   value={formData.code}
@@ -530,7 +534,6 @@ export default function ShippingMethodsPage() {
                     setFormData({ ...formData, code: e.target.value.toLowerCase().replace(/\s/g, "_") })
                   }
                   placeholder="Ex: mondial_relay"
-                  disabled={!!editingMethod}
                 />
               </div>
             </div>
