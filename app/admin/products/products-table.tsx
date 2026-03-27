@@ -42,6 +42,28 @@ export default function ProductsTable({
   const [stockFilter, setStockFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [localProducts, setLocalProducts] = useState(products);
+  const [editingStockId, setEditingStockId] = useState<string | null>(null);
+  const [editingStockValue, setEditingStockValue] = useState<number>(0);
+
+  const handleStockSave = async (productId: string) => {
+    const product = localProducts.find(p => p.id === productId);
+    if (!product) return;
+
+    const { error } = await supabase
+      .from('products')
+      .update({ stock_quantity: editingStockValue })
+      .eq('id', productId);
+
+    if (error) {
+      toast.error('Erreur mise à jour stock');
+      return;
+    }
+
+    setLocalProducts(prev => prev.map(p => p.id === productId ? { ...p, stock_quantity: editingStockValue } : p));
+    setEditingStockId(null);
+    toast.success(`Stock mis à jour: ${editingStockValue}`);
+  };
+
 
   // ÉTAT POUR LA SÉLECTION EN MASSE
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -139,7 +161,7 @@ export default function ProductsTable({
     }
   };
 
-  const toggleSelectOne = (id: string) => {
+  const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -330,7 +352,7 @@ export default function ProductsTable({
                       <TableCell>
                         <Checkbox
                           checked={selectedIds.has(product.id)}
-                          onCheckedChange={() => toggleSelectOne(product.id)}
+                          onCheckedChange={() => toggleSelect(product.id)}
                         />
                       </TableCell>
                       <TableCell>
@@ -391,17 +413,31 @@ export default function ProductsTable({
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1">
-                          <Badge
-                            variant={
-                              product.stock_quantity > 0 ? "default" : "destructive"
-                            }
-                          >
-                            {product.stock_quantity > 0
-                              ? `${product.stock_quantity} en stock`
-                              : "Rupture"}
-                          </Badge>
-                          
-                          {/* BULLE NOTIFICATION CLIENTS EN ATTENTE */}
+                          {editingStockId === product.id ? (
+                            <div className="flex items-center gap-1">
+                              <Input
+                                type="number"
+                                value={editingStockValue}
+                                onChange={(e) => setEditingStockValue(parseInt(e.target.value) || 0)}
+                                className="w-16 h-7 text-xs text-center"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleStockSave(product.id);
+                                  if (e.key === 'Escape') setEditingStockId(null);
+                                }}
+                              />
+                              <Button size="sm" className="h-7 px-2 text-xs bg-green-600 hover:bg-green-700" onClick={() => handleStockSave(product.id)}>OK</Button>
+                            </div>
+                          ) : (
+                            <Badge
+                              variant={product.stock_quantity > 0 ? "default" : "destructive"}
+                              className="cursor-pointer hover:opacity-80"
+                              onClick={() => { setEditingStockId(product.id); setEditingStockValue(product.stock_quantity || 0); }}
+                            >
+                              {product.stock_quantity > 0 ? `${product.stock_quantity} en stock` : "Rupture"}
+                            </Badge>
+                          )}
+
                           {notificationCounts[product.id] > 0 && (
                             <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 gap-1 text-[10px] font-black uppercase tracking-tighter w-fit">
                               <Bell className="h-2.5 w-2.5" /> {notificationCounts[product.id]} en attente
@@ -537,7 +573,8 @@ export default function ProductsTable({
                         </div>
                         <Badge
                           variant={product.stock_quantity > 0 ? "default" : "destructive"}
-                          className="text-xs"
+                          className="text-xs cursor-pointer hover:opacity-80"
+                          onClick={() => { setEditingStockId(product.id); setEditingStockValue(product.stock_quantity || 0); }}
                         >
                           {product.stock_quantity > 0 ? `Stock: ${product.stock_quantity}` : "Rupture"}
                         </Badge>
