@@ -40,7 +40,7 @@ export default function CategoryPage() {
   const params = useParams();
   const router = useRouter();
   const { profile } = useAuth();
-  const slug = params.slug as string;
+  const slug = decodeURIComponent(params.slug as string);
 
   const [category, setCategory] = useState<ProductCategory | null>(null);
   const [allProducts, setAllProducts] = useState<any[]>([]);

@@ -60,7 +60,8 @@ import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 
 export default function ProductPage() {
-  const { slug } = useParams();
+  const params = useParams();
+  const slug = typeof params.slug === 'string' ? decodeURIComponent(params.slug) : params.slug;
   const router = useRouter();
   const { addToCart } = useCart();
   const { profile, user } = useAuth();
