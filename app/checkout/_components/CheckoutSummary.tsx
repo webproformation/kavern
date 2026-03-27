@@ -171,7 +171,7 @@ export function CheckoutSummary({
 
           <Separator />
 
-          {selectedPaymentMethod?.code === 'paypal' ? (
+          {(selectedPaymentMethod?.code === 'paypal' || selectedPaymentMethod?.provider === 'paypal') ? (
             <>
               {!rgpdConsent && <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-800 text-sm"><AlertCircle className="h-4 w-4 inline mr-1" /> Acceptez les CGV pour continuer.</div>}
               <PayPalButtons amount={totalAfterWallet} disabled={!rgpdConsent || loading || subtotal < MIN_ORDER_AMOUNT} onSuccess={onPayPalSuccess} onError={onPayPalError} />

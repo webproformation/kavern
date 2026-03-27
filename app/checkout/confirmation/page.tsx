@@ -82,8 +82,9 @@ function OrderConfirmationContent() {
 
   useEffect(() => {
     if (!loading && order && paymentMethod) {
-        const isBankTransfer = paymentMethod.code === 'bank_transfer' || paymentMethod.code === 'virement';
-        if (!isBankTransfer && (redirectStatus === 'succeeded' || order.payment_status === 'paid' || paymentMethod.code === 'paypal')) {
+        const isBankTransfer = paymentMethod.code === 'bank_transfer' || paymentMethod.code === 'virement' || paymentMethod.provider === 'bank_transfer';
+        const isCashOnDelivery = paymentMethod.code === 'cash_on_delivery' || paymentMethod.provider === 'cash_on_delivery';
+        if (!isBankTransfer && !isCashOnDelivery && (redirectStatus === 'succeeded' || order.payment_status === 'paid' || paymentMethod.code === 'paypal' || paymentMethod.provider === 'paypal')) {
             const jsConfetti = new JSConfetti();
             jsConfetti.addConfetti({
                 emojis: ['🛍️', '✨', '💳', '🎉'],
@@ -168,7 +169,7 @@ function OrderConfirmationContent() {
 
   const renderPaymentSpecificInfo = () => {
     // VIREMENT
-    if (paymentMethod.code === 'bank_transfer' || paymentMethod.code === 'virement') {
+    if (paymentMethod.code === 'bank_transfer' || paymentMethod.code === 'virement' || paymentMethod.provider === 'bank_transfer') {
       return (
         <div className="mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
           <div className="bg-black text-[#D4AF37] p-6 rounded-t-xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg border-b border-[#D4AF37]/30">

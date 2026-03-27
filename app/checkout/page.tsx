@@ -50,13 +50,15 @@ interface ShippingMethod {
 interface PaymentMethod {
   id: string;
   name: string;
-  code: string;
+  code?: string;
+  provider?: string;
   description: string;
-  icon: string;
+  icon?: string;
   is_active: boolean;
-  processing_fee_percentage: number;
-  processing_fee_fixed: number;
-  type: string;
+  processing_fee_percentage?: number;
+  processing_fee_fixed?: number;
+  type?: string;
+  config?: any;
 }
 
 const TVA_RATE = 0.20;
@@ -425,7 +427,7 @@ export default function CheckoutPage() {
         });
       }
 
-      if (selectedPaymentMethod?.code === 'stripe' && totalAfterWallet > 0) {
+      if ((selectedPaymentMethod?.code === 'stripe' || selectedPaymentMethod?.provider === 'stripe') && totalAfterWallet > 0) {
         setCreatedOrderId(newOrder.id);
         setCreatedOrderNumber(orderNumber);
         setShowStripePayment(true);

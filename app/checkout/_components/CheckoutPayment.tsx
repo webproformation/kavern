@@ -60,7 +60,7 @@ export function CheckoutPayment({
           </div>
         </RadioGroup>
 
-        {selectedPaymentMethod?.code === 'bank_transfer' && (
+        {(selectedPaymentMethod?.code === 'bank_transfer' || selectedPaymentMethod?.provider === 'bank_transfer') && (
           <div className="mt-4">
             <Dialog open={bankDialogOpen} onOpenChange={setBankDialogOpen}>
               <DialogTrigger asChild>
