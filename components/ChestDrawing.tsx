@@ -20,6 +20,7 @@ export function ChestDrawing({ liveStreamId, isUnlocked, isAdmin }: ChestDrawing
   const [winner, setWinner] = useState<any>(null);
   const [showWinner, setShowWinner] = useState(false);
   const [participants, setParticipants] = useState<any[]>([]);
+  const [drawingCountdown, setDrawingCountdown] = useState(0);
 
   useEffect(() => {
     if (isUnlocked) {
@@ -54,22 +55,42 @@ export function ChestDrawing({ liveStreamId, isUnlocked, isAdmin }: ChestDrawing
     }
 
     setIsDrawing(true);
+    setDrawingCountdown(30);
 
-    const animationDuration = 3000;
-    const intervalDuration = 100;
-    const iterations = animationDuration / intervalDuration;
-    let count = 0;
+    // Phase 1: Countdown 30 secondes avec défilement des prénoms (de plus en plus lent)
+    const totalDuration = 30000;
+    const startTime = Date.now();
+    let lastWinner: any = null;
 
-    const interval = setInterval(() => {
-      const randomIndex = Math.floor(Math.random() * participants.length);
-      setWinner(participants[randomIndex]);
-      count++;
+    // Countdown
+    const countdownInterval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, Math.ceil((totalDuration - elapsed) / 1000));
+      setDrawingCountdown(remaining);
+      if (remaining <= 0) clearInterval(countdownInterval);
+    }, 200);
 
-      if (count >= iterations) {
-        clearInterval(interval);
-        finalizeWinner(participants[randomIndex]);
+    // Défilement des prénoms (ralentit progressivement)
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed >= totalDuration) {
+        clearInterval(countdownInterval);
+        finalizeWinner(lastWinner || participants[Math.floor(Math.random() * participants.length)]);
+        return;
       }
-    }, intervalDuration);
+
+      // Plus on avance, plus l'intervalle ralentit (50ms → 500ms)
+      const progress = elapsed / totalDuration;
+      const delay = 50 + progress * 450;
+
+      const randomIndex = Math.floor(Math.random() * participants.length);
+      lastWinner = participants[randomIndex];
+      setWinner(lastWinner);
+
+      setTimeout(animate, delay);
+    };
+
+    animate();
   }
 
   async function finalizeWinner(selectedWinner: any) {
@@ -127,24 +148,31 @@ export function ChestDrawing({ liveStreamId, isUnlocked, isAdmin }: ChestDrawing
           </p>
 
           {isAdmin && (
-            <Button
-              onClick={startDrawing}
-              disabled={isDrawing || participants.length === 0}
-              size="lg"
-              className="bg-white text-[#D4AF37] hover:bg-gray-100 font-bold shadow-xl transform hover:scale-105 transition-transform"
-            >
-              {isDrawing ? (
-                <>
-                  <Sparkles className="w-5 h-5 mr-2 animate-spin" />
-                  Tirage en cours...
-                </>
-              ) : (
-                <>
-                  <Trophy className="w-5 h-5 mr-2" />
-                  Lancer le Tirage au Sort
-                </>
-              )}
-            </Button>
+            <div className="flex gap-3 justify-center">
+              <Button
+                onClick={startDrawing}
+                disabled={isDrawing || participants.length === 0}
+                size="lg"
+                className="bg-white text-[#D4AF37] hover:bg-gray-100 font-bold shadow-xl transform hover:scale-105 transition-transform"
+              >
+                {isDrawing ? (
+                  <>
+                    <Sparkles className="w-5 h-5 mr-2 animate-spin" />
+                    Tirage... {drawingCountdown}s
+                  </>
+                ) : winner ? (
+                  <>
+                    <Trophy className="w-5 h-5 mr-2" />
+                    Relancer le Tirage
+                  </>
+                ) : (
+                  <>
+                    <Trophy className="w-5 h-5 mr-2" />
+                    Lancer le Tirage (30s)
+                  </>
+                )}
+              </Button>
+            </div>
           )}
 
           {!isAdmin && (
@@ -188,12 +216,21 @@ export function ChestDrawing({ liveStreamId, isUnlocked, isAdmin }: ChestDrawing
       </Dialog>
 
       {isDrawing && winner && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center">
-          <div className="text-center">
-            <Sparkles className="w-16 h-16 text-[#D4AF37] mx-auto mb-6 animate-spin" />
-            <h2 className="text-6xl font-bold text-white animate-pulse">
-              {winner.profiles?.first_name} {winner.profiles?.last_name}
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center">
+          <div className="text-center space-y-8">
+            <div className="relative">
+              <Gift className="w-24 h-24 text-[#D4AF37] mx-auto animate-bounce" />
+              <div className="absolute inset-0 animate-ping">
+                <Sparkles className="w-24 h-24 text-[#D4AF37]/30 mx-auto" />
+              </div>
+            </div>
+            <div className="bg-[#D4AF37] text-black font-black text-5xl md:text-7xl px-12 py-6 rounded-2xl shadow-2xl animate-pulse">
+              {drawingCountdown}
+            </div>
+            <h2 className="text-4xl md:text-6xl font-bold text-white" style={{ textShadow: '0 0 40px rgba(212,175,55,0.5)' }}>
+              {winner.profiles?.first_name}
             </h2>
+            <p className="text-[#D4AF37]/60 text-lg uppercase tracking-[0.5em]">Tirage en cours...</p>
           </div>
         </div>
       )}

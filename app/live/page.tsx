@@ -18,6 +18,7 @@ import { LiveChat } from '@/components/LiveChat';
 import { LiveProducts } from '@/components/LiveProducts';
 import { ChestDrawing } from '@/components/ChestDrawing';
 import { ReplayChapters } from '@/components/ReplayChapters';
+import { PushNotificationButton } from '@/components/PushNotificationButton';
 
 interface LiveStream {
   id: string;
@@ -454,9 +455,10 @@ export default function LivePage() {
                   <h3 className="text-xl font-bold">Notifications</h3>
                 </div>
                 <p className="text-gray-600">
-                  Activez les notifications sur nos réseaux sociaux pour être alerté au démarrage de chaque live.
+                  Activez les notifications pour être alerté(e) au démarrage de chaque live.
                 </p>
                 <div className="space-y-2">
+                  <PushNotificationButton />
                   <Button asChild className="w-full" variant="outline">
                     <a
                       href="https://www.facebook.com/people/KAVERN/"
