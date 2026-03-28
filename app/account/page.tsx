@@ -415,6 +415,54 @@ export default function AccountPage() {
           </form>
         </CardContent>
       </Card>
+
+      {/* RGPD — SUPPRESSION DE COMPTE */}
+      <Card className="border border-red-100">
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-4">
+            <div className="flex-1">
+              <h3 className="text-sm font-bold text-gray-900 mb-1">Supprimer mon compte</h3>
+              <p className="text-xs text-gray-500">
+                Conformément au RGPD, vous pouvez demander la suppression de votre compte et de vos données personnelles.
+                Vos factures seront conservées de manière anonymisée (obligation légale de 10 ans).
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-red-200 text-red-600 hover:bg-red-50 flex-shrink-0"
+              onClick={async () => {
+                if (!confirm('Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible. Vos commandes et factures seront anonymisées.')) return;
+                if (!confirm('Dernière confirmation : toutes vos données personnelles, votre cagnotte et votre historique seront définitivement supprimés.')) return;
+                try {
+                  // Anonymiser le profil
+                  await supabase.from('profiles').update({
+                    first_name: 'Compte',
+                    last_name: 'Supprimé',
+                    phone: null,
+                    birth_date: null,
+                    wallet_balance: 0,
+                    loyalty_euros: 0,
+                    referral_code: null,
+                  }).eq('id', user?.id);
+
+                  // Anonymiser les adresses
+                  await supabase.from('addresses').delete().eq('user_id', user?.id);
+
+                  // Déconnexion
+                  await supabase.auth.signOut();
+                  toast.success('Votre compte a été supprimé. Merci d\'avoir fait partie de l\'aventure KAVERN.');
+                  window.location.href = '/';
+                } catch (err) {
+                  toast.error('Erreur lors de la suppression');
+                }
+              }}
+            >
+              Supprimer mon compte
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
