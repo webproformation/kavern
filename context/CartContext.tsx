@@ -273,8 +273,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const existingIndex = prevCart.findIndex(
         item => {
           const itemPackKey = item.isPack ? JSON.stringify(item.packItems) : "";
+          // Normaliser null/undefined pour la comparaison
+          const itemVarId = item.variationId || null;
+          const productVarId = product.variationId || null;
           return item.id === product.id &&
-                 item.variationId === product.variationId &&
+                 itemVarId === productVarId &&
                  itemPackKey === newPackKey;
         }
       );

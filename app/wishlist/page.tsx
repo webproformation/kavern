@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useWishlist } from '@/context/WishlistContext';
+import { useCart } from '@/context/CartContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -211,6 +212,7 @@ function WishlistProductCard({
 export default function WishlistPage() {
   const { user } = useAuth();
   const { wishlistItems, toggleWishlist } = useWishlist();
+  const { addToCart: cartAddToCart } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -247,33 +249,14 @@ export default function WishlistPage() {
   };
 
   const addToCart = (product: Product) => {
-    try {
-      const savedCart = localStorage.getItem('cart');
-      const cart = savedCart ? JSON.parse(savedCart) : [];
-
-      const existingItem = cart.find((cartItem: any) => cartItem.product_id === product.id);
-
-      if (existingItem) {
-        existingItem.quantity += 1;
-      } else {
-        cart.push({
-          id: product.id,
-          product_id: product.id,
-          name: product.name,
-          slug: product.slug,
-          price: product.sale_price || product.regular_price,
-          image_url: product.image_url,
-          quantity: 1,
-        });
-      }
-
-      localStorage.setItem('cart', JSON.stringify(cart));
-      window.dispatchEvent(new Event('cartUpdated'));
-      toast.success('Article ajouté au panier');
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      toast.error('Erreur lors de l\'ajout au panier');
-    }
+    cartAddToCart({
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      price: String(product.sale_price || product.regular_price),
+      image: product.image_url ? { sourceUrl: product.image_url } : undefined,
+      stock_quantity: product.stock_quantity,
+    });
   };
 
   if (loading) {

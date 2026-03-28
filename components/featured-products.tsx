@@ -118,7 +118,7 @@ export function FeaturedProducts() {
                   className="flex-[0_0_80%] min-w-0 pl-4 sm:flex-[0_0_45%] md:flex-[0_0_33.33%] lg:flex-[0_0_20%]"
                 >
                   <div className="h-full transition-transform duration-300 hover:scale-[1.02] py-2">
-                    <ProductCard product={product} />
+                    <ProductCard product={product} showAddToCart={true} />
                   </div>
                 </div>
               ))}

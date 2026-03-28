@@ -179,7 +179,7 @@ export function SiteHeader() {
                 <img
                   src="/kavern-logo.png"
                   alt="Kavern"
-                  className="h-14 md:h-20 w-auto"
+                  className="h-10 sm:h-14 md:h-20 w-auto"
                 />
               </Link>
             </div>
@@ -219,7 +219,7 @@ export function SiteHeader() {
               )}
             </nav>
 
-            <div className="flex items-center gap-1 md:gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
               <Button
                 variant="ghost"
                 size="icon"
