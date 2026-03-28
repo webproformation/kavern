@@ -80,6 +80,8 @@ export default function CheckoutPage() {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<string>('');
   const [relayPointData, setRelayPointData] = useState<any>(null);
+  const [useDifferentBillingAddress, setUseDifferentBillingAddress] = useState(false);
+  const [billingAddressId, setBillingAddressId] = useState<string>('');
 
   // --- LOGIQUE AVANTAGES ---
   const [useWallet, setUseWallet] = useState(false);
@@ -205,6 +207,23 @@ export default function CheckoutPage() {
     const { data, error } = await supabase.from('referral_codes').select('id, code, user_id, is_active').eq('code', referralCode.toUpperCase()).eq('is_active', true).maybeSingle();
     if (error || !data) { toast.error('Code invalide ou expiré'); return; }
     if (data.user_id === user?.id) { toast.error('Vous ne pouvez pas utiliser votre propre code'); return; }
+
+    // Anti-fraude : vérifier que le parrain n'a pas la même adresse postale
+    const selectedAddr = addresses.find(a => a.id === selectedAddressId);
+    if (selectedAddr && data.user_id) {
+      const { data: referrerAddresses } = await supabase
+        .from('addresses')
+        .select('address_line1, postal_code')
+        .eq('user_id', data.user_id);
+
+      const sameAddress = referrerAddresses?.some(ra =>
+        ra.address_line1?.toLowerCase().trim() === selectedAddr.address_line1?.toLowerCase().trim() &&
+        ra.postal_code === selectedAddr.postal_code
+      );
+
+      if (sameAddress) { toast.error('Le parrain et le filleul ne peuvent pas avoir la même adresse.'); return; }
+    }
+
     setAppliedReferral(data);
     setReferralDiscount(5);
     toast.success('Code parrainage appliqué ! -5€');
@@ -516,6 +535,7 @@ export default function CheckoutPage() {
         wallet_amount_used: (Number(walletAmountToUse) + Number(loyaltyAmountToUse)).toFixed(2),
         total: totalAfterWallet.toFixed(2),
         shipping_address: isStorePickup ? null : selectedAddress,
+        billing_address: useDifferentBillingAddress ? addresses.find(a => a.id === billingAddressId) || selectedAddress : selectedAddress,
         shipping_street: selectedAddress?.address_line1 || '',
         shipping_phone: selectedAddress?.phone || '',
         shipping_method_id: isStorePickup ? null : (selectedShippingMethodId || null),
@@ -658,7 +678,44 @@ export default function CheckoutPage() {
               isStorePickup={isStorePickup}
             />
 
-            <CheckoutPayment 
+            {/* ADRESSE DE FACTURATION SÉPARÉE */}
+            {!isStorePickup && selectedAddressId && (
+              <Card className="border-l-4 border-gray-300">
+                <CardContent className="pt-6">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <input
+                      type="checkbox"
+                      id="differentBilling"
+                      checked={useDifferentBillingAddress}
+                      onChange={(e) => setUseDifferentBillingAddress(e.target.checked)}
+                      className="rounded border-gray-300"
+                    />
+                    <label htmlFor="differentBilling" className="text-sm cursor-pointer">
+                      Utiliser une adresse de facturation différente (ex: cadeau)
+                    </label>
+                  </div>
+                  {useDifferentBillingAddress && (
+                    <div className="space-y-2">
+                      {addresses.filter(a => a.id !== selectedAddressId).map(addr => (
+                        <div
+                          key={addr.id}
+                          onClick={() => setBillingAddressId(addr.id)}
+                          className={`p-3 border rounded-lg cursor-pointer transition-colors ${billingAddressId === addr.id ? 'border-[#D4AF37] bg-[#D4AF37]/5' : 'border-gray-200 hover:border-gray-300'}`}
+                        >
+                          <p className="font-semibold text-sm">{addr.first_name} {addr.last_name}</p>
+                          <p className="text-xs text-gray-600">{addr.address_line1}, {addr.postal_code} {addr.city}</p>
+                        </div>
+                      ))}
+                      {addresses.filter(a => a.id !== selectedAddressId).length === 0 && (
+                        <p className="text-sm text-gray-500">Ajoutez une autre adresse dans votre profil pour l&apos;utiliser ici.</p>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            <CheckoutPayment
               paymentMethods={paymentMethods}
               selectedPaymentMethodId={selectedPaymentMethodId}
               setSelectedPaymentMethodId={setSelectedPaymentMethodId}
