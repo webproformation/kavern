@@ -54,23 +54,10 @@ export default function CouponsPage() {
     try {
       if (!user) return;
 
-      // Mapper les colonnes coupon_types vers le format attendu
-      const mapCouponType = (item: any) => {
-        if (item?.coupon_types) {
-          item.coupon = {
-            ...item.coupon_types,
-            discount_type: item.coupon_types.type === 'discount_amount' ? 'fixed' : item.coupon_types.type === 'discount_percentage' ? 'percentage' : item.coupon_types.type,
-            discount_value: item.coupon_types.value,
-          };
-          delete item.coupon_types;
-        }
-        return item;
-      };
-
       // 1. Charger les coupons "gagnés" (Jeux, etc) qui ne sont PAS encore utilisés
       const { data: myWalletCoupons, error: walletError } = await supabase
         .from('user_coupons')
-        .select('*, coupon_types(*)')
+        .select('*, coupon:coupons(*)')
         .eq('user_id', user.id)
         .eq('is_used', false)
         .order('obtained_at', { ascending: false });
@@ -80,7 +67,7 @@ export default function CouponsPage() {
       // 2. Charger l'historique d'utilisation depuis user_coupons
       const { data: usageHistory, error: usageError } = await supabase
         .from('user_coupons')
-        .select('*, coupon_types(*)')
+        .select('*, coupon:coupons(*)')
         .eq('user_id', user.id)
         .eq('is_used', true)
         .order('used_at', { ascending: false });
@@ -90,8 +77,7 @@ export default function CouponsPage() {
       // --- TRAITEMENT DES DONNEES ---
 
       // Liste des disponibles (ceux du wallet)
-      const availableList = (myWalletCoupons || []).map(mapCouponType);
-      setUserCoupons(availableList);
+      setUserCoupons(myWalletCoupons || []);
 
       // Liste des utilisés
       const mappedUsage = (usageHistory || []).map(mapCouponType);
