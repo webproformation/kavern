@@ -101,17 +101,20 @@ export function CheckoutSummary({
               </label>
             </div>
             <div className="flex items-start space-x-2">
-              <Checkbox 
-                id="rgpd" 
-                checked={rgpdConsent} 
-                onCheckedChange={(c) => setRgpdConsent(c as boolean)} 
+              <Checkbox
+                id="rgpd"
+                checked={rgpdConsent}
+                onCheckedChange={(c) => setRgpdConsent(c as boolean)}
               />
               <label htmlFor="rgpd" className="text-sm leading-tight cursor-pointer">
-                <span className="text-red-500">*</span> J&apos;accepte la{' '}
-                <Link href="/politique-confidentialite" className="text-[#C6A15B] hover:underline">
-                  politique de confidentialité
+                <span className="text-red-500">*</span> J&apos;ai lu et j&apos;accepte les{' '}
+                <Link href="/cgv" className="text-[#C6A15B] hover:underline">
+                  Conditions Générales de Vente
                 </Link>{' '}
-                et le traitement de mes données personnelles
+                et la{' '}
+                <Link href="/politique-confidentialite" className="text-[#C6A15B] hover:underline">
+                  Politique de Confidentialité
+                </Link>
               </label>
             </div>
           </div>
@@ -153,7 +156,7 @@ export function CheckoutSummary({
           <div className="space-y-2">
             <div className="flex justify-between text-sm"><span className="text-gray-600">Sous-total</span><span className="font-semibold">{subtotal.toFixed(2)} €</span></div>
             {!addToOpenPackage && <div className="flex justify-between text-sm"><span className="text-gray-600">Livraison</span><span className="font-semibold">{shippingCost === 0 ? 'Gratuit' : `${shippingCost.toFixed(2)} €`}</span></div>}
-            {insuranceCost > 0 && <div className="flex justify-between text-sm"><span className="text-gray-600">Assurance</span><span className="font-semibold">{insuranceCost.toFixed(2)} €</span></div>}
+            {/* Assurance supprimée à la demande d'André */}
             {paymentFee > 0 && <div className="flex justify-between text-sm"><span className="text-gray-600">Frais de paiement</span><span className="font-semibold">{paymentFee.toFixed(2)} €</span></div>}
             {discountAmount > 0 && <div className="flex justify-between text-sm text-green-600"><span>Remise</span><span className="font-semibold">-{discountAmount.toFixed(2)} €</span></div>}
             {referralDiscount > 0 && <div className="flex justify-between text-sm text-green-600"><span>Parrainage</span><span className="font-semibold">-{referralDiscount.toFixed(2)} €</span></div>}
@@ -173,13 +176,24 @@ export function CheckoutSummary({
 
           {(selectedPaymentMethod?.code === 'paypal' || selectedPaymentMethod?.provider === 'paypal') ? (
             <>
-              {!rgpdConsent && <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-800 text-sm"><AlertCircle className="h-4 w-4 inline mr-1" /> Acceptez les CGV pour continuer.</div>}
+              {!rgpdConsent && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-800 text-sm"><AlertCircle className="h-4 w-4 inline mr-1" /> Veuillez accepter les CGV et la politique de confidentialité pour continuer.</div>}
               <PayPalButtons amount={totalAfterWallet} disabled={!rgpdConsent || loading || subtotal < MIN_ORDER_AMOUNT} onSuccess={onPayPalSuccess} onError={onPayPalError} />
             </>
           ) : (
-            <Button type="submit" disabled={loading || !rgpdConsent || subtotal < MIN_ORDER_AMOUNT} className="w-full bg-[#b8933d] hover:bg-[#a07c2f] text-white h-14 text-lg">
+            <Button
+              type={rgpdConsent ? 'submit' : 'button'}
+              disabled={loading}
+              onClick={!rgpdConsent ? () => {
+                const el = document.getElementById('rgpd');
+                if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus(); }
+              } : undefined}
+              className={`w-full h-14 text-lg ${rgpdConsent ? 'bg-[#b8933d] hover:bg-[#a07c2f] text-white' : 'bg-[#b8933d] hover:bg-[#a07c2f] text-white opacity-90'}`}
+            >
               {loading ? 'Traitement...' : <><CreditCardIcon className="h-5 w-5 mr-2" /> Confirmer le paiement de {totalAfterWallet.toFixed(2)} €</>}
             </Button>
+          )}
+          {!rgpdConsent && (
+            <p className="text-xs text-red-500 text-center mt-2">Veuillez accepter les CGV et la politique de confidentialité</p>
           )}
 
           <div className="text-xs text-gray-500 text-center flex items-center justify-center gap-1 mt-4">

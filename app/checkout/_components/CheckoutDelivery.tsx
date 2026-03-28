@@ -248,8 +248,8 @@ export function CheckoutDelivery({
         </>
       )}
 
-      {/* ASSURANCE LIVRAISON */}
-      {!addToOpenPackage && selectedShippingMethodId && (
+      {/* ASSURANCE LIVRAISON — Désactivée à la demande d'André */}
+      {false && !addToOpenPackage && selectedShippingMethodId && (
         <Card className="border-l-4 border-[#C6A15B]">
           <CardHeader>
             <div className="flex items-center gap-3">

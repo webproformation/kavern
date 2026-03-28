@@ -231,14 +231,14 @@ function OrderConfirmationContent() {
       );
     }
 
-    // PAIEMENT À LA LIVRAISON
+    // PAIEMENT EN BOUTIQUE
     if (paymentMethod.code === 'cash_on_delivery' || paymentMethod.provider === 'cash_on_delivery') {
       return (
         <Card className="border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-white shadow-lg mb-6">
           <CardHeader className="bg-gradient-to-r from-amber-100 to-amber-50 border-b border-amber-200">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-amber-500 rounded-full"><CheckCircle className="h-8 w-8 text-white" /></div>
-              <div><CardTitle className="text-2xl text-amber-900">Commande Confirmée !</CardTitle><p className="text-amber-700 text-sm mt-1">Paiement à la livraison</p></div>
+              <div><CardTitle className="text-2xl text-amber-900">Commande Confirmée !</CardTitle><p className="text-amber-700 text-sm mt-1">Paiement en boutique</p></div>
             </div>
           </CardHeader>
           <CardContent className="pt-6 space-y-4">

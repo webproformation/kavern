@@ -368,6 +368,10 @@ export function SiteFooter() {
                 CGV
               </Link>
               <span>|</span>
+              <Link href="/retours-remboursements" className="hover:text-white transition-colors">
+                Retours
+              </Link>
+              <span>|</span>
               <a
                 href="https://webproformation.fr/"
                 target="_blank"

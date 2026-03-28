@@ -94,6 +94,12 @@ export default function CGVPage() {
                   l&apos;adresse indiquée lors de la commande initiale, sans aucun frais supplémentaire à régler par le Client.
                 </p>
               </div>
+              <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700 mt-4">
+                <p>
+                  Le délai de rétractation légal de 14 jours pour l&apos;ensemble des articles d&apos;un Colis Ouvert
+                  ne commence à courir qu&apos;à compter de la réception physique du colis final consolidé par le Client.
+                </p>
+              </div>
             </CardContent>
           </Card>
 
@@ -102,6 +108,11 @@ export default function CGVPage() {
               <CardTitle>Article 5 — Livraison</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              <p>
+                Le montant minimum pour valider une commande sur le site est fixé à 10,00 € TTC.
+                Ce montant s&apos;entend hors frais de port et après déduction des éventuelles remises,
+                codes promotionnels ou cagnottes de fidélité.
+              </p>
               <p>
                 Les livraisons sont assurées par nos partenaires transporteurs (via Sendcloud) à l&apos;adresse
                 indiquée par le Client. Les délais de livraison sont donnés à titre indicatif. KAVERN ne saurait

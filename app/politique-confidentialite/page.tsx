@@ -45,6 +45,7 @@ export default function PolitiqueConfidentialitePage() {
                 <li><strong>Données liées au concept KAVERN :</strong> sauvegarde des paniers pour le service &quot;Colis Ouvert&quot; (retenue de 7 jours), historique des avis laissés sur le &quot;Livre d&apos;Or&quot; et solde de votre &quot;Cagnotte&quot; fidélité</li>
                 <li><strong>Données de navigation :</strong> adresse IP, type de navigateur, pages visitées, durée de visite</li>
                 <li><strong>Cookies :</strong> préférences de navigation, maintien de la session</li>
+                <li><strong>Données de Live Shopping :</strong> lors de l&apos;utilisation de la plateforme de Live Shopping interactive, les pseudonymes utilisés et les messages postés dans le chat en direct sont collectés de manière temporaire pour assurer le bon fonctionnement de l&apos;événement et sa modération</li>
               </ul>
             </CardContent>
           </Card>
