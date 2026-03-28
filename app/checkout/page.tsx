@@ -63,6 +63,7 @@ interface PaymentMethod {
 
 const TVA_RATE = 0.20;
 const MIN_ORDER_AMOUNT = 10;
+const MAX_PACKAGE_WEIGHT_KG = 10;
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -508,7 +509,18 @@ export default function CheckoutPage() {
         if (!selectedAddressId) { toast.error('Veuillez sélectionner une adresse de livraison'); return; }
     }
 
-    if (!rgpdConsent) { toast.error('Vous devez accepter la politique de confidentialité'); return; }
+    if (!rgpdConsent) { toast.error('Vous devez accepter les CGV et la politique de confidentialité'); return; }
+
+    // Vérification poids max 10kg pour le colis ouvert
+    if (addToOpenPackage && openPackage) {
+      const cartWeight = cart.reduce((sum, item) => sum + ((item as any).weight || 0.3) * item.quantity, 0);
+      // TODO: récupérer le poids existant du colis ouvert depuis les commandes précédentes
+      // Pour l'instant on vérifie juste le panier courant
+      if (cartWeight > MAX_PACKAGE_WEIGHT_KG) {
+        toast.error(`Votre colis dépasse les ${MAX_PACKAGE_WEIGHT_KG} kg (poids max pour un voyage sécurisé). Réduisez la quantité ou fermez votre colis ouvert actuel.`);
+        return;
+      }
+    }
 
     setLoading(true);
 
