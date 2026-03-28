@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Loader2, User, Package, MapPin, Heart, LogOut, Shield, Ruler, Gift, Ticket, PackageOpen, CreditCard } from 'lucide-react';
+import { Loader2, User, Package, MapPin, Heart, LogOut, Shield, Ruler, Gift, Ticket, PackageOpen, CreditCard, PiggyBank } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Liste de base (sans l'admin)
@@ -15,6 +15,7 @@ const baseNavItems = [
   { href: '/account/orders', label: 'Mes commandes', icon: Package },
   { href: '/account/coupons', label: 'Mes coupons', icon: Ticket },
   { href: '/account/gift-cards', label: 'Mes cartes cadeaux', icon: CreditCard },
+  { href: '/account/loyalty', label: 'Ma cagnotte', icon: PiggyBank },
   { href: '/account/my-packages', label: 'Mes colis ouverts', icon: PackageOpen },
   { href: '/account/addresses', label: 'Mes adresses', icon: MapPin },
   // { href: '/account/measurements', label: 'Mes mensurations', icon: Ruler }, // Module masqué - Facile à restaurer
