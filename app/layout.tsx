@@ -34,7 +34,7 @@ export const metadata: Metadata = {
 };
 
 // MODE MAINTENANCE — Passer à false pour réactiver le site
-const MAINTENANCE_MODE = true;
+const MAINTENANCE_MODE = false;
 
 export default function RootLayout({
   children,
