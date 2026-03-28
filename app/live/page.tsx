@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Video, Calendar, Bell, MessageCircle, ShoppingBag, Sparkles } from 'lucide-react';
+import { Video, Calendar, Bell, MessageCircle, ShoppingBag, Sparkles, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import PageHeader from '@/components/PageHeader';
 import { LiveVideoPlayer } from '@/components/LiveVideoPlayer';
@@ -228,20 +228,105 @@ export default function LivePage() {
     <div className="min-h-screen bg-gradient-to-b from-white to-[#F2F2E8]">
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-6xl mx-auto">
-          <PageHeader
-            icon={Video}
-            title="Live Shopping & Replay"
-            description="Rejoignez-nous en direct pour découvrir nos nouveautés et profiter d'offres exclusives"
-          />
-
+          {/* HERO HEADER — Prochain Live avec Countdown */}
           {upcomingLives.length > 0 && (
+            <div className="relative mb-12 rounded-3xl overflow-hidden bg-gradient-to-br from-black via-gray-900 to-black p-8 md:p-12 text-center">
+              <div className="absolute inset-0 opacity-20">
+                {upcomingLives[0].thumbnail_url && (
+                  <img src={upcomingLives[0].thumbnail_url} alt="" className="w-full h-full object-cover" />
+                )}
+              </div>
+              <div className="relative z-10 space-y-6">
+                <Badge className="bg-red-600 text-white text-sm px-4 py-1.5 animate-pulse">PROCHAIN DIRECT</Badge>
+                <h1 className="text-3xl md:text-5xl font-bold text-white">{upcomingLives[0].title}</h1>
+                {upcomingLives[0].description && (
+                  <p className="text-white/70 text-lg max-w-xl mx-auto">{upcomingLives[0].description}</p>
+                )}
+
+                {/* COUNTDOWN */}
+                <div className="flex justify-center gap-4 md:gap-8 py-4">
+                  {(() => {
+                    const target = new Date(upcomingLives[0].scheduled_start).getTime();
+                    const now = Date.now();
+                    const diff = Math.max(0, target - now);
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                    const minutes = Math.floor((diff / (1000 * 60)) % 60);
+                    const seconds = Math.floor((diff / 1000) % 60);
+                    return [
+                      { val: days, label: 'Jours' },
+                      { val: hours, label: 'Heures' },
+                      { val: minutes, label: 'Minutes' },
+                      { val: seconds, label: 'Secondes' }
+                    ].map(({ val, label }) => (
+                      <div key={label} className="flex flex-col items-center">
+                        <div className="bg-[#D4AF37] text-black font-black text-2xl md:text-4xl w-16 h-16 md:w-20 md:h-20 flex items-center justify-center rounded-xl shadow-lg">
+                          {String(val).padStart(2, '0')}
+                        </div>
+                        <span className="text-white/60 text-xs mt-2 uppercase tracking-widest">{label}</span>
+                      </div>
+                    ));
+                  })()}
+                </div>
+
+                <p className="text-[#D4AF37] font-semibold">
+                  {new Date(upcomingLives[0].scheduled_start).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
+                </p>
+
+                <Button className="bg-[#D4AF37] hover:bg-[#C6A15B] text-black font-bold text-lg px-8 py-6 rounded-full shadow-xl">
+                  <Bell className="h-5 w-5 mr-2" /> M&apos;alerter pour le prochain Live
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {!upcomingLives.length && (
+            <PageHeader
+              icon={Video}
+              title="Live Shopping & Replay"
+              description="Rejoignez-nous en direct pour découvrir nos nouveautés et profiter d'offres exclusives"
+            />
+          )}
+
+          {/* 3 COLONNES CONCEPT */}
+          <div className="grid md:grid-cols-3 gap-6 mb-12">
+            <Card className="text-center border-none shadow-sm">
+              <CardContent className="pt-8 pb-6 space-y-3">
+                <div className="mx-auto w-14 h-14 bg-[#D4AF37]/10 rounded-full flex items-center justify-center">
+                  <MessageCircle className="h-7 w-7 text-[#D4AF37]" />
+                </div>
+                <h3 className="font-bold text-gray-900">Un moment de partage</h3>
+                <p className="text-sm text-gray-600">Oubliez le shopping ennuyeux, venez rigoler et découvrir nos pépites en direct.</p>
+              </CardContent>
+            </Card>
+            <Card className="text-center border-none shadow-sm">
+              <CardContent className="pt-8 pb-6 space-y-3">
+                <div className="mx-auto w-14 h-14 bg-[#D4AF37]/10 rounded-full flex items-center justify-center">
+                  <ShoppingBag className="h-7 w-7 text-[#D4AF37]" />
+                </div>
+                <h3 className="font-bold text-gray-900">Le Colis Ouvert</h3>
+                <p className="text-sm text-gray-600">Regroupez vos achats sur 7 jours, ne payez les frais de port qu&apos;une fois !</p>
+              </CardContent>
+            </Card>
+            <Card className="text-center border-none shadow-sm">
+              <CardContent className="pt-8 pb-6 space-y-3">
+                <div className="mx-auto w-14 h-14 bg-[#D4AF37]/10 rounded-full flex items-center justify-center">
+                  <Sparkles className="h-7 w-7 text-[#D4AF37]" />
+                </div>
+                <h3 className="font-bold text-gray-900">Le Coffre & Les Cadeaux</h3>
+                <p className="text-sm text-gray-600">Faites monter l&apos;énergie du Live et gagnez des surprises en direct.</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {upcomingLives.length > 1 && (
             <div className="mb-12">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                🔜 Prochains Lives
+                Prochains Lives
               </h2>
 
               <div className="grid md:grid-cols-2 gap-6">
-                {upcomingLives.map((live) => (
+                {upcomingLives.slice(1).map((live) => (
                   <Card key={live.id} className="overflow-hidden border-2 border-blue-200 bg-blue-50">
                     {live.thumbnail_url && (
                       <div className="relative aspect-video">
@@ -272,6 +357,29 @@ export default function LivePage() {
               </div>
             </div>
           )}
+
+          {/* FAQ ACCORDÉON */}
+          <Card className="mb-12 border-none shadow-sm">
+            <CardContent className="p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Questions fréquentes</h2>
+              <div className="space-y-3">
+                {[
+                  { q: 'Faut-il un compte pour participer ?', a: 'Vous pouvez regarder le live sans compte, mais pour acheter ou participer au chat, il faut être connecté(e). L\'inscription est gratuite et prend 30 secondes !' },
+                  { q: 'Comment payer pendant un live ?', a: 'Ajoutez les produits à votre panier pendant le direct, puis finalisez votre commande normalement via la page panier. Vous pouvez payer par carte, PayPal ou virement.' },
+                  { q: 'Et si je rate le live ?', a: 'Pas de panique ! Tous nos lives sont enregistrés et disponibles en replay avec navigation par chapitres. Vous pouvez acheter les produits présentés après le direct.' },
+                  { q: 'Qu\'est-ce que le Colis Ouvert ?', a: 'C\'est notre système exclusif : regroupez vos achats sur 7 jours et ne payez les frais de port qu\'une seule fois. Idéal pour craquer sur plusieurs lives sans exploser les frais !' },
+                ].map(({ q, a }, idx) => (
+                  <details key={idx} className="group border border-gray-100 rounded-lg">
+                    <summary className="flex items-center justify-between p-4 cursor-pointer font-semibold text-sm text-gray-900 hover:text-[#D4AF37]">
+                      {q}
+                      <ChevronDown className="h-4 w-4 text-gray-400 group-open:rotate-180 transition-transform" />
+                    </summary>
+                    <p className="px-4 pb-4 text-sm text-gray-600">{a}</p>
+                  </details>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
           {replays.length > 0 && (
             <div className="mb-12">
