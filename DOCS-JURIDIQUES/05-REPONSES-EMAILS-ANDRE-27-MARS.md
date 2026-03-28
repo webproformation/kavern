@@ -1,396 +1,162 @@
-# RÉPONSES AUX EMAILS D'ANDRÉ — 27 MARS 2026
+# RÉPONSES AUX 35 EMAILS D'ANDRÉ — 27/28 MARS 2026
 
-À adapter et envoyer par Greg. Ton = professionnel, factuel, bienveillant mais ferme.
-
----
-
-## EMAIL 1 — Module Facturation & Comptabilité (17h57)
-
-Objet : Re: KAVERN - Vérification back-office : Module Facturation & Comptabilité
-
-Bonjour André,
-
-Merci pour ce point détaillé. Voici l'état des lieux pour ton comptable :
-
-**1. Numérotation séquentielle**
-La numérotation est en place (CMD-XXXXXXXXX). Pour passer au format FAV-2026-0001 avec protection anti-suppression, c'est une évolution du module facturation qui nécessite :
-- Une table dédiée `invoices` en base de données
-- Un compteur séquentiel avec verrouillage (pas de trous)
-- L'interdiction de suppression (soft-delete uniquement)
-
-C'est prévu dans la feuille de route mais c'est un développement spécifique qui n'était pas dans le périmètre initial.
-
-**2. PDF avec mentions légales KAVERN**
-✅ Déjà opérationnel. Les factures PDF générées contiennent : KAVERN SASU, capital 1 000 €, siège social, SIREN 102 355 443, TVA FR37102355443, RCS Dunkerque. J'ai corrigé un bug d'affichage aujourd'hui même (les couleurs du PDF crashaient).
-
-**3. Ventilation TVA multi-taux**
-Le champ taux de TVA par produit existe déjà dans l'admin (20%, 10%, 5.5%, 0%). Pour que la facture PDF affiche le détail ventilé (HT par taux, montant TVA par taux, TTC), c'est une évolution du générateur PDF. Développement spécifique hors périmètre initial.
-
-**4. Système d'Avoirs**
-La génération d'avoirs (AVO-2026-XXXX) avec sa propre numérotation séquentielle, c'est un module complet à développer :
-- Table `credit_notes` en base
-- Numérotation indépendante
-- Génération PDF avoir
-- Lien avec la commande d'origine
-- Remise en stock automatique
-
-C'est un développement conséquent (estimé 2-3 jours) qui n'était absolument pas prévu dans le devis initial.
-
-**5. Export Comptable CSV**
-L'export CSV avec filtrage par période (Date, N° Facture, HT, TVA, TTC) est réalisable. C'est un développement spécifique additionnel.
-
-**En résumé :** Le point 2 est OK. Les points 1, 3, 4 et 5 sont des développements supplémentaires qui n'étaient pas prévus au devis. Je les note dans la feuille de route.
-
-Cordialement,
-Grégory
+Toutes les demandes ont été traitées. Voici le statut de chaque point.
 
 ---
 
-## EMAIL 2 — Email de Bienvenue (17h33)
+EMAIL 1 — Module Facturation et Comptabilité
 
-Objet : Re: L'Email de Bienvenue (Création du compte)
-
-Bonjour André,
-
-Bien noté pour le template de l'email de bienvenue. Le contenu est clair et bien rédigé, je vais l'intégrer.
-
-Concernant le bloc "5 € BIENVENUE5" temporaire et désactivable : c'est techniquement faisable. Je prévois un paramètre dans l'admin "Paramètres du site" pour activer/désactiver ce bloc sans toucher au code.
-
-Note : les emails transactionnels nécessitent un serveur SMTP opérationnel. Pour rappel, j'attends toujours de ta part les identifiants SMTP de ton hébergeur O2switch (contact@kavern-france.fr). Sans ça, aucun email ne partira.
-
-Cordialement,
-Grégory
+1. Numérotation séquentielle : Fait. Table invoices créée avec numérotation FAV-2026-0001 automatique (trigger en base). Impossible de supprimer une facture (obligation légale).
+2. PDF avec mentions légales KAVERN : Fait. KAVERN SASU, capital 1 000 €, SIREN 102 355 443, TVA FR37102355443, RCS Dunkerque.
+3. Ventilation TVA multi-taux : Fait. Tableau détaillé sur la facture PDF (Base HT, Montant TVA, TTC par taux). Chaque produit a son taux configurable dans l'admin.
+4. Système d'Avoirs : Fait. Numérotation AVO-2026-0001 avec séquence indépendante. Hors périmètre initial.
+5. Export Comptable CSV : Fait. Bouton "Export Comptable" dans la page Commandes. Colonnes : Date, N° Commande, HT, TVA, TTC. Uniquement les commandes payées. Hors périmètre initial.
 
 ---
 
-## EMAIL 3 — Email Post-Achat / Demande d'avis (17h39)
+EMAIL 2 — Email de Bienvenue
 
-Objet : Re: L'Email "Post-Achat" (Demande d'avis pour la cagnotte)
-
-Bonjour André,
-
-Bien reçu. Un cron job de demande d'avis est déjà en place (J+7 après expédition). Je vais :
-- Ajuster le timing à 3-5 jours après le statut "Livré" (au lieu de J+7 après expédition)
-- Ajouter la condition d'exclusion : ne pas envoyer si un avis existe déjà pour cette commande
-- Mettre à jour le template avec ton texte
-
-Même remarque : tout ça dépend du SMTP O2switch que j'attends.
-
-Cordialement,
-Grégory
+Fait. Template intégré avec ton texte. Bloc 5 € BIENVENUE5 en noir et or. Mentions Colis Ouvert et Cagnotte. Envoi automatique à chaque inscription. SMTP O2switch configuré (contact@kavern-france.fr).
 
 ---
 
-## EMAIL 4 — Email Confirmation de Commande (17h43)
+EMAIL 3 — Email Post-Achat (Demande d'avis)
 
-Objet : Re: E-mail de Confirmation de Commande
-
-Bonjour André,
-
-Noté. Le template de confirmation existe déjà. Je vais l'enrichir avec :
-- Ton texte personnalisé
-- Le tableau récapitulatif des articles
-- L'affichage conditionnel Option A (expédition classique) / Option B (Colis Ouvert)
-
-C'est une mise à jour du template existant, je l'intègre à la prochaine livraison.
-
-Cordialement,
-Grégory
+Fait. Cron job ajusté à 3-5 jours après le statut "Livré". Condition d'exclusion : l'email ne part pas si la cliente a déjà posté un avis pour cette commande. Template mis à jour avec ton texte (Livre d'Or + 0,20 € cagnotte).
 
 ---
 
-## EMAIL 5 — Email d'Expédition du Colis (17h54)
+EMAIL 4 — Email Confirmation de Commande
 
-Objet : Re: E-mail d'Expédition du Colis
-
-Bonjour André,
-
-Bien noté. Ce template sera déclenché quand tu passes une commande en statut "Expédié" dans l'admin. Il inclura :
-- Le nom du transporteur (Mondial Relay / DPD / Chronopost)
-- Le lien de suivi
-
-Note importante : le lien de suivi dynamique dépend de l'intégration Sendcloud. Pour rappel, j'attends toujours tes clés API Sendcloud. Sans ça, le lien de suivi devra être saisi manuellement.
-
-Cordialement,
-Grégory
+Fait. Récapitulatif des articles avec images. Affichage conditionnel : Option A (expédition classique sous 24-48h) ou Option B (Colis Ouvert avec rappel des 7 jours). Envoi automatique après validation du paiement.
 
 ---
 
-## EMAIL 6 — Modification "Vite chez vous" footer (18h05)
+EMAIL 5 — Email d'Expédition du Colis
 
-Objet : Re: Modif
-
-Bonjour André,
-
-✅ Déjà fait. J'ai retiré la mention du prix (4,90 €) de la page "Vite chez vous".
-
-Pour le texte dans le pied de page (footer) du site, je vais aussi mettre à jour :
-"Vos pépites emballées avec soin et une expédition rapide."
-(sans la mention du prix)
-
-Cordialement,
-Grégory
+Fait. Template avec nom du transporteur dynamique et lien de suivi. Envoi automatique quand tu passes une commande en statut "Expédié" dans l'admin. Le lien de suivi sera renseigné automatiquement via Sendcloud quand tu auras activé ton abonnement et fourni les clés API.
 
 ---
 
-## EMAIL 7 — Stocks Live, Anti-fraude & Logistique Colis Ouvert (18h51)
+EMAIL 6 — Modification "Vite chez vous"
 
-Objet : Re: KAVERN - Vérification back-office : Stocks "Live", Anti-fraude automatique & Logistique "Colis Ouvert"
-
-Bonjour André,
-
-Merci pour ce cahier des charges très détaillé. Je vais être transparent avec toi sur ce que ça représente :
-
-**PARTIE 1 — Panier Live (Réservation 24h)**
-Le système actuel ajoute au panier classique. La mécanique de "réservation temporaire avec déduction de stock + remise en stock automatique après 24h" est un développement spécifique majeur :
-- Nouveau statut "réservé" sur les stocks
-- Cron job de nettoyage des paniers expirés
-- Remise en stock automatique
-
-Ce n'était pas prévu dans le devis initial (le devis prévoyait un site e-commerce, pas une plateforme de live shopping avec réservation temps réel).
-
-**PARTIE 2 — Sécurité & 3 Strikes**
-- Le badge "Nouveau" sur la fiche client : réalisable simplement (vérifier si 0 commande passée).
-- Le système "3 strikes" (blocage automatique après 3 paniers expirés) : c'est un développement anti-fraude complet avec compteur par client, logique de sanction automatique, et gestion admin des déblocages. Hors périmètre initial.
-
-**PARTIE 3 — Bascule Colis Ouvert**
-Le système de Colis Ouvert fonctionne déjà (ouverture, ajout à 0€, fermeture auto 7 jours). La logique "au moment du paiement" est celle qui est en place. Le cas d'expiration pendant une réservation live est lié à la Partie 1 (qui est un nouveau développement).
-
-**PARTIE 4 — Admin Colis Ouvert**
-- Onglet "Colis ouverts en cours" : ✅ existe déjà dans l'admin
-- Compte à rebours 7 jours : ✅ en place
-- Bon de préparation fusionné : ✅ existe (impression bordereau)
-- Étiquette Sendcloud : dépend de tes clés API Sendcloud (que j'attends)
-- Bouton "Annuler article" avec avoir partiel : c'est le module d'avoirs (cf. email Facturation) — développement spécifique
-
-**En résumé :** Les bases du Colis Ouvert sont opérationnelles. Les mécaniques Live Shopping (réservation 24h, 3 strikes, anti-fraude) sont des développements supplémentaires conséquents qui n'étaient pas dans le périmètre contractuel.
-
-Cordialement,
-Grégory
+Fait. Prix retiré de la page ET du footer. Le texte affiche maintenant : "Vos pépites emballées avec soin et une expédition rapide."
 
 ---
 
-## EMAIL 8 — Fidélité, Gamification & Livre d'Or (19h48)
+EMAIL 7 — Stocks Live, Anti-fraude et Logistique Colis Ouvert
 
-Objet : Re: KAVERN - Vérification back-office : Fidélité, Gamification & Livre d'Or
+PARTIE 1 — Panier Live 24h : Fait. Cron job toutes les heures qui vide les paniers live de plus de 24h et remet le stock en place automatiquement. Hors périmètre initial.
 
-Bonjour André,
+PARTIE 2 — Sécurité et 3 Strikes : Fait. Badge "Nouveau" visible dans la liste clients admin. Compteur de strikes par client. Après 3 paniers live expirés sans paiement, la réservation différée est bloquée automatiquement. Hors périmètre initial.
 
-**1. Séparation Livre d'Or vs Avis Produits**
-✅ Confirmé. Le crédit de 0,20 € est rattaché uniquement au module "Livre d'Or". La validation d'un avis sur une fiche produit ne déclenche aucun gain.
+PARTIE 3 — Bascule Colis Ouvert : Fait. La logique fonctionne au moment du paiement. Le colis ouvert ne peut plus être créé "à vide" depuis le profil — il s'ouvre uniquement au checkout.
 
-**2. Automatisation du gain**
-Le système est conçu pour que l'approbation d'un avis Livre d'Or crédite automatiquement la cagnotte. Je vais vérifier que le déclencheur fonctionne bien de bout en bout (approbation admin → crédit 0,20 € × multiplicateur → notification).
-
-**3. Rangs & Multiplicateurs**
-✅ Le système est en place dans Supabase :
-- Esprit Curieux (x1) : palier de départ
-- Passionné (x2) : à partir d'un certain seuil de dépenses
-- Collectionneur (x3) : palier supérieur
-
-Le passage d'un rang à l'autre est calculé automatiquement par un trigger en base de données. Le multiplicateur s'applique à tous les gains de cagnotte.
-
-**4. Modification manuelle**
-Oui, tu as la main dans l'admin pour ajuster manuellement la cagnotte et le rang d'un client (geste commercial, SAV). C'est dans la fiche client > section Fidélité.
-
-Cordialement,
-Grégory
+PARTIE 4 — Admin Colis Ouvert : Fait. Onglet "Colis ouverts en cours" opérationnel. Compte à rebours 7 jours. Bon de préparation. Jauge de poids (X kg / 10 kg). Bouton "Clôturer et expédier". Pour les étiquettes Sendcloud : en attente de tes clés API.
 
 ---
 
-## EMAIL 9 — BUGS CRITIQUES d'inventaire & Optimisations UX (20h46)
+EMAIL 8 — Fidélité, Gamification et Livre d'Or
 
-Objet : Re: KAVERN - BUGS CRITIQUES d'inventaire & Optimisations UX (Admin + Site)
-
-Bonjour André,
-
-**PARTIE 1 — Bugs à corriger**
-
-1. **Affichage "Épuisé" sur produits variables** : Bien identifié. Le stock parent doit être la somme des variantes actives. Je corrige.
-
-2. **Bouton "Je craque" grisé pour les variables** : OK, je vais changer le comportement : si le produit a des variantes, le bouton affichera "Choisir ma pépite" et redirigera vers la fiche produit.
-
-3. **Dépassement de stock dans le panier** : Le contrôle de stock existe déjà à l'ajout au panier (il y a un toast "Stock insuffisant"). Je vais vérifier qu'il fonctionne aussi sur le bouton "+" du panier et le bloquer strictement au stock disponible.
-
-**PARTIE 2 — Optimisations Admin**
-
-Ce sont toutes des fonctionnalités nouvelles qui n'étaient pas dans le périmètre contractuel :
-
-1. **Export inventaire CSV** : Développement spécifique (½ journée)
-2. **Accordéons formulaire** : Amélioration UX (½ journée)
-3. **Badges marketing dropdown** : Nouveau système (1 journée)
-4. **Édition rapide stock** : Popup inline (1 journée)
-5. **Actions groupées** : Cases à cocher + bulk actions (1-2 journées)
-
-Je note tout dans la feuille de route. Les 3 bugs critiques sont prioritaires.
-
-Cordialement,
-Grégory
+1. Séparation Livre d'Or vs Avis Produits : Confirmé et vérifié. Seul le Livre d'Or donne 0,20 €. Les avis sur les fiches produits ne rapportent rien.
+2. Automatisation du gain : Fait. Quand tu cliques "Approuver" dans le Livre d'Or, les 0,20 € sont crédités automatiquement sur la cagnotte de la cliente (avec vérification anti-doublon).
+3. Rangs et Multiplicateurs : En place. Esprit Curieux (x1), Passionné (x2), Collectionneur (x3). Le passage est calculé automatiquement par la base de données.
+4. Modification manuelle : Oui, possible dans l'admin depuis la fiche client.
 
 ---
 
-## EMAIL 10 — Minimum de commande, Non-cumul & Livraisons (21h41)
+EMAIL 9 — Bugs critiques d'inventaire et Optimisations UX
 
-Objet : Re: KAVERN - Vérification back-office : Minimum de commande 10 €, Non-cumul des cagnottes & Livraisons
+PARTIE 1 — Bugs : Tous corrigés.
+- Affichage "Épuisé" sur produits variables : corrigé (le stock parent est maintenant la somme des variantes).
+- Bouton "Je craque" grisé : corrigé (affiche "Choisir ma pépite" et redirige vers la fiche produit).
+- Dépassement de stock panier : corrigé (le "+" se bloque au stock disponible avec message d'erreur).
 
-Bonjour André,
-
-**PARTIE 1 — Minimum & Cagnottes**
-
-1. **Minimum 10 € final** : ✅ Le minimum de 10 € est déjà en place au checkout. Je vais ajuster pour qu'il s'applique bien sur le montant APRÈS déduction des cagnottes et coupons (le "reste à payer" réel).
-
-2. **Non-cumul BIENVENUE5 + Cagnotte** : Noté, je vais ajouter la règle d'exclusion : si un code promo est actif, les cagnottes (porte-monnaie + fidélité) sont grisées, et vice-versa. Une seule réduction par commande.
-
-**PARTIE 2 — Livraisons**
-
-1. **Carte interactive Point Relais** : L'intégration d'une carte Mondial Relay interactive (API avec sélection visuelle du point relais) est un développement spécifique conséquent. Le système actuel permet de saisir un point relais. La carte interactive avec géolocalisation est une feature additionnelle hors devis.
-
-2. **Automatisation étiquettes Sendcloud** : Oui, c'est prévu. Mais j'attends toujours tes clés API Sendcloud pour connecter le système.
-
-3. **Gestion retours (remise stock + avoir)** : C'est le même module d'avoirs évoqué dans ton email sur la facturation. Développement spécifique à planifier.
-
-Cordialement,
-Grégory
+PARTIE 2 — Optimisations Admin (toutes hors périmètre, toutes réalisées) :
+- Export inventaire CSV : Fait. Bouton vert dans la liste produits.
+- Accordéons formulaire : Fait. Sections repliables (SEO et Options fermées par défaut).
+- Badges marketing : Fait. Dropdown dans les options produit + affichage visuel sur le catalogue.
+- Édition rapide stock : Fait. Clic sur le badge stock dans la liste = input direct.
+- Actions groupées : Opérationnel (publier, supprimer, privé live en masse).
 
 ---
 
-## EMAIL 11 — Logique de Poids 10 kg (21h06)
+EMAIL 10 — Minimum de commande, Non-cumul et Livraisons
 
-Objet : Re: KAVERN - Logique de Poids (Limite 10 kg) et UX du Panier / Colis Ouvert
-
-Bonjour André,
-
-La gestion du poids est un sujet pertinent pour ta logistique. Voici ce que ça implique techniquement :
-
-**Prérequis :** Chaque produit doit avoir un champ "poids" renseigné dans sa fiche admin. Sans ça, impossible de calculer le poids du colis.
-
-**1. Jauge de poids**
-Réalisable : barre de progression "X kg / 10 kg" dans le panier et le résumé du colis ouvert. Nécessite que tous les produits aient leur poids renseigné.
-
-**2. Blocage + bascule nouveau colis**
-C'est une mécanique complexe :
-- Vérification du poids total à chaque ajout au panier
-- Popup d'alerte si dépassement
-- Clôture automatique du colis ouvert en cours
-- Création d'un nouveau colis avec frais de port
-
-C'est un développement spécifique qui n'était pas dans le périmètre initial. Je le note dans la feuille de route.
-
-**Action immédiate de ton côté :** Commence à renseigner le poids (en kg) de chaque produit dans l'admin. Sans ça, aucune logique de poids ne fonctionnera.
-
-Cordialement,
-Grégory
+1. Minimum 10 € final : Fait. S'applique sur le montant net à payer (après déduction cagnottes et coupons). Message explicatif si le seuil n'est pas atteint.
+2. Non-cumul BIENVENUE5 + Cagnotte : Fait. Code promo et cagnotte sont mutuellement exclusifs. L'un grise l'autre au checkout. Message "Une seule réduction par commande".
+3. Carte interactive Point Relais : Déjà développée (composant RelayPointSelector + API Mondial Relay + Google Maps). En attente des clés API pour activation.
+4. Étiquettes Sendcloud : En attente de tes clés API.
+5. Gestion retours : Module avoirs développé (voir email 1).
 
 ---
 
-## EMAIL 12 — Actualités/Blog SEO + Fiche Client 360° (email supplémentaire)
+EMAIL 11 — Logique de Poids 10 kg
 
-Objet : Re: KAVERN - Vérification back-office : Actualités/Blog + Clients
-
-Bonjour André,
-
-**PARTIE 1 — Blog/Actualités SEO**
-
-- **Champs SEO (Title, Meta-description, Slug)** : ✅ En place dans l'éditeur d'articles.
-- **Alt images** : ✅ Le champ texte alternatif est disponible pour les images.
-- **Structure H2/H3** : ✅ L'éditeur permet la structuration des titres.
-
-**PARTIE 2 — Fiche Client**
-
-- **Vue centralisée** : La fiche client affiche les infos principales. L'affichage du colis ouvert en cours et du solde cagnottes directement sur la fiche est une amélioration UX que je note.
-- **Ajustement manuel cagnotte** : ✅ C'est possible dans l'admin.
-- **Bouton RGPD (anonymisation)** : C'est un développement spécifique (anonymisation du compte + conservation des factures anonymisées pendant 10 ans). Hors périmètre initial mais important pour la conformité.
-
-Cordialement,
-Grégory
+Fait. Jauge de poids visuelle dans la page "Mes Colis Ouverts" (X kg / 10 kg avec barre de progression). Vérification du poids max au checkout. Action de ton côté : renseigner le poids de chaque produit dans l'admin pour que la jauge affiche les bonnes valeurs. Hors périmètre initial.
 
 ---
 
-## EMAIL 13 — Pages SEO, Médiathèque, Sauvegardes (email supplémentaire)
+EMAIL 12 — Actualités/Blog SEO + Fiche Client
 
-Objet : Re: KAVERN - Vérification back-office : Site, Médiathèque & Sauvegardes
+Blog/Actualités SEO : Champs Title, Meta-description, Slug, Alt images, structure H2/H3 — tout est en place dans l'éditeur d'articles.
 
-Bonjour André,
-
-**1. Open Graph (partage Facebook/WhatsApp)**
-- Pages fixes : ✅ Les balises OG sont en place (titre, description, image).
-- Produits : Les balises OG dynamiques (photo produit + titre + prix) sont partiellement en place. Je vais vérifier que chaque fiche produit génère bien sa carte de partage.
-
-**2. Compression images**
-Next.js intègre nativement l'optimisation d'images (composant next/image). Les images sont automatiquement redimensionnées et servies en format WebP par Vercel. Tu n'as rien à faire de spécial à l'upload.
-
-**3. Sauvegardes**
-- **Automatiques** : Supabase (notre base de données) effectue des sauvegardes automatiques quotidiennes. Les données sont répliquées.
-- **Manuelles** : Tu peux exporter tes données depuis le dashboard Supabase à tout moment. Un bouton "Export" dans l'admin est une feature additionnelle.
-- **Restauration** : En cas de pépin, une restauration est possible via Supabase. Ce n'est pas un bouton en un clic mais c'est faisable.
-
-Cordialement,
-Grégory
+Fiche Client : Vue centralisée opérationnelle. Badge "Nouveau" et compteur de strikes visibles. Ajustement manuel de la cagnotte possible. Bouton RGPD "Supprimer mon compte" ajouté dans l'espace client (anonymisation + conservation factures 10 ans). Hors périmètre initial.
 
 ---
 
-## EMAIL 14 — Bug page "Mes Coupons"
+EMAIL 13 — Pages SEO, Médiathèque, Sauvegardes
 
-Objet : Re: Bug page Mes Coupons
-
-Bonjour André,
-
-✅ Corrigé. Le bug venait d'une incompatibilité entre les noms de colonnes dans la base de données et l'affichage. La page fonctionne maintenant.
-
-Cordialement,
-Grégory
+1. Open Graph : Fait. Chaque produit génère automatiquement une carte de partage avec photo, titre et description pour Facebook/WhatsApp.
+2. Compression images : Natif. Next.js/Vercel optimise et sert automatiquement les images en WebP.
+3. Sauvegardes : Automatiques quotidiennes via Supabase. Export manuel possible depuis le dashboard Supabase.
 
 ---
 
-## EMAIL 15 — Cartes Cadeaux (mécanique financière)
+EMAIL 14 — Bug page "Mes Coupons"
 
-Objet : Re: Cartes Cadeaux - Vérification mécanique
+Corrigé. Le bug venait d'une incompatibilité entre les noms de colonnes en base de données et l'affichage. La page fonctionne maintenant.
 
-Bonjour André,
+---
+
+EMAIL 15 — Cartes Cadeaux (mécanique financière)
 
 Les 3 points sont opérationnels :
-
-1. **Reliquat automatique** : ✅ Oui, si un client utilise une carte de 50€ pour un panier de 30€, les 20€ restants sont conservés sur le même code. Le solde est mis à jour en temps réel.
-
-2. **Paiement partagé** : ✅ Oui, si le panier dépasse le solde de la carte, le client paye la différence par carte bancaire ou PayPal. Le système déduit d'abord la carte cadeau, puis demande le complément.
-
-3. **Attribution des cartes reçues** : ✅ Oui, quand une cliente choisit "Directement au destinataire", la carte est liée à l'adresse email indiquée. Si la destinataire se connecte ou crée un compte avec cette même adresse, elle retrouve la carte dans son onglet "Cartes reçues".
-
-Tout est opérationnel.
-
-Cordialement,
-Grégory
+1. Reliquat automatique : le solde restant est conservé sur le même code.
+2. Paiement partagé : la carte déduit ce qu'elle peut, le reste se paye par CB/PayPal.
+3. Attribution des cartes reçues : liées à l'email du destinataire. Visible dans l'onglet "Cartes reçues" si la destinataire se connecte avec le même email.
 
 ---
 
-## EMAIL 16 — Adresses et Colis Ouvert (logique back-end)
+EMAIL 16 — Adresses et Colis Ouvert
 
-Objet : Re: Adresses et Colis Ouvert
-
-Bonjour André,
-
-**1. Modification d'adresse pendant un Colis Ouvert :**
-L'adresse du Colis Ouvert est enregistrée dans la commande initiale (celle qui ouvre le colis). L'étiquette finale utilise cette adresse-là, pas l'adresse par défaut du profil. Si la cliente modifie son profil le mercredi, ça n'affecte pas le colis ouvert du lundi. L'adresse est bien "verrouillée" à la création.
-
-**2. Facturation / Livraison :**
-Le checkout permet actuellement de sélectionner une adresse de livraison parmi les adresses enregistrées. Pour la facturation séparée (cas cadeau), c'est une fonctionnalité qui nécessiterait un champ supplémentaire au checkout. Ce n'est pas encore en place mais c'est facilement ajustable si besoin.
-
-Cordialement,
-Grégory
+1. Modification d'adresse pendant un Colis Ouvert : L'adresse est verrouillée à la création du colis. Une modification ultérieure du profil n'affecte pas le colis en cours.
+2. Facturation / Livraison : Fait. Checkbox "Utiliser une adresse de facturation différente" ajoutée au checkout (pour les cadeaux). Hors périmètre initial.
 
 ---
 
-## EMAIL 17 — Anti-cumul Parrainage + Bienvenue
+EMAIL 17 — Anti-cumul Parrainage + Bienvenue
 
-Objet : Re: Module parrainage — anti-cumul
+Non-cumul : Fait. Une seule réduction par commande. Code promo et cagnotte mutuellement exclusifs.
+Anti-auto-parrainage : Fait. Le système vérifie que le code n'appartient pas à l'utilisateur lui-même ET que le parrain et le filleul n'ont pas la même adresse postale.
 
-Bonjour André,
+---
 
-**Cumul Bienvenue / Parrainage :**
-La règle de non-cumul est en place. Une seule réduction par commande : si la filleule utilise BIENVENUE5 (5€), elle ne peut pas cumuler avec le code parrainage (et vice-versa). Les champs cagnotte et code promo sont mutuellement exclusifs au checkout (l'un grise l'autre).
+EMAILS 18-27 — Contenu pages légales, page Live, sécurité client
 
-**Anti-auto-parrainage :**
-Oui, le système vérifie que le code de parrainage n'appartient pas à l'utilisateur lui-même (comparaison user_id). Pour le cas de comptes différents à la même adresse, c'est techniquement faisable via l'adresse postale mais pas encore implémenté (ça reste rare et détectable en admin).
+Pages légales (CGV, Mentions Légales, RGPD, Colis Ouvert, Retours, Livraison, Paiement, Qui sommes-nous) : Toutes mises à jour avec les textes fournis. Nouvelle page "Retours et Remboursements" créée.
 
-Cordialement,
-Grégory
+Page Live : Refonte complète avec Hero Header + countdown dynamique + 3 colonnes concept + FAQ accordéon + texte SEO complet avec tes textes.
+
+Sécurité client : Date de naissance verrouillée (anti-fraude anniversaire). Bouton RGPD "Supprimer mon compte" ajouté. Code BIENVENUE5 vérifié par adresse et téléphone.
+
+---
+
+EMAILS 28-35 — Checkout, persistance panier, documents PDF, tests
+
+Checkout : Case CGV + RGPD obligatoire combinée. Bouton toujours actif visuellement. Assurance livraison supprimée. Paiement renommé "en boutique".
+Persistance panier mobile : Corrigé (rechargement automatique au réveil du téléphone).
+Documents PDF techniques : Module complet. Upload dans l'admin + affichage sur la fiche produit avec boutons de téléchargement. Section masquée si aucun document.
+Onglet Composition : Ajouté sur la fiche produit (affiché si le champ est rempli).
+Tirage au sort : Animation 30 secondes avec countdown géant + ralentissement progressif + bouton Relancer. Hors périmètre initial.
+Notifications Push : Service worker + bouton d'activation + sauvegarde en base. Hors périmètre initial.
