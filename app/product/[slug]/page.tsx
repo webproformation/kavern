@@ -487,7 +487,16 @@ export default function ProductPage() {
                   )}
                 </AccordionContent>
               </AccordionItem>
-              
+
+              {product.composition && (
+              <AccordionItem value="composition" className="border-none bg-white rounded-2xl px-6 shadow-sm">
+                <AccordionTrigger className="font-black text-gray-900 uppercase text-[10px] tracking-[0.2em] py-5">Composition</AccordionTrigger>
+                <AccordionContent className="pb-8 text-sm text-gray-700">
+                  <div dangerouslySetInnerHTML={{ __html: product.composition }} />
+                </AccordionContent>
+              </AccordionItem>
+              )}
+
               <AccordionItem value="shipping" className="border-none bg-white rounded-2xl px-6 shadow-sm">
                 <AccordionTrigger className="font-black text-gray-900 uppercase text-[10px] tracking-[0.2em] py-5">Livraison & Retours</AccordionTrigger>
                 <AccordionContent className="pb-8 text-sm text-gray-700 space-y-6">

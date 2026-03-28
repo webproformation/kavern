@@ -403,32 +403,45 @@ export default function LivePage() {
           {/* BLOC SEO — Texte optimisé pour le référencement */}
           <div className="mt-12 space-y-8 text-gray-700">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Une expérience de shopping interactive et gourmande</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Live Shopping KAVERN : L&apos;Artisanat, l&apos;Inattendu et la Convivialité en Direct</h2>
               <p className="leading-relaxed">
-                Faire son shopping pendant un live n&apos;a jamais été aussi simple. Profitez de notre fonction Direct-to-Cart
-                qui vous permet d&apos;ajouter les créations présentées par André directement à votre panier, sans jamais quitter
-                la vidéo. Interagissez en temps réel via le chat, posez vos questions sur les parfums de Grasse, les textures
-                de nos savons ou les saveurs de nos terrines, et vibrez au rythme des découvertes en direct !
+                Bienvenue sur la page officielle du Live Shopping KAVERN, le rendez-vous incontournable des amoureux de
+                l&apos;artisanat français et des créations originales. Oubliez l&apos;e-commerce traditionnel et plongez dans une
+                expérience interactive unique. Chaque semaine, André vous ouvre les portes de sa caverne d&apos;Ali Baba pour
+                des soirées placées sous le signe de la bonne humeur, de l&apos;authenticité et des découvertes surprenantes.
               </p>
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Le Coffre de la Kavern : Un défi communautaire passionnant</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Pourquoi participer à nos soirées Shopping en Direct ?</h2>
               <p className="leading-relaxed">
-                L&apos;une des grandes animations de notre boutique est la Jauge Vivante. Ensemble, faites grimper l&apos;énergie
-                du live en participant et en partageant le direct. À chaque palier d&apos;audience franchi, vous vous rapprochez
-                de l&apos;ouverture du Coffre de la Kavern, déclenchant des surprises exclusives, des cadeaux et des tirages
-                au sort pour récompenser votre fidélité !
+                Le Live Shopping chez KAVERN, c&apos;est avant tout un moment de vie. En rejoignant notre direct, vous ne faites
+                pas que remplir un panier : vous rencontrez une communauté passionnée (nos fidèles copinettes !), vous posez
+                vos questions en temps réel, et vous découvrez nos produits sous tous les angles. Des bougies gourmandes en
+                trompe-l&apos;œil saisissantes de réalisme aux pépites d&apos;épicerie fine, chaque article est présenté avec
+                passion et transparence.
               </p>
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Replays intelligents : Retrouvez vos pépites à la demande</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Des innovations pensées pour vous : Le Colis Ouvert et le Direct-to-Cart</h2>
               <p className="leading-relaxed">
-                Vous avez manqué notre dernier rendez-vous ? Retrouvez tous nos replays organisés par chapitres. Notre système
-                de navigation vous permet de sauter directement au produit qui vous intéresse pour en voir la présentation
-                détaillée, vous offrant un gain de temps précieux. C&apos;est l&apos;outil idéal pour revoir les explications
-                d&apos;André et composer votre Colis Ouvert à votre rythme.
+                Nous avons révolutionné la façon dont vous achetez en ligne. Grâce à notre système &quot;Direct-to-Cart&quot;,
+                ajoutez vos coups de cœur à votre panier sans jamais quitter l&apos;émission des yeux. Vous craquez sur
+                plusieurs de nos rendez-vous hebdomadaires ? Profitez de notre concept exclusif de &quot;Colis Ouvert&quot; :
+                regroupez vos achats sur une période de 7 jours (jusqu&apos;à 10 kg) et ne payez les frais d&apos;expédition
+                qu&apos;une seule fois !
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Animations, Tirages au sort et Replays intelligents</h2>
+              <p className="leading-relaxed">
+                L&apos;adrénaline fait partie de l&apos;expérience KAVERN. Participez activement dans le chat pour faire grimper
+                la Jauge Vivante et tentez d&apos;ouvrir le mythique Coffre de la Kavern pour remporter des cadeaux en direct.
+                Vous avez manqué une diffusion ? Pas de panique. Notre vidéothèque de replays intelligents vous permet de
+                revoir nos émissions et de naviguer directement vers les chapitres et les produits qui vous intéressent.
+                Rejoignez l&apos;aventure et remettez de l&apos;humain dans votre shopping en ligne !
               </p>
             </div>
 

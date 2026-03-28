@@ -35,4 +35,22 @@ BEGIN
     ALTER TABLE orders ADD COLUMN tracking_url TEXT DEFAULT NULL;
   END IF;
 END $$;
+
+-- =====================================================
+-- 3. Colonne composition pour les produits
+-- =====================================================
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'products' AND column_name = 'composition'
+  ) THEN
+    ALTER TABLE products ADD COLUMN composition TEXT DEFAULT NULL;
+  END IF;
+END $$;
+
+-- =====================================================
+-- 4. Renommer "Paiement à la livraison" en "Paiement en boutique"
+-- =====================================================
+UPDATE payment_methods SET name = 'Paiement en boutique' WHERE provider = 'cash_on_delivery' OR code = 'cash_on_delivery';
 ```
