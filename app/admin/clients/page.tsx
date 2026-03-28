@@ -425,7 +425,18 @@ export default function ClientsPage() {
                     </TableCell>
                     <TableCell>{profile.phone || '-'}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">{(Number(profile.wallet_balance) || 0).toFixed(2)} €</Badge>
+                      <div className="flex flex-col gap-1">
+                        <Badge variant="outline">{(Number(profile.wallet_balance) || 0).toFixed(2)} €</Badge>
+                        {(profile as any).is_first_order && (
+                          <Badge className="bg-blue-100 text-blue-800 text-[9px]">Nouveau</Badge>
+                        )}
+                        {(profile as any).live_cart_strikes > 0 && (
+                          <Badge className={`text-[9px] ${(profile as any).live_cart_blocked ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}`}>
+                            {(profile as any).live_cart_strikes} strike{(profile as any).live_cart_strikes > 1 ? 's' : ''}
+                            {(profile as any).live_cart_blocked ? ' (bloqué)' : ''}
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Switch

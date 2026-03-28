@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/review-request",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/expire-live-carts",
+      "schedule": "0 */1 * * *"
     }
   ]
 }
