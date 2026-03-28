@@ -6,6 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {
   ChevronRight,
+  Download,
   Home,
   ShoppingCart,
   Plus,
@@ -519,6 +520,33 @@ export default function ProductPage() {
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
+
+            {/* DOCUMENTS TECHNIQUES (PDF) */}
+            {product.technical_documents && product.technical_documents.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] text-[10px]">Fiches techniques & Sécurité</h3>
+                <div className="grid gap-2">
+                  {product.technical_documents.map((doc: any, idx: number) => (
+                    <a
+                      key={idx}
+                      href={doc.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-[#D4AF37] hover:shadow-sm transition-all group"
+                    >
+                      <div className="p-2 bg-red-50 rounded-lg group-hover:bg-red-100 transition-colors">
+                        <svg className="h-5 w-5 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-gray-900 group-hover:text-[#D4AF37]">{doc.title || 'Document'}</p>
+                        <p className="text-xs text-gray-500">PDF — Cliquez pour télécharger</p>
+                      </div>
+                      <Download className="h-4 w-4 text-gray-400 group-hover:text-[#D4AF37]" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="pt-10 border-t-2 border-gray-50 space-y-8" id="avis">
                 <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] flex items-center justify-between text-[10px]"><span>Avis des collectionneurs ({(reviews || []).length})</span></h3>

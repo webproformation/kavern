@@ -55,7 +55,20 @@ END $$;
 UPDATE payment_methods SET name = 'Paiement en boutique' WHERE provider = 'cash_on_delivery' OR code = 'cash_on_delivery';
 
 -- =====================================================
--- 5. Table factures avec numérotation séquentielle
+-- 5. Colonne technical_documents pour les produits (PDFs)
+-- =====================================================
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'products' AND column_name = 'technical_documents'
+  ) THEN
+    ALTER TABLE products ADD COLUMN technical_documents JSONB DEFAULT NULL;
+  END IF;
+END $$;
+
+-- =====================================================
+-- 6. Table factures avec numérotation séquentielle
 -- (copier depuis supabase/migrations/20260328_create_invoices_table.sql)
 -- =====================================================
 ```

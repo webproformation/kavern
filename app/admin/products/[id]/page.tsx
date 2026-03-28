@@ -73,6 +73,7 @@ export default function EditProductPage() {
   const [andreReview, setAndreReview] = useState("");
   const [composition, setComposition] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
+  const [technicalDocs, setTechnicalDocs] = useState<{title: string; url: string}[]>([]);
 
   const [purchasePrice, setPurchasePrice] = useState<number>(0);
   const [regularPrice, setRegularPrice] = useState<number>(0);
@@ -140,6 +141,7 @@ export default function EditProductPage() {
         setDescription(prod.description || "");
         setAndreReview(prod.andre_review || "");
         setComposition(prod.composition || "");
+        setTechnicalDocs(prod.technical_documents || []);
         setVideoUrl(prod.video_url || "");
         setPurchasePrice(prod.purchase_price || 0);
         setRegularPrice(prod.regular_price || 0);
@@ -254,7 +256,7 @@ export default function EditProductPage() {
     try {
       const { error: pErr } = await supabase.from("products").update({
         name: name.trim(), slug: slug.trim(), sku: sku.trim() || null,
-        short_description: shortDescription.substring(0, 150), description, composition, andre_review: andreReview,
+        short_description: shortDescription.substring(0, 150), description, composition, technical_documents: technicalDocs, andre_review: andreReview,
         video_url: videoUrl, purchase_price: purchasePrice, regular_price: regularPrice,
         sale_price: salePrice, stock_quantity: stockQuantity, virtual_weight: virtualWeight,
         status, is_featured: isFeatured, is_diamond: isDiamond, has_variations: hasVariations,
@@ -419,6 +421,46 @@ export default function EditProductPage() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2"><Video className="h-5 w-5 text-red-500" /><Label>Lien Vidéo</Label></div>
                 <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} className="border-red-100 focus:border-red-400" />
+              </div>
+              <Separator />
+              <div className="space-y-4">
+                <Label className="font-bold">Documents techniques (PDF)</Label>
+                <p className="text-xs text-gray-500">Fiches de sécurité CLP, listes d&apos;allergènes, notices d&apos;utilisation...</p>
+                {technicalDocs.map((doc, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <Input
+                      value={doc.title}
+                      onChange={(e) => {
+                        const updated = [...technicalDocs];
+                        updated[idx].title = e.target.value;
+                        setTechnicalDocs(updated);
+                      }}
+                      placeholder="Titre du document"
+                      className="flex-1"
+                    />
+                    <Input
+                      value={doc.url}
+                      onChange={(e) => {
+                        const updated = [...technicalDocs];
+                        updated[idx].url = e.target.value;
+                        setTechnicalDocs(updated);
+                      }}
+                      placeholder="URL du fichier PDF"
+                      className="flex-1"
+                    />
+                    <Button variant="ghost" size="icon" onClick={() => setTechnicalDocs(technicalDocs.filter((_, i) => i !== idx))}>
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTechnicalDocs([...technicalDocs, { title: '', url: '' }])}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Ajouter un document
+                </Button>
               </div>
             </CardContent>
           </Card>

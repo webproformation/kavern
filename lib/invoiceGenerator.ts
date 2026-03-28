@@ -192,9 +192,44 @@ export const generateInvoicePDF = async (order: any, invoiceNumber: string) => {
   if (insurance > 0) drawTotal("Assurance :", `${insurance.toFixed(2)} €`, finalY += 6);
   if (discount > 0) drawTotal("Réduction :", `-${discount.toFixed(2)} €`, finalY += 6, greenColor);
   if (wallet > 0) drawTotal("Cagnotte :", `-${wallet.toFixed(2)} €`, finalY += 6, primaryColor);
-  
-  doc.setDrawColor(200); doc.line(130, finalY + 2, 195, finalY + 2);
-  drawTotal("TOTAL TTC :", `${total.toFixed(2)} €`, finalY += 8, primaryColor, true);
+
+  // VENTILATION TVA MULTI-TAUX
+  const tvaBreakdown: Record<string, { ht: number; tva: number; ttc: number }> = {};
+  items.forEach((item: any) => {
+    const rate = parseFloat(item.tva_rate || item.tax_rate || 20);
+    const ttc = parseFloat(item.price || item.unit_price || 0) * (item.quantity || 1);
+    const ht = ttc / (1 + rate / 100);
+    const tva = ttc - ht;
+    const key = `${rate}`;
+    if (!tvaBreakdown[key]) tvaBreakdown[key] = { ht: 0, tva: 0, ttc: 0 };
+    tvaBreakdown[key].ht += ht;
+    tvaBreakdown[key].tva += tva;
+    tvaBreakdown[key].ttc += ttc;
+  });
+
+  const tvaKeys = Object.keys(tvaBreakdown).sort((a, b) => parseFloat(b) - parseFloat(a));
+  if (tvaKeys.length > 0) {
+    finalY += 4;
+    doc.setDrawColor(220); doc.line(130, finalY, 195, finalY);
+    finalY += 4;
+    doc.setFontSize(8); doc.setTextColor(...blackColor); doc.setFont("helvetica", "bold");
+    doc.text("Détail TVA", 130, finalY);
+    doc.text("Base HT", 155, finalY, { align: 'right' });
+    doc.text("TVA", 175, finalY, { align: 'right' });
+    doc.text("TTC", 195, finalY, { align: 'right' });
+    doc.setFont("helvetica", "normal");
+    tvaKeys.forEach(rate => {
+      finalY += 5;
+      const b = tvaBreakdown[rate];
+      doc.text(`TVA ${rate}%`, 130, finalY);
+      doc.text(`${b.ht.toFixed(2)} €`, 155, finalY, { align: 'right' });
+      doc.text(`${b.tva.toFixed(2)} €`, 175, finalY, { align: 'right' });
+      doc.text(`${b.ttc.toFixed(2)} €`, 195, finalY, { align: 'right' });
+    });
+  }
+
+  doc.setDrawColor(200); doc.line(130, finalY + 3, 195, finalY + 3);
+  drawTotal("TOTAL TTC :", `${total.toFixed(2)} €`, finalY += 9, primaryColor, true);
 
   // 6. PIED DE PAGE
   doc.setFontSize(8); doc.setTextColor(150); doc.setFont("helvetica", "normal");
