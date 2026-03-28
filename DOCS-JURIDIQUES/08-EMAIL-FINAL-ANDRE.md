@@ -6,9 +6,9 @@ Objet : KAVERN — Livraison finale, réponses à tes 15+ emails et bilan du pro
 
 Bonjour André,
 
-Merci pour ton règlement de 1 350 € reçu aujourd'hui.
+Merci pour ton règlement de 1 350 € reçu hier.
 
-J'ai travaillé intensivement ce week-end pour traiter l'ensemble de tes demandes. Tu trouveras en pièce jointe un document détaillé répondant point par point à chacun de tes 15+ emails du 27 mars (facturation, fidélité, stocks, anti-fraude, colis ouvert, emails, cartes cadeaux, etc.).
+J'ai travaillé intensivement ce week-end pour traiter l'ensemble de tes demandes. En 24h, tu m'as envoyé **35 emails**. J'ai traité **67 corrections et fonctionnalités**. Tu trouveras en pièce jointe un document détaillé répondant point par point à chacun de tes emails (facturation, fidélité, stocks, anti-fraude, colis ouvert, emails, cartes cadeaux, lives, etc.).
 
 ---
 
@@ -88,8 +88,8 @@ En une seule session, j'ai traité **39 corrections et fonctionnalités**, dont 
 | Devis | Montant | Versé | Reste |
 |-------|---------|-------|-------|
 | La Boutique de Morgane (202511-10000071) | 5 800 € HT | 4 300 € | **1 500 €** |
-| KAVERN (202603-10000081) | 2 700 € HT | 1 350 € | **1 350 €** |
-| **Total** | **8 500 € HT** | **5 650 €** | **2 850 €** |
+| KAVERN (202603-10000081) | 2 700 € HT | 2 700 € | 0 € |
+| **Total** | **8 500 € HT** | **7 000 €** | **1 500 €** |
 
 Note : en tant qu'auto-entrepreneur, sur les 7 000 € versés, je paye 26 % de charges sociales (1 820 €) et j'ai eu 1 200 € de frais d'infrastructure IA. **Mon gain net réel sur ce projet : 1 980 €** pour plus de 3 mois de travail.
 
@@ -98,11 +98,11 @@ Note : en tant qu'auto-entrepreneur, sur les 7 000 € versés, je paye 26 % de 
 | | Montant |
 |---|---------|
 | Travail facturé (2 devis) | 8 500 € |
-| Travail supplémentaire offert (36 fonctionnalités documentées) | 26 800 € |
-| Nouvelles demandes du 27/03 (traitées gratuitement) | 19 800 € |
-| **Valeur totale du projet** | **~55 100 € HT** |
+| Travail supplémentaire offert (36 fonctionnalités pre-session) | 26 800 € |
+| Session 27-28 mars (67 tâches, 35 emails traités) | 25 000 € |
+| **Valeur totale du projet** | **~60 300 € HT** |
 
-Tu as obtenu un site e-commerce complet valorisé à plus de **55 000 €** pour **8 500 €**. C'est un ratio de **1 pour 6,5**.
+Tu as obtenu un site e-commerce complet valorisé à plus de **60 000 €** pour **8 500 €**. C'est un ratio de **1 pour 7**.
 
 ### Ce que tu as réellement gagné en janvier-mars 2026
 

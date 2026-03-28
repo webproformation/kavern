@@ -18,8 +18,8 @@ SIRET : 498 592 104 00034
 | Devis | Montant | Verse | Reste du |
 |---|---|---|---|
 | Devis La Boutique de Morgane n° 202511-10000071 | 5 800 EUR HT | 4 300 EUR | 1 500 EUR |
-| Devis KAVERN n° 202603-10000081 | 2 700 EUR HT | 1 350 EUR | 1 350 EUR |
-| **TOTAL** | **8 500 EUR HT** | **5 650 EUR** | **2 850 EUR** |
+| Devis KAVERN n° 202603-10000081 | 2 700 EUR HT | 2 700 EUR | 0 EUR |
+| **TOTAL** | **8 500 EUR HT** | **7 000 EUR** | **1 500 EUR** |
 
 ## 2. Reserve de propriete (Article 2367 du Code civil)
 
@@ -54,13 +54,13 @@ A l'instar de la construction immobiliere, le maitre d'ouvrage (client) a une ob
 
 ## 6. Mise en demeure implicite
 
-Le present document vaut rappel amiable. En cas de non-reglement du solde de **2 850 EUR HT** dans un delai de 15 jours a compter de la livraison du site, une mise en demeure formelle sera adressee par lettre recommandee avec accuse de reception.
+Le present document vaut rappel amiable. En cas de non-reglement du solde de **1 500 EUR HT** dans un delai de 15 jours a compter de la livraison du site, une mise en demeure formelle sera adressee par lettre recommandee avec accuse de reception.
 
 Passe ce delai, des penalites de retard seront appliquees conformement a l'article L441-10 du Code de commerce (taux BCE + 10 points, soit environ 14.25% annuel au 27/03/2026).
 
 ## 7. Valeur reelle du travail effectue
 
-A titre informatif, la valeur reelle du travail effectue pour ce projet est estimee a **35 300 EUR HT minimum** (8 500 EUR factures + 26 800 EUR de travail supplementaire offert, cf. document annexe "Inventaire du travail supplementaire"), soit plus de 4 fois le montant facture. Le developpeur a choisi de ne pas facturer ce surplus, ce qui constitue un geste commercial significatif.
+A titre informatif, la valeur reelle du travail effectue pour ce projet est estimee a **60 300 EUR HT minimum** (8 500 EUR factures + 26 800 EUR de travail supplementaire offert + 25 000 EUR session 27-28 mars, cf. documents annexes), soit plus de 7 fois le montant facture. Le developpeur a choisi de ne pas facturer ce surplus, ce qui constitue un geste commercial significatif.
 
 ---
 

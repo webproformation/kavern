@@ -4,7 +4,7 @@
 
 | # | Action | Comment faire | Bloquant pour |
 |---|--------|--------------|---------------|
-| 1 | **Régler le solde de 2 850 €** | Virement sur le compte de Web Pro Formation | Transfert de propriété du site |
+| 1 | **Régler le solde de 1 350 € HT** | Virement sur le compte de Web Pro Formation | Transfert de propriété du site |
 | 2 | **Fournir les clés Stripe LIVE** | Dashboard Stripe → Developers → API Keys → copier la clé publique (pk_live_...) et secrète (sk_live_...) | Paiements par carte bancaire réels |
 | 3 | **Activer Stripe en mode LIVE** | Dashboard Stripe → activer le mode production (sortir du mode test) | idem |
 
@@ -19,13 +19,7 @@
 | 8 | **Fournir les clés API** | app.sendcloud.com → Réglages → Integrations → API Keys → Créer "KAVERN" → copier Public Key + Secret Key |
 | 9 | **Fournir les clés Mondial Relay** | Depuis Sendcloud → section transporteurs → activer Mondial Relay → copier MONDIAL_RELAY_ID et MONDIAL_RELAY_KEY |
 
-## ÉTAPE 3 : DNS (BLOQUANT pour le domaine)
-
-| # | Action | Comment faire |
-|---|--------|--------------|
-| 10 | **Pointer DNS kavern-france.fr → Vercel** | Aller sur O2switch (ou le registrar du domaine) → Zone DNS → Ajouter un enregistrement CNAME : `www` → `cname.vercel-dns.com` + un enregistrement A : `@` → `76.76.21.21` |
-
-## ÉTAPE 4 : Contenu produits (IMPORTANT)
+## ÉTAPE 3 : Contenu produits (IMPORTANT)
 
 | # | Action | Comment faire |
 |---|--------|--------------|
@@ -36,7 +30,7 @@
 | 15 | **Vérifier les taux de TVA** | Admin → Produits → Modifier → Champ "TVA" → 20% pour bougies/accessoires, 5.5% pour épicerie |
 | 16 | **Vérifier les photos** | S'assurer que les photos sont au format carré ou portrait (ratio 4:5 idéal), bonne résolution |
 
-## ÉTAPE 5 : Test avant ouverture
+## ÉTAPE 4 : Test avant ouverture
 
 | # | Action | Comment faire |
 |---|--------|--------------|
@@ -46,7 +40,7 @@
 | 20 | **Tester un live privé** | Admin → Live Shopping → Créer un live test → Configurer OBS → Lancer en privé |
 | 21 | **Vérifier les emails** | Créer un compte test → vérifier l'email de bienvenue → passer commande → vérifier confirmation |
 
-## ÉTAPE 6 : Clé Google Maps (OPTIONNEL mais recommandé)
+## ÉTAPE 5 : Clé Google Maps (OPTIONNEL mais recommandé)
 
 | # | Action | Comment faire |
 |---|--------|--------------|
@@ -56,9 +50,8 @@
 
 ## RÉSUMÉ
 
-**Obligatoire avant ouverture :** Actions 1 à 10 (paiements, Stripe, Sendcloud, DNS)
-**Recommandé avant ouverture :** Actions 11 à 16 (contenu produits)
+**Obligatoire avant ouverture :** Actions 1 à 9 (paiement solde, Stripe, Sendcloud)
+**Recommandé avant ouverture :** Actions 10 à 16 (contenu produits)
 **Avant le premier vrai live :** Actions 17 à 21 (tests)
-**Optionnel :** Action 22 (Google Maps)
 
-**Sans les actions 1 à 10, le site ne peut pas fonctionner en production.**
+**Sans les actions 1 à 9, le site ne peut pas fonctionner en production.**
