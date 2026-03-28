@@ -17,9 +17,9 @@ SIRET : 498 592 104 00034
 
 | Devis | Montant | Verse | Reste du |
 |---|---|---|---|
-| Devis La Boutique de Morgane n° 202511-10000071 | 5 800 EUR HT | 4 300 EUR | 1 500 EUR |
-| Devis KAVERN n° 202603-10000081 | 2 700 EUR HT | 2 700 EUR | 0 EUR |
-| **TOTAL** | **8 500 EUR HT** | **7 000 EUR** | **1 500 EUR** |
+| Devis La Boutique de Morgane n° 202511-10000071 | 5 800 EUR HT | 4 300 EUR | 1 500 EUR (dossier Morgane DEWANIN) |
+| Devis KAVERN n° 202603-10000081 | 2 700 EUR HT | 1 350 EUR | **1 350 EUR** |
+| **TOTAL du par Andre OLIVARES** | | | **1 350 EUR** |
 
 ## 2. Reserve de propriete (Article 2367 du Code civil)
 
@@ -54,7 +54,7 @@ A l'instar de la construction immobiliere, le maitre d'ouvrage (client) a une ob
 
 ## 6. Mise en demeure implicite
 
-Le present document vaut rappel amiable. En cas de non-reglement du solde de **1 500 EUR HT** dans un delai de 15 jours a compter de la livraison du site, une mise en demeure formelle sera adressee par lettre recommandee avec accuse de reception.
+Le present document vaut rappel amiable. En cas de non-reglement du solde de **1 350 EUR HT** dans un delai de 15 jours a compter de la livraison du site, une mise en demeure formelle sera adressee par lettre recommandee avec accuse de reception.
 
 Passe ce delai, des penalites de retard seront appliquees conformement a l'article L441-10 du Code de commerce (taux BCE + 10 points, soit environ 14.25% annuel au 27/03/2026).
 

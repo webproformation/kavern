@@ -131,10 +131,10 @@ Le devis KAVERN (202603-10000081) couvrait le rebranding + ajustements.
 | Travail supplémentaire déjà réalisé gratuitement (doc 02) | 26 800 € |
 | Nouvelles demandes du 27/03/2026 | 19 800 € |
 | **TOTAL travail hors contrat** | **~46 600 €** |
-| Montant total facturé (2 devis) | 8 500 € |
-| Montant impayé | 2 850 € |
+| Devis KAVERN facturé | 2 700 € |
+| Solde dû par André OLIVARES | 1 350 € |
 
-Le client demande **46 600 € de travail supplémentaire** tout en ayant **2 850 € d'impayés**.
+Le client demande **46 600 € de travail supplémentaire** tout en ayant **1 350 € d'impayés**.
 
 ---
 

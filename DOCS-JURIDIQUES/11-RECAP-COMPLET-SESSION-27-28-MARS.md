@@ -151,19 +151,15 @@
 ### Ce qu'André a payé
 | Devis | Montant | Versé | Reste |
 |-------|---------|-------|-------|
-| La Boutique de Morgane | 5 800 € HT | 4 300 € | 1 500 € |
-| KAVERN | 2 700 € HT | 2 700 € | 0 € |
-| **Total** | **8 500 € HT** | **7 000 €** | **1 500 €** |
-
-Note : le devis KAVERN prévoyait 1 350 € à la commande + 1 350 € à la livraison.
-André a versé les 2 × 1 350 € du devis KAVERN.
-**Il reste 1 500 € du solde du devis La Boutique de Morgane.**
+| La Boutique de Morgane | 5 800 € HT | 4 300 € | 1 500 € (dossier Morgane DEWANIN) |
+| KAVERN | 2 700 € HT | 1 350 € | 1 350 € |
+| **Dû par André OLIVARES** | | | **1 350 €** |
 
 ### Ce que Greg a réellement gagné
-- Versé : 7 000 €
-- Charges auto-entrepreneur (26%) : -1 820 €
+- Versé total (Morgane + André) : 5 650 €
+- Charges auto-entrepreneur (26%) : -1 469 €
 - Frais IA : -1 200 €
-- **Net : 1 980 €** pour 3+ mois de travail
+- **Net : 2 981 €** pour 4+ mois de travail
 
 ### Valeur réelle du projet
 | | Montant |

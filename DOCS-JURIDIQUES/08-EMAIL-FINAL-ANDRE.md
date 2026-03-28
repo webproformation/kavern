@@ -87,11 +87,11 @@ En une seule session, j'ai traité **39 corrections et fonctionnalités**, dont 
 ### Ce que tu as payé
 | Devis | Montant | Versé | Reste |
 |-------|---------|-------|-------|
-| La Boutique de Morgane (202511-10000071) | 5 800 € HT | 4 300 € | **1 500 €** |
-| KAVERN (202603-10000081) | 2 700 € HT | 2 700 € | 0 € |
-| **Total** | **8 500 € HT** | **7 000 €** | **1 500 €** |
+| KAVERN (202603-10000081) | 2 700 € HT | 1 350 € | **1 350 €** |
 
-Note : en tant qu'auto-entrepreneur, sur les 7 000 € versés, je paye 26 % de charges sociales (1 820 €) et j'ai eu 1 200 € de frais d'infrastructure IA. **Mon gain net réel sur ce projet : 1 980 €** pour plus de 3 mois de travail.
+Pour rappel, le devis KAVERN intègre le rebranding complet du site initial vers KAVERN, les ajustements techniques liés à la nouvelle entité SASU, et la couverture de mes frais d'infrastructure.
+
+De mon côté, sur les 5 650 € encaissés au total sur ce projet (4 300 € Morgane + 1 350 € KAVERN), je paye 26 % de charges sociales (1 469 €) et j'ai eu 1 200 € de frais d'infrastructure. **Mon gain net réel sur ce projet : 2 981 €** pour plus de 4 mois de travail.
 
 ### La valeur réelle de ce qui a été développé
 

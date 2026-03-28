@@ -4,7 +4,7 @@
 
 | # | Action | Comment faire | Bloquant pour |
 |---|--------|--------------|---------------|
-| 1 | **Régler le solde de 1 350 € HT** | Virement sur le compte de Web Pro Formation | Transfert de propriété du site |
+| 1 | **Régler le solde du devis KAVERN : 1 350 € HT** | Virement sur le compte de Web Pro Formation | Transfert de propriété du site |
 | 2 | **Fournir les clés Stripe LIVE** | Dashboard Stripe → Developers → API Keys → copier la clé publique (pk_live_...) et secrète (sk_live_...) | Paiements par carte bancaire réels |
 | 3 | **Activer Stripe en mode LIVE** | Dashboard Stripe → activer le mode production (sortir du mode test) | idem |
 
