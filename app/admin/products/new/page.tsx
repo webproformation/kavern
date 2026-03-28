@@ -68,6 +68,7 @@ export default function NewProductPage() {
   const [shortDescription, setShortDescription] = useState("");
   const [description, setDescription] = useState("");
   const [andreReview, setAndreReview] = useState("");
+  const [composition, setComposition] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
 
   const [purchasePrice, setPurchasePrice] = useState<number>(0);
@@ -217,7 +218,7 @@ export default function NewProductPage() {
 
       const { error: pErr } = await supabase.from("products").insert({
         id: newProductId, name: name.trim(), slug: slug.trim(), sku: sku.trim() || null,
-        short_description: shortDescription.substring(0, 150), description, andre_review: andreReview,
+        short_description: shortDescription.substring(0, 150), description, composition, andre_review: andreReview,
         video_url: videoUrl, purchase_price: purchasePrice, regular_price: regularPrice,
         sale_price: salePrice, stock_quantity: stockQuantity, virtual_weight: virtualWeight, tva_rate: tvaRate,
         status, is_featured: isFeatured, is_diamond: isDiamond, marketing_badge: marketingBadge || null, has_variations: hasVariations,
@@ -342,6 +343,7 @@ export default function NewProductPage() {
                 <Input value={shortDescription} onChange={(e) => setShortDescription(e.target.value.substring(0, 150))} placeholder="Le goût authentique..." className="italic" />
               </div>
               <div className="space-y-2"><Label>Histoire du produit (Description longue)</Label><RichTextEditor value={description} onChange={setDescription} /></div>
+              <div className="space-y-2"><Label>Composition (ingrédients, matériaux...)</Label><RichTextEditor value={composition} onChange={setComposition} /></div>
               <div className="p-5 bg-amber-50 rounded-2xl border border-amber-100 space-y-3">
                 <Label className="text-[#b8933d] font-bold flex items-center gap-2 uppercase tracking-tighter"><Heart className="h-4 w-4 fill-[#b8933d]" /> L&apos;avis d&apos;André</Label>
                 <Textarea value={andreReview} onChange={(e) => setAndreReview(e.target.value)} placeholder="Pourquoi avez-vous craqué pour ce produit ?" rows={4} className="bg-white border-none italic shadow-inner" />

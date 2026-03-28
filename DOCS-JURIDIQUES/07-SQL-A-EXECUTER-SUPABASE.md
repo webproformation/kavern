@@ -53,4 +53,9 @@ END $$;
 -- 4. Renommer "Paiement à la livraison" en "Paiement en boutique"
 -- =====================================================
 UPDATE payment_methods SET name = 'Paiement en boutique' WHERE provider = 'cash_on_delivery' OR code = 'cash_on_delivery';
+
+-- =====================================================
+-- 5. Table factures avec numérotation séquentielle
+-- (copier depuis supabase/migrations/20260328_create_invoices_table.sql)
+-- =====================================================
 ```
