@@ -38,15 +38,24 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
 
       if (mappingsError) throw mappingsError;
 
-      // Ajouter les category_ids à chaque produit
+      // Récupérer les variations pour calculer le stock des produits variables
+      const { data: variationsData } = await supabase
+        .from('product_variations')
+        .select('product_id, stock_quantity, sku, regular_price, sale_price, attributes, is_active');
+
+      // Ajouter les category_ids et variations à chaque produit
       const productsWithCategories = (productsData || []).map((product) => {
         const categoryIds = (mappings || [])
           .filter((m) => m.product_id === product.id)
           .map((m) => m.category_id);
 
+        const productVariations = (variationsData || [])
+          .filter((v) => v.product_id === product.id);
+
         return {
           ...product,
-          category_ids: categoryIds
+          category_ids: categoryIds,
+          product_variations: productVariations
         };
       });
 

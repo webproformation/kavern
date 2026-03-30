@@ -219,10 +219,14 @@ export default function CartPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => updateQuantity(itemId, item.quantity + 1)}
+                              disabled={item.stockQuantity != null && item.quantity >= item.stockQuantity}
                               className="h-8 w-8 p-0"
                             >
                               <Plus className="h-3 w-3" />
                             </Button>
+                            {item.stockQuantity != null && item.quantity >= item.stockQuantity && (
+                              <span className="text-[10px] text-orange-600 font-bold">Max</span>
+                            )}
                           </div>
 
                           <div className="flex items-center space-x-4">

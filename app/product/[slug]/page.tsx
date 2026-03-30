@@ -266,6 +266,11 @@ export default function ProductPage() {
       return { id, name: p?.name, quantity: qty };
     }) : null;
 
+    // Stock effectif pour bloquer le dépassement dans le panier
+    const effectiveStock = selectedVariation
+      ? selectedVariation.stock_quantity
+      : product.stock_quantity;
+
     addToCart({
       id: product.id,
       name: displayTitle,
@@ -275,7 +280,9 @@ export default function ProductPage() {
       variationId: selectedVariation?.id,
       variationData: selectedVariation?.attributes,
       isPack: product.is_pack,
-      packItems: packDetails // Transmis au CartContext
+      packItems: packDetails, // Transmis au CartContext
+      stock_quantity: effectiveStock,
+      stockQuantity: effectiveStock,
     }, quantity);
     
     toast.success(`${displayTitle} ajouté au panier`);
@@ -420,11 +427,24 @@ export default function ProductPage() {
                 </div>
                 
                 {!isOutOfStock && !product.is_pack && (
-                  <div className="flex items-center border-2 border-gray-100 rounded-2xl bg-white h-14 px-2 shadow-inner">
-                    <Button variant="ghost" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="text-[#b8933d] hover:bg-transparent"><Minus className="h-4 w-4" /></Button>
-                    <Input type="number" value={quantity} onChange={(e) => setQuantity(parseInt(e.target.value) || 1)} className="w-12 border-none text-center font-black text-lg focus-visible:ring-0 p-0" />
-                    <Button variant="ghost" size="icon" onClick={() => setQuantity(quantity + 1)} className="text-[#b8933d] hover:bg-transparent"><Plus className="h-4 w-4" /></Button>
-                  </div>
+                  {(() => {
+                    const maxStock = selectedVariation
+                      ? selectedVariation.stock_quantity
+                      : product.stock_quantity;
+                    return (
+                      <div className="flex items-center border-2 border-gray-100 rounded-2xl bg-white h-14 px-2 shadow-inner">
+                        <Button variant="ghost" size="icon" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="text-[#b8933d] hover:bg-transparent"><Minus className="h-4 w-4" /></Button>
+                        <Input type="number" value={quantity} onChange={(e) => {
+                          const val = parseInt(e.target.value) || 1;
+                          setQuantity(maxStock != null ? Math.min(val, maxStock) : val);
+                        }} className="w-12 border-none text-center font-black text-lg focus-visible:ring-0 p-0" />
+                        <Button variant="ghost" size="icon" onClick={() => setQuantity(maxStock != null ? Math.min(quantity + 1, maxStock) : quantity + 1)} disabled={maxStock != null && quantity >= maxStock} className="text-[#b8933d] hover:bg-transparent"><Plus className="h-4 w-4" /></Button>
+                        {maxStock != null && quantity >= maxStock && (
+                          <span className="text-[10px] text-orange-600 font-bold ml-1">Max</span>
+                        )}
+                      </div>
+                    );
+                  })()}
                 )}
               </div>
               
@@ -556,7 +576,7 @@ export default function ProductPage() {
                   <p className="text-xs text-gray-400 italic text-center py-6 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-100 text-[10px]">Soyez la première personne à partager votre expérience !</p>
                 )}
             </div>
-            <HiddenDiamond productId={product.id} position="description" selectedPosition="description" />
+            {product.is_diamond && <HiddenDiamond productId={product.id} position="description" selectedPosition="description" />}
           </div>
         </div>
 

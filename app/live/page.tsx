@@ -461,7 +461,7 @@ export default function LivePage() {
                   <PushNotificationButton />
                   <Button asChild className="w-full" variant="outline">
                     <a
-                      href="https://www.facebook.com/people/KAVERN/"
+                      href="https://www.facebook.com/share/1ApxRYbs2v/"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -470,7 +470,7 @@ export default function LivePage() {
                   </Button>
                   <Button asChild className="w-full" variant="outline">
                     <a
-                      href="https://www.tiktok.com/@kavern_france"
+                      href="https://tiktok.com/@kavernfrance"
                       target="_blank"
                       rel="noopener noreferrer"
                     >

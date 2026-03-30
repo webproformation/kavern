@@ -213,10 +213,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           setTimeout(() => {
             syncCartToSupabase(mergedCart, hasMerged || mergedCart.length > 0);
           }, 500);
-          // Ne supprimer le localStorage que si on a bien chargé depuis Supabase
-          if (supabaseCart.length > 0 || mergedCart.length > 0) {
-            localStorage.removeItem('cart');
-          }
+          // Garder le localStorage comme backup (évite perte panier si session expire)
         }
       } else {
         const localCart = loadCartFromLocalStorage();
@@ -252,10 +249,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (loading) return;
 
     const timeoutId = setTimeout(() => {
+      // Toujours sauvegarder en localStorage comme backup (évite perte panier si session expire)
+      saveCartToLocalStorage(cart);
       if (user) {
         syncCartToSupabase(cart, false);
-      } else {
-        saveCartToLocalStorage(cart);
       }
     }, 1000); // J'ai passé le délai de debounce à 1s pour soulager Supabase
 

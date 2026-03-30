@@ -35,39 +35,46 @@ export function LoyaltyBanner() {
 
   return (
     <div className="w-full bg-gradient-to-r from-[#D4AF37] via-[#C6A15B] to-[#D4AF37] border-b border-[#C6A15B]">
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between gap-4 text-white w-full flex-wrap">
-          <div className="flex items-center gap-4 md:gap-6 flex-wrap">
-            <div className="flex items-center gap-2">
-              <PiggyBank className="h-5 w-5" />
-              <span className="text-sm font-medium">
-                Cagnotte: <span className="font-bold text-lg">{loyaltyEuros.toFixed(2)}€</span>
+      <div className="container mx-auto px-2 md:px-4 py-1.5 md:py-3">
+        <div className="flex items-center justify-between gap-2 md:gap-4 text-white w-full">
+          {/* Mobile: tout sur une ligne compacte */}
+          <div className="flex items-center gap-2 md:gap-6 overflow-x-auto whitespace-nowrap">
+            <div className="flex items-center gap-1 md:gap-2">
+              <PiggyBank className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
+              <span className="text-xs md:text-sm font-medium">
+                <span className="font-bold text-sm md:text-lg">{loyaltyEuros.toFixed(2)}€</span>
               </span>
             </div>
 
             {walletBalance > 0 && (
-              <div className="flex items-center gap-2">
-                <PiggyBank className="h-5 w-5" />
-                <span className="text-sm font-medium">
+              <div className="flex items-center gap-1">
+                <span className="text-xs md:text-sm font-medium">
                   Avoirs: <span className="font-bold">{walletBalance.toFixed(2)}€</span>
                 </span>
               </div>
             )}
 
-            <div className="flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full">
+            <div className="flex items-center gap-1 px-2 py-0.5 md:px-3 md:py-1 bg-white/20 rounded-full">
               {currentTier.multiplier === 3 ? (
-                <Crown className="h-4 w-4" />
+                <Crown className="h-3 w-3 md:h-4 md:w-4" />
               ) : (
-                <Zap className="h-4 w-4 fill-yellow-300" />
+                <Zap className="h-3 w-3 md:h-4 md:w-4 fill-yellow-300" />
               )}
-              <span className="text-sm font-bold">
-                {currentTier.name} • Gains x{currentTier.multiplier}
+              <span className="text-[10px] md:text-sm font-bold">
+                {currentTier.name} x{currentTier.multiplier}
               </span>
             </div>
+
+            {/* Mobile: progression inline */}
+            {nextTier && (
+              <span className="text-[10px] md:hidden font-medium opacity-80">
+                +{remaining.toFixed(2)}€ → {nextTier.name}
+              </span>
+            )}
           </div>
 
           {nextTier && (
-            <div className="hidden lg:flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-3">
               <div className="flex flex-col items-end">
                 <span className="text-xs font-medium">
                   Plus que {remaining.toFixed(2)}€ pour {nextTier.name}
@@ -83,7 +90,7 @@ export function LoyaltyBanner() {
           )}
 
           {!nextTier && (
-            <div className="hidden lg:flex items-center gap-2 text-yellow-200">
+            <div className="hidden md:flex items-center gap-2 text-yellow-200">
               <Crown className="h-5 w-5" />
               <span className="text-sm font-bold">Palier maximum atteint !</span>
             </div>

@@ -155,7 +155,7 @@ export function SiteHeader() {
           <div className="animate-marquee whitespace-nowrap flex gap-12 font-bold text-[10px] uppercase tracking-widest">
             <span>✨ {topBarText} ✨</span>
             {!user && <span>🎁 Crée ton compte et reçois 5€ de bienvenue 🎁</span>}
-            <span>🚚 Livraison offerte dès 80€ d&apos;achats</span>
+            <span>🚚 Livraison rapide et soignée</span>
             <span>🎥 Rejoignez-nous pour le prochain Live Shopping</span>
             <span>✨ {topBarText} ✨</span>
           </div>
@@ -292,14 +292,17 @@ export function SiteHeader() {
                       </DropdownMenuItem>
                     </>
                   ) : (
-                    <div className="p-2 space-y-2">
-                      <Button asChild className="w-full bg-[#C6A15B] hover:bg-gray-900 rounded-xl h-10 font-bold uppercase text-[10px] tracking-widest">
-                        <Link href="/auth/login">Se connecter</Link>
-                      </Button>
-                      <Button asChild variant="outline" className="w-full border-amber-100 text-[#C6A15B] rounded-xl h-10 font-bold uppercase text-[10px] tracking-widest">
-                        <Link href="/auth/register">Créer un compte</Link>
-                      </Button>
-                    </div>
+                    // Ne pas afficher les boutons auth si on est déjà sur une page auth
+                    !pathname?.startsWith('/auth') && (
+                      <div className="p-2 space-y-2">
+                        <Button asChild className="w-full bg-[#C6A15B] hover:bg-gray-900 rounded-xl h-10 font-bold uppercase text-[10px] tracking-widest">
+                          <Link href="/auth/login">Se connecter</Link>
+                        </Button>
+                        <Button asChild variant="outline" className="w-full border-amber-100 text-[#C6A15B] rounded-xl h-10 font-bold uppercase text-[10px] tracking-widest">
+                          <Link href="/auth/register">Créer un compte</Link>
+                        </Button>
+                      </div>
+                    )
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>

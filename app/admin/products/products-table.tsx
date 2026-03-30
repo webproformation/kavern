@@ -220,10 +220,15 @@ export default function ProductsTable({
       const matchesStatus =
         statusFilter === "all" || product.status === statusFilter;
 
+      // Pour les produits à variantes, calculer le stock total des variantes
+      const effectiveStock = product.has_variations && product.product_variations?.length
+        ? product.product_variations.reduce((sum: number, v: any) => sum + (v.stock_quantity ?? 0), 0)
+        : product.stock_quantity;
+
       const matchesStock =
         stockFilter === "all" ||
-        (stockFilter === "in-stock" && product.stock_quantity > 0) ||
-        (stockFilter === "out-of-stock" && product.stock_quantity === 0);
+        (stockFilter === "in-stock" && effectiveStock > 0) ||
+        (stockFilter === "out-of-stock" && effectiveStock === 0);
 
       const matchesCategory =
         categoryFilter === "all" ||
@@ -413,30 +418,36 @@ export default function ProductsTable({
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1">
-                          {editingStockId === product.id ? (
-                            <div className="flex items-center gap-1">
-                              <Input
-                                type="number"
-                                value={editingStockValue}
-                                onChange={(e) => setEditingStockValue(parseInt(e.target.value) || 0)}
-                                className="w-16 h-7 text-xs text-center"
-                                autoFocus
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleStockSave(product.id);
-                                  if (e.key === 'Escape') setEditingStockId(null);
-                                }}
-                              />
-                              <Button size="sm" className="h-7 px-2 text-xs bg-green-600 hover:bg-green-700" onClick={() => handleStockSave(product.id)}>OK</Button>
-                            </div>
-                          ) : (
-                            <Badge
-                              variant={product.stock_quantity > 0 ? "default" : "destructive"}
-                              className="cursor-pointer hover:opacity-80"
-                              onClick={() => { setEditingStockId(product.id); setEditingStockValue(product.stock_quantity || 0); }}
-                            >
-                              {product.stock_quantity > 0 ? `${product.stock_quantity} en stock` : "Rupture"}
-                            </Badge>
-                          )}
+                          {(() => {
+                            const effStock = product.has_variations && product.product_variations?.length
+                              ? product.product_variations.reduce((sum: number, v: any) => sum + (v.stock_quantity ?? 0), 0)
+                              : product.stock_quantity;
+                            return editingStockId === product.id ? (
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="number"
+                                  value={editingStockValue}
+                                  onChange={(e) => setEditingStockValue(parseInt(e.target.value) || 0)}
+                                  className="w-16 h-7 text-xs text-center"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleStockSave(product.id);
+                                    if (e.key === 'Escape') setEditingStockId(null);
+                                  }}
+                                />
+                                <Button size="sm" className="h-7 px-2 text-xs bg-green-600 hover:bg-green-700" onClick={() => handleStockSave(product.id)}>OK</Button>
+                              </div>
+                            ) : (
+                              <Badge
+                                variant={effStock > 0 ? "default" : "destructive"}
+                                className="cursor-pointer hover:opacity-80"
+                                onClick={() => { setEditingStockId(product.id); setEditingStockValue(product.stock_quantity || 0); }}
+                              >
+                                {effStock > 0 ? `${effStock} en stock` : "Rupture"}
+                                {product.has_variations && product.product_variations?.length > 0 && ` (${product.product_variations.length} var.)`}
+                              </Badge>
+                            );
+                          })()}
 
                           {notificationCounts[product.id] > 0 && (
                             <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 gap-1 text-[10px] font-black uppercase tracking-tighter w-fit">
@@ -571,13 +582,20 @@ export default function ProductsTable({
                             </span>
                           )}
                         </div>
-                        <Badge
-                          variant={product.stock_quantity > 0 ? "default" : "destructive"}
-                          className="text-xs cursor-pointer hover:opacity-80"
-                          onClick={() => { setEditingStockId(product.id); setEditingStockValue(product.stock_quantity || 0); }}
-                        >
-                          {product.stock_quantity > 0 ? `Stock: ${product.stock_quantity}` : "Rupture"}
-                        </Badge>
+                        {(() => {
+                          const effStock = product.has_variations && product.product_variations?.length
+                            ? product.product_variations.reduce((sum: number, v: any) => sum + (v.stock_quantity ?? 0), 0)
+                            : product.stock_quantity;
+                          return (
+                            <Badge
+                              variant={effStock > 0 ? "default" : "destructive"}
+                              className="text-xs cursor-pointer hover:opacity-80"
+                              onClick={() => { setEditingStockId(product.id); setEditingStockValue(product.stock_quantity || 0); }}
+                            >
+                              {effStock > 0 ? `Stock: ${effStock}` : "Rupture"}
+                            </Badge>
+                          );
+                        })()}
                       </div>
 
                       {/* NOTIF ATTENTE MOBILE */}

@@ -11,15 +11,20 @@ export default function ProductsClientWrapper() {
   const { products, categories, loading, error, fetchProducts, fetchCategories } = useProductsStore();
 
   const exportInventoryCSV = () => {
-    const rows: string[] = ['Nom;Variante;UGS;Quantite;Prix Vente TTC;Prix Achat HT'];
+    const rows: string[] = ['Nom;Variante;UGS;Quantite;Prix Vente TTC;Prix HT;TVA %;Prix Achat HT'];
     products.forEach((p: any) => {
+      const tvaRate = p.tva_rate || 20;
       if (p.product_variations?.length > 0) {
         p.product_variations.forEach((v: any) => {
           const varLabel = Object.entries(v.attributes || {}).map(([k, val]: any) => `${val?.name || val}`).join(' / ');
-          rows.push(`"${p.name}";"${varLabel}";"${v.sku || ''}";"${v.stock_quantity ?? ''}";"${v.price || v.regular_price || ''}";"${p.purchase_price_ht || ''}"`);
+          const ttc = v.sale_price || v.regular_price || p.sale_price || p.regular_price || 0;
+          const ht = (ttc / (1 + tvaRate / 100)).toFixed(2);
+          rows.push(`"${p.name}";"${varLabel}";"${v.sku || ''}";"${v.stock_quantity ?? ''}";"${ttc}";"${ht}";"${tvaRate}";"${p.purchase_price || ''}"`);
         });
       } else {
-        rows.push(`"${p.name}";"";"${p.sku || ''}";"${p.stock_quantity ?? ''}";"${p.sale_price || p.regular_price || ''}";"${p.purchase_price_ht || ''}"`);
+        const ttc = p.sale_price || p.regular_price || 0;
+        const ht = (ttc / (1 + tvaRate / 100)).toFixed(2);
+        rows.push(`"${p.name}";"";"${p.sku || ''}";"${p.stock_quantity ?? ''}";"${ttc}";"${ht}";"${tvaRate}";"${p.purchase_price || ''}"`);
       }
     });
     const blob = new Blob(['\ufeff' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
@@ -103,12 +108,18 @@ export default function ProductsClientWrapper() {
       {/* Floating Action Buttons - Mobile Only */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 shadow-lg z-40 flex gap-2">
         <Button
+          onClick={exportInventoryCSV}
+          variant="outline"
+          className="h-12 border-green-300 text-green-700 px-3"
+        >
+          <Download className="h-5 w-5" />
+        </Button>
+        <Button
           onClick={() => fetchProducts()}
           variant="outline"
-          className="flex-1 h-12 border-gray-300"
+          className="h-12 border-gray-300 px-3"
         >
-          <RefreshCw className="h-5 w-5 mr-2" />
-          Actualiser
+          <RefreshCw className="h-5 w-5" />
         </Button>
         <Link href="/admin/products/new" className="flex-1">
           <Button className="bg-blue-600 hover:bg-blue-700 w-full h-12">

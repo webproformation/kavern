@@ -51,19 +51,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const { data } = await supabase.rpc('add_loyalty_gain', {
-        p_user_id: userId, 
-        p_type: 'daily_login', 
-        p_base_amount: 0.10, 
+      const { data, error } = await supabase.rpc('add_loyalty_gain', {
+        p_user_id: userId,
+        p_type: 'daily_login',
+        p_base_amount: 0.10,
         p_description: 'Connexion quotidienne'
       });
-      if (data) {
+      if (error) {
+        console.error("Daily login bonus error:", error.message);
+        // Marquer comme vérifié pour ne pas réessayer en boucle
         dailyLoginCheckedRef.current = true;
-        localStorage.setItem(`login_${userId}`, today);
+        return;
+      }
+      dailyLoginCheckedRef.current = true;
+      localStorage.setItem(`login_${userId}`, today);
+      if (data) {
         toast.success("Bonus quotidien crédité !");
       }
-    } catch (e) { 
-      console.error("Login check skipped"); 
+    } catch (e: any) {
+      console.error("Daily login bonus exception:", e.message);
+      dailyLoginCheckedRef.current = true;
     }
   };
 
@@ -108,8 +115,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       useAuthStore.getState().setUser(currentUser);
-      
-      if (currentUser && (event === 'SIGNED_IN' || event === 'USER_UPDATED')) {
+
+      if (currentUser && (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED')) {
         loadProfile(currentUser.id, true);
       } else if (event === 'SIGNED_OUT') {
         setProfile(null);
@@ -117,8 +124,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         dailyLoginCheckedRef.current = false;
       }
     });
-    
-    return () => subscription.unsubscribe();
+
+    // Rafraîchir la session quand l'onglet revient en foreground (évite les bugs multi-onglet)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          const currentUser = session?.user ?? null;
+          setUser(currentUser);
+          useAuthStore.getState().setUser(currentUser);
+          if (currentUser) {
+            loadProfile(currentUser.id, true);
+          }
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {

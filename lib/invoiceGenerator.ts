@@ -145,18 +145,21 @@ export const generateInvoicePDF = async (order: any, invoiceNumber: string) => {
 
     const p = parseFloat(item.price || item.unit_price || 0);
     const q = item.quantity || 1;
-    return [productName, q, `${p.toFixed(2)} €`, `${(p * q).toFixed(2)} €`];
+    const tvaRate = parseFloat(item.tva_rate || item.tax_rate || 20);
+    const sku = String(item.sku || '').trim();
+    const refCol = (sku && sku !== 'null' && sku !== 'undefined') ? sku.toUpperCase() : '-';
+    return [refCol, productName, q, `${tvaRate}%`, `${p.toFixed(2)} €`, `${(p * q).toFixed(2)} €`];
   });
 
   // @ts-ignore
   autoTable(doc, {
     startY: currentY + 45,
-    head: [["Produit", "Qté", "Prix Unit.", "Total"]],
+    head: [["Réf.", "Produit", "Qté", "TVA", "Prix Unit.", "Total"]],
     body: tableRows,
     theme: 'grid',
-    styles: { fontSize: 9, cellPadding: 4, valign: 'top' },
+    styles: { fontSize: 8, cellPadding: 3, valign: 'top' },
     headStyles: { fillColor: [212, 175, 55], textColor: 255, fontStyle: 'bold' },
-    columnStyles: { 0: { cellWidth: 'auto' }, 1: { cellWidth: 15, halign: 'center' }, 2: { cellWidth: 25, halign: 'right' }, 3: { cellWidth: 25, halign: 'right' } }
+    columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 12, halign: 'center' }, 3: { cellWidth: 14, halign: 'center' }, 4: { cellWidth: 22, halign: 'right' }, 5: { cellWidth: 22, halign: 'right' } }
   });
 
   // 5. TOTAUX & PAIEMENT (Partie Riche restaurée)

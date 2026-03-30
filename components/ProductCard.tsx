@@ -66,6 +66,13 @@ export function ProductCard({ product, showAddToCart = false }: ProductCardProps
     };
   }, [emblaApi, onSelect]);
 
+  // Sur mobile, un tap simple (sans swipe) redirige vers le produit
+  const handleImageTap = useCallback(() => {
+    // clickAllowed() retourne false si un drag vient de se produire
+    if (emblaApi && !emblaApi.clickAllowed()) return;
+    window.location.href = `/product/${product.slug}`;
+  }, [emblaApi, product.slug]);
+
   const displayPrice = product.sale_price || product.regular_price || 0;
   const hasDiscount = product.sale_price && product.sale_price < (product.regular_price || 0);
   // Pour les produits à variantes, sommer le stock des variantes
@@ -100,12 +107,12 @@ export function ProductCard({ product, showAddToCart = false }: ProductCardProps
     <Card className="group relative overflow-hidden rounded-xl border-none shadow-sm hover:shadow-md transition-all duration-300 bg-white h-full flex flex-col">
       {/* Zone Image avec Swipe Tactile (Embla) */}
       <div className="relative aspect-[4/5] overflow-hidden bg-gray-50 cursor-grab active:cursor-grabbing">
-        
-        {/* Lien global cliquable sur toute la zone d'image (sauf les flèches) */}
-        <Link href={`/product/${product.slug}`} className="absolute inset-0 z-10" />
+
+        {/* Lien global cliquable sur toute la zone d'image — pointer-events-none pour laisser le swipe passer */}
+        <Link href={`/product/${product.slug}`} className="absolute inset-0 z-10 pointer-events-none md:pointer-events-auto" />
 
         {images.length > 0 ? (
-          <div className="overflow-hidden h-full w-full" ref={emblaRef}>
+          <div className="overflow-hidden h-full w-full" ref={emblaRef} onClick={handleImageTap}>
             <div className="flex h-full">
               {images.map((img, index) => (
                 <div className="flex-[0_0_100%] min-w-0 h-full relative" key={index}>

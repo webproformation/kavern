@@ -63,7 +63,7 @@ export function CheckoutDelivery({
             <CardTitle className="text-2xl">Mettre ma commande en attente</CardTitle>
           </div>
           <CardDescription className="text-gray-700 font-medium">
-            Payez les frais de livraison maintenant, mais l&apos;expédition sera effectuée dans 5 jours (ou validée manuellement avant).
+            Payez les frais de livraison maintenant, mais l&apos;expédition sera effectuée dans 7 jours (ou validée manuellement avant).
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -84,7 +84,7 @@ export function CheckoutDelivery({
               {createPendingPackage && (
                 <div className="mt-2 space-y-2 text-sm text-gray-600">
                   <p className="flex items-center gap-2"><Info className="h-4 w-4 text-[#C6A15B]" /> Les frais de livraison seront payés aujourd&apos;hui.</p>
-                  <p className="flex items-center gap-2"><Info className="h-4 w-4 text-[#C6A15B]" /> Expédition automatique dans 5 jours ou manuelle via votre compte.</p>
+                  <p className="flex items-center gap-2"><Info className="h-4 w-4 text-[#C6A15B]" /> Expédition automatique dans 7 jours ou manuelle via votre compte.</p>
                 </div>
               )}
             </div>

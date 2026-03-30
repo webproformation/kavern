@@ -238,6 +238,7 @@ export default function ClientsPage() {
           last_name: editedData.last_name,
           phone: editedData.phone,
           birth_date: editedData.birth_date,
+          wallet_balance: editedData.wallet_balance,
         })
         .eq('id', selectedCustomer.id)
         .select();
@@ -580,9 +581,22 @@ export default function ClientsPage() {
                 </div>
                 <div>
                   <Label>Wallet Balance</Label>
-                  <div className="flex items-center mt-1">
-                    <PiggyBank className="h-4 w-4 mr-2 text-gray-400" />
-                    <span>{(Number(selectedCustomer.wallet_balance) || 0).toFixed(2)} €</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <PiggyBank className="h-4 w-4 text-gray-400" />
+                    {editMode ? (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={editedData?.wallet_balance ?? selectedCustomer.wallet_balance ?? 0}
+                          onChange={(e) => setEditedData((prev: any) => ({ ...prev, wallet_balance: parseFloat(e.target.value) || 0 }))}
+                          className="w-24 h-8 text-sm"
+                        />
+                        <span className="text-sm text-gray-500">€</span>
+                      </div>
+                    ) : (
+                      <span>{(Number(selectedCustomer.wallet_balance) || 0).toFixed(2)} €</span>
+                    )}
                   </div>
                 </div>
               </div>
