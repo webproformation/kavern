@@ -58,14 +58,14 @@ export function FeaturedProducts() {
       try {
         const { data, error } = await supabase
           .from('products')
-          .select('*, product_variations(*)')
+          .select('id, name, slug, regular_price, sale_price, image_url, gallery_images, is_variable_product, has_variations, stock_quantity, is_featured, is_diamond, attributes, marketing_badge, product_variations(product_id, stock_quantity)')
           .eq('is_featured', true)
           .eq('status', 'publish')
           .order('created_at', { ascending: false })
           .limit(15);
 
         if (error) throw error;
-        setProducts(data || []);
+        setProducts((data || []) as any);
       } catch (error) {
         console.error('Error fetching featured products:', error);
       } finally {

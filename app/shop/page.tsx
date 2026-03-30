@@ -40,6 +40,7 @@ export default function ShopPage() {
 
   const [allProducts, setAllProducts] = useState<any[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+  const [visibleCount, setVisibleCount] = useState(24);
   const [loading, setLoading] = useState(true);
   const [availableTerms, setAvailableTerms] = useState<Set<string>>(new Set());
   const [productTermsMap, setProductTermsMap] = useState<Record<string, Set<string>>>({});
@@ -109,16 +110,16 @@ export default function ShopPage() {
         termsData.forEach(t => { dict[String(t.id).toLowerCase()] = t.name; });
       }
 
-      // CORRECTION : Filtre strict sur le statut 'publish' uniquement pour la boutique publique
+      // OPTIMISATION : Ne charger que les champs nécessaires pour les cartes produit (réduit de 1.1Mo → ~150Ko)
       const { data: productsData } = await supabase
         .from('products')
-        .select('*')
+        .select('id, name, slug, regular_price, sale_price, image_url, gallery_images, is_variable_product, has_variations, stock_quantity, is_featured, is_diamond, attributes, marketing_badge, status, created_at')
         .eq('status', 'publish')
         .order('created_at', { ascending: false });
 
       if (productsData) {
         const productIds = productsData.map(p => p.id);
-        const { data: variationsData } = await supabase.from('product_variations').select('*').in('product_id', productIds);
+        const { data: variationsData } = await supabase.from('product_variations').select('product_id, stock_quantity, attributes, is_active').in('product_id', productIds);
         
         const finalProducts = productsData.map(p => ({
           ...p,
@@ -174,6 +175,7 @@ export default function ShopPage() {
     });
     
     setFilteredProducts(filtered);
+    setVisibleCount(24); // Reset pagination quand les filtres changent
   }
 
   if (loading) return (
@@ -246,10 +248,22 @@ export default function ShopPage() {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              {filteredProducts.map((product) => (
+              {filteredProducts.slice(0, visibleCount).map((product) => (
                 <ProductCard key={product.id} product={product} showAddToCart={true} />
               ))}
             </div>
+
+            {visibleCount < filteredProducts.length && (
+              <div className="text-center mt-12">
+                <Button
+                  onClick={() => setVisibleCount(prev => prev + 24)}
+                  variant="outline"
+                  className="rounded-2xl border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37]/10 px-12 py-6 font-bold uppercase tracking-widest text-xs"
+                >
+                  Voir plus de pépites ({filteredProducts.length - visibleCount} restantes)
+                </Button>
+              </div>
+            )}
 
             {filteredProducts.length === 0 && !loading && (
               <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">

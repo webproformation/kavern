@@ -115,7 +115,7 @@ export default function CategoryPage() {
       if (termsData) {
         termsData.forEach(t => { dict[String(t.id).toLowerCase()] = t.name; });
       }
-      let productsQuery = supabase.from('products').select('*').eq('status', 'publish').order('created_at', { ascending: false });
+      let productsQuery = supabase.from('products').select('id, name, slug, regular_price, sale_price, image_url, gallery_images, is_variable_product, has_variations, stock_quantity, is_featured, is_diamond, attributes, marketing_badge, status, created_at').eq('status', 'publish').order('created_at', { ascending: false });
 
       if (slug !== 'tous') {
         const { data: categoryData } = await supabase.from('categories').select('*').eq('slug', slug).maybeSingle();
@@ -131,7 +131,7 @@ export default function CategoryPage() {
 
       if (productsData) {
         const productIds = productsData.map(p => p.id);
-        const { data: variationsData } = await supabase.from('product_variations').select('*').in('product_id', productIds);
+        const { data: variationsData } = await supabase.from('product_variations').select('product_id, stock_quantity, attributes, is_active').in('product_id', productIds);
         const finalProducts = productsData.map(p => ({
           ...p,
           product_variations: variationsData?.filter(v => v.product_id === p.id) || []
