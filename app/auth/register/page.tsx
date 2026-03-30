@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,9 @@ import { PasswordInput } from '@/components/PasswordInput';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { signUp, user, loading: authLoading } = useAuth();
+  const isSuccess = searchParams?.get('success') === 'true';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -87,14 +89,49 @@ export default function RegisterPage() {
       body: JSON.stringify({ email, firstName })
     }).catch(() => {});
 
-    toast.success('Compte créé ! Vérifie tes e-mails pour confirmer.');
-    router.push('/account');
+    toast.success('Compte créé avec succès !');
+    // Rediriger vers une page de confirmation au lieu de /account
+    router.push('/auth/register?success=true');
   };
 
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F2F2E8]/30">
         <Loader2 className="h-8 w-8 animate-spin text-[#D4AF37]" />
+      </div>
+    );
+  }
+
+  // Écran de succès après inscription
+  if (isSuccess) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border-none shadow-xl rounded-[2rem] overflow-hidden bg-white">
+          <CardContent className="p-10 text-center space-y-6">
+            <div className="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
+              <Mail className="h-10 w-10 text-green-600" />
+            </div>
+            <CardTitle className="text-2xl font-black text-gray-900">
+              Bienvenue dans la KAVERN !
+            </CardTitle>
+            <p className="text-gray-600 leading-relaxed">
+              Votre compte a bien été créé. <strong>Un email de confirmation</strong> vient de vous être envoyé.
+            </p>
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">
+              <strong>Prochaine étape :</strong> Ouvrez votre boîte mail et cliquez sur le lien de confirmation pour activer votre compte et recevoir vos <strong>5€ de bienvenue</strong>.
+            </div>
+            <div className="space-y-3 pt-2">
+              <Link href="/auth/login">
+                <Button className="w-full h-12 bg-gradient-to-r from-[#b8933d] to-[#d4af37] hover:from-[#9a7a2f] hover:to-[#b8933d] text-white font-bold rounded-xl">
+                  J&apos;ai confirmé, me connecter
+                </Button>
+              </Link>
+              <p className="text-xs text-gray-400">
+                Pensez à vérifier vos spams si vous ne trouvez pas l&apos;email.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }

@@ -66,7 +66,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dailyLoginCheckedRef.current = true;
       localStorage.setItem(`login_${userId}`, today);
       if (data) {
-        toast.success("Bonus quotidien crédité !");
+        toast.success("Bonus quotidien crédité ! +0,10€");
+        // Confettis pour célébrer
+        try {
+          const confetti = (await import('canvas-confetti')).default;
+          confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 }, colors: ['#D4AF37', '#C6A15B', '#FFD700'] });
+        } catch {}
       }
     } catch (e: any) {
       console.error("Daily login bonus exception:", e.message);

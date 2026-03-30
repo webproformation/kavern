@@ -79,6 +79,12 @@ export function HiddenDiamond({ productId, position, selectedPosition }: HiddenD
           duration: 5000,
         });
 
+        // Confettis diamant
+        try {
+          const confetti = (await import('canvas-confetti')).default;
+          confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors: ['#D4AF37', '#60A5FA', '#FFD700', '#C084FC'] });
+        } catch {}
+
         setHasFoundDiamond(true);
 
         setTimeout(() => {

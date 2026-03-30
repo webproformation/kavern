@@ -33,10 +33,14 @@ export default function NewLivePage() {
     try {
       const streamKey = `live_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+      // Convertir l'heure locale en ISO avec timezone pour éviter le décalage UTC
+      const localDate = formData.scheduled_start ? new Date(formData.scheduled_start).toISOString() : null;
+
       const { data, error } = await supabase
         .from('live_streams')
         .insert([{
           ...formData,
+          scheduled_start: localDate,
           id: streamKey,
           stream_key: streamKey,
           status: 'scheduled',

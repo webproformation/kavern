@@ -19,6 +19,7 @@ import { LiveProducts } from '@/components/LiveProducts';
 import { ChestDrawing } from '@/components/ChestDrawing';
 import { ReplayChapters } from '@/components/ReplayChapters';
 import { PushNotificationButton } from '@/components/PushNotificationButton';
+import { LiveCountdown } from '@/components/LiveCountdown';
 
 interface LiveStream {
   id: string;
@@ -245,30 +246,7 @@ export default function LivePage() {
                 )}
 
                 {/* COUNTDOWN */}
-                <div className="flex justify-center gap-4 md:gap-8 py-4">
-                  {(() => {
-                    const target = new Date(upcomingLives[0].scheduled_start).getTime();
-                    const now = Date.now();
-                    const diff = Math.max(0, target - now);
-                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-                    const minutes = Math.floor((diff / (1000 * 60)) % 60);
-                    const seconds = Math.floor((diff / 1000) % 60);
-                    return [
-                      { val: days, label: 'Jours' },
-                      { val: hours, label: 'Heures' },
-                      { val: minutes, label: 'Minutes' },
-                      { val: seconds, label: 'Secondes' }
-                    ].map(({ val, label }) => (
-                      <div key={label} className="flex flex-col items-center">
-                        <div className="bg-[#D4AF37] text-black font-black text-2xl md:text-4xl w-16 h-16 md:w-20 md:h-20 flex items-center justify-center rounded-xl shadow-lg">
-                          {String(val).padStart(2, '0')}
-                        </div>
-                        <span className="text-white/60 text-xs mt-2 uppercase tracking-widest">{label}</span>
-                      </div>
-                    ));
-                  })()}
-                </div>
+                <LiveCountdown scheduledStart={upcomingLives[0].scheduled_start} />
 
                 <p className="text-[#D4AF37] font-semibold">
                   {new Date(upcomingLives[0].scheduled_start).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}

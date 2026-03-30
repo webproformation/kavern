@@ -100,6 +100,8 @@ export function ProductCard({ product, showAddToCart = false }: ProductCardProps
       slug: product.slug,
       price: displayPrice.toString(),
       image: { sourceUrl: product.image_url || '' },
+      stock_quantity: totalStock,
+      stockQuantity: totalStock,
     }, 1);
   };
 
@@ -108,8 +110,8 @@ export function ProductCard({ product, showAddToCart = false }: ProductCardProps
       {/* Zone Image avec Swipe Tactile (Embla) */}
       <div className="relative aspect-[4/5] overflow-hidden bg-gray-50 cursor-grab active:cursor-grabbing">
 
-        {/* Lien global cliquable sur toute la zone d'image — pointer-events-none pour laisser le swipe passer */}
-        <Link href={`/product/${product.slug}`} className="absolute inset-0 z-10 pointer-events-none md:pointer-events-auto" />
+        {/* Desktop: lien overlay | Mobile: tap via handleImageTap sur le carousel */}
+        <Link href={`/product/${product.slug}`} className="absolute inset-0 z-10 hidden md:block" />
 
         {images.length > 0 ? (
           <div className="overflow-hidden h-full w-full" ref={emblaRef} onClick={handleImageTap}>
@@ -239,10 +241,10 @@ export function ProductCard({ product, showAddToCart = false }: ProductCardProps
         {showAddToCart && (
           <Button
             onClick={handleAddToCart}
-            disabled={!isInStock && !product.is_variable_product}
+            disabled={!isInStock && !product.is_variable_product && !(product.product_variations && product.product_variations.length > 0)}
             className="w-full bg-[#b8933d] hover:bg-[#D4AF37] text-white font-bold rounded-lg transition-all text-[11px] h-8 mt-auto"
           >
-            {product.is_variable_product ? (
+            {(product.is_variable_product || product.has_variations || (product.product_variations && product.product_variations.length > 0)) ? (
               "Choisir ma pépite"
             ) : (
               <><ShoppingCart className="h-3 w-3 mr-1.5" />{CUSTOM_TEXTS.buttons.addToCart}</>
