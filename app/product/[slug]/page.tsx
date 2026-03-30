@@ -426,8 +426,7 @@ export default function ProductPage() {
                   {oldPrice && <span className="text-sm text-gray-400 line-through italic">{oldPrice.toFixed(2)} €</span>}
                 </div>
                 
-                {!isOutOfStock && !product.is_pack && (
-                  {(() => {
+                {!isOutOfStock && !product.is_pack && (() => {
                     const maxStock = selectedVariation
                       ? selectedVariation.stock_quantity
                       : product.stock_quantity;
@@ -445,7 +444,6 @@ export default function ProductPage() {
                       </div>
                     );
                   })()}
-                )}
               </div>
               
               <div className="w-full sm:flex-1 flex gap-2">
