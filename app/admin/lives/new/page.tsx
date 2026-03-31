@@ -21,6 +21,8 @@ export default function NewLivePage() {
     description: '',
     scheduled_start: '',
     thumbnail_url: '',
+    playback_url: '',
+    replay_url: '',
     chat_enabled: true,
     products_enabled: true,
     is_recorded: true,
@@ -140,6 +142,34 @@ export default function NewLivePage() {
               />
               <p className="text-sm text-gray-500">
                 Image qui sera affichée avant le début du live
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="playback_url">URL YouTube Live</Label>
+              <Input
+                id="playback_url"
+                type="url"
+                placeholder="https://www.youtube.com/watch?v=..."
+                value={formData.playback_url}
+                onChange={(e) => setFormData({ ...formData, playback_url: e.target.value })}
+              />
+              <p className="text-sm text-gray-500">
+                Collez ici le lien YouTube de votre live
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="replay_url">URL Replay (optionnel)</Label>
+              <Input
+                id="replay_url"
+                type="url"
+                placeholder="https://www.youtube.com/watch?v=..."
+                value={formData.replay_url}
+                onChange={(e) => setFormData({ ...formData, replay_url: e.target.value })}
+              />
+              <p className="text-sm text-gray-500">
+                Lien de la rediffusion (à remplir après le live)
               </p>
             </div>
 

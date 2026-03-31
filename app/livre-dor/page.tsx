@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useGuestbook, useAmbassador, useHearts, canUserReview, submitGuestbookEntry } from '@/hooks/use-guestbook'
 import { useAuth } from '@/context/AuthContext'
+import { supabase } from '@/lib/supabase'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -33,10 +34,11 @@ import Link from 'next/link'
 export default function LivreDorPage() {
   const { entries, loading, refetch } = useGuestbook(50, 'approved')
   const { currentAmbassador, loading: ambassadorLoading } = useAmbassador()
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [eligibleOrders, setEligibleOrders] = useState<{ id: string; order_number: string; created_at: string }[]>([])
   const [formData, setFormData] = useState({
     order_number: '',
     rating: 5,
@@ -45,6 +47,39 @@ export default function LivreDorPage() {
     customer_photo_url: '',
     gdpr_consent: false
   })
+
+  // Charger les commandes éligibles (livrées/terminées, pas encore notées)
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      // Récupérer les commandes livrées de l'utilisateur
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('id, order_number, created_at')
+        .eq('user_id', user.id)
+        .in('status', ['delivered', 'shipped', 'completed', 'processing'])
+        .eq('payment_status', 'paid')
+        .order('created_at', { ascending: false });
+
+      if (!orders || orders.length === 0) { setEligibleOrders([]); return; }
+
+      // Exclure celles déjà notées dans le livre d'or
+      const { data: reviewed } = await supabase
+        .from('guestbook_entries')
+        .select('order_number')
+        .eq('user_id', user.id);
+
+      const reviewedNumbers = new Set((reviewed || []).map(r => r.order_number));
+      setEligibleOrders(orders.filter(o => o.order_number && !reviewedNumbers.has(o.order_number)));
+    })();
+  }, [user])
+
+  // Auto-compléter le prénom depuis le profil
+  useEffect(() => {
+    if (profile?.first_name) {
+      setFormData(prev => ({ ...prev, customer_name: profile.first_name }));
+    }
+  }, [profile])
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -317,20 +352,34 @@ export default function LivreDorPage() {
                         <Input
                           id="customer_name"
                           value={formData.customer_name}
-                          onChange={(e) => setFormData(prev => ({ ...prev, customer_name: e.target.value }))}
-                          className="rounded-xl"
+                          className="rounded-xl bg-gray-50"
+                          readOnly
                           required
                         />
+                        <p className="text-[10px] text-gray-400">Récupéré depuis votre profil</p>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="order_number">Numéro de commande (optionnel)</Label>
-                        <Input
-                          id="order_number"
-                          value={formData.order_number}
-                          onChange={(e) => setFormData(prev => ({ ...prev, order_number: e.target.value }))}
-                          placeholder="#12345"
-                          className="rounded-xl"
-                        />
+                        <Label htmlFor="order_number">Commande concernée *</Label>
+                        {eligibleOrders.length > 0 ? (
+                          <select
+                            id="order_number"
+                            value={formData.order_number}
+                            onChange={(e) => setFormData(prev => ({ ...prev, order_number: e.target.value }))}
+                            className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            required
+                          >
+                            <option value="">Sélectionnez une commande</option>
+                            {eligibleOrders.map(order => (
+                              <option key={order.id} value={order.order_number}>
+                                {order.order_number} — {new Date(order.created_at).toLocaleDateString('fr-FR')}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded-xl border">
+                            Aucune commande éligible. Vos commandes livrées apparaîtront ici.
+                          </div>
+                        )}
                       </div>
                     </div>
 

@@ -25,6 +25,8 @@ interface LiveStream {
   scheduled_start: string;
   stream_key: string;
   thumbnail_url: string;
+  playback_url: string;
+  replay_url: string;
   chat_enabled: boolean;
   products_enabled: boolean;
   is_recorded: boolean;
@@ -162,6 +164,8 @@ export default function LiveManagementPage() {
           description: live.description,
           scheduled_start: live.scheduled_start,
           thumbnail_url: live.thumbnail_url,
+          playback_url: live.playback_url,
+          replay_url: live.replay_url,
           chat_enabled: live.chat_enabled,
           products_enabled: live.products_enabled,
           is_recorded: live.is_recorded,
@@ -400,6 +404,30 @@ export default function LiveManagementPage() {
                     value={live.scheduled_start ? new Date(live.scheduled_start).toISOString().slice(0, 16) : ''}
                     onChange={(e) => setLive({ ...live, scheduled_start: new Date(e.target.value).toISOString() })}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="playback_url">URL YouTube Live</Label>
+                  <Input
+                    id="playback_url"
+                    type="url"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    value={live.playback_url || ''}
+                    onChange={(e) => setLive({ ...live, playback_url: e.target.value })}
+                  />
+                  <p className="text-sm text-gray-500">Lien YouTube du live (sera affiché sur le site en temps réel)</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="replay_url">URL Replay</Label>
+                  <Input
+                    id="replay_url"
+                    type="url"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    value={live.replay_url || ''}
+                    onChange={(e) => setLive({ ...live, replay_url: e.target.value })}
+                  />
+                  <p className="text-sm text-gray-500">Lien de la rediffusion (après la fin du live)</p>
                 </div>
 
                 <div className="space-y-4 pt-4 border-t">

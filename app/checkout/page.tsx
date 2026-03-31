@@ -401,8 +401,9 @@ export default function CheckoutPage() {
         product_name: item.name || 'Produit',
         product_slug: item.slug || '',
         product_image: item.image?.sourceUrl || item.variationImage?.sourceUrl || '',
-        price: String(item.price || 0),
+        price: String(item.variationPrice || item.price || 0),
         quantity: item.quantity || 1,
+        tva_rate: String((item as any).tva_rate || 20),
         variation_data: item.isPack ? { isPack: true, packItems: item.packItems, attributes: item.selectedAttributes } : (item.selectedAttributes || null),
       }));
 
@@ -459,7 +460,7 @@ export default function CheckoutPage() {
       }
 
       if (addToOpenPackage && openPackage) {
-        await supabase.from('open_package_orders').insert([{ open_package_id: openPackage.id, order_id: orderId, is_paid: false }]);
+        await supabase.from('open_package_orders').insert([{ open_package_id: openPackage.id, order_id: orderId }]);
       }
 
       if (createPendingPackage && !addToOpenPackage) {
@@ -483,7 +484,7 @@ export default function CheckoutPage() {
         }
 
         if (newPackage) {
-          await supabase.from('open_package_orders').insert([{ open_package_id: newPackage.id, order_id: orderId, is_paid: false }]);
+          await supabase.from('open_package_orders').insert([{ open_package_id: newPackage.id, order_id: orderId }]);
         }
       }
 
@@ -607,8 +608,9 @@ export default function CheckoutPage() {
         product_name: item.name || 'Produit',
         product_slug: item.slug || '',
         product_image: item.image?.sourceUrl || item.variationImage?.sourceUrl || '',
-        price: String(item.price || 0),
+        price: String(item.variationPrice || item.price || 0),
         quantity: item.quantity || 1,
+        tva_rate: String((item as any).tva_rate || 20),
         variation_data: item.isPack ? { isPack: true, packItems: item.packItems, attributes: item.selectedAttributes } : (item.selectedAttributes || null),
       }));
 
