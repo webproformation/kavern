@@ -51,23 +51,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const { data, error } = await supabase.rpc('add_loyalty_gain', {
+      const { data, error } = await supabase.rpc('record_daily_connection', {
         p_user_id: userId,
-        p_type: 'daily_login',
-        p_base_amount: 0.10,
-        p_description: 'Connexion quotidienne'
       });
       if (error) {
         console.error("Daily login bonus error:", error.message);
-        // Marquer comme vérifié pour ne pas réessayer en boucle
         dailyLoginCheckedRef.current = true;
         return;
       }
       dailyLoginCheckedRef.current = true;
       localStorage.setItem(`login_${userId}`, today);
-      if (data) {
+      if (data?.success) {
         toast.success("Bonus quotidien crédité ! +0,10€");
-        // Confettis pour célébrer
         try {
           const confetti = (await import('canvas-confetti')).default;
           confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 }, colors: ['#D4AF37', '#C6A15B', '#FFD700'] });

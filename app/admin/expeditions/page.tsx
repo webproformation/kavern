@@ -187,7 +187,19 @@ export default function ExpeditionsPage() {
                   <p className="font-medium text-black">{order.shipping_address?.first_name} {order.shipping_address?.last_name}</p>
                   <p>{order.shipping_address?.city} ({order.shipping_address?.postal_code})</p>
                 </div>
-                <Button className="bg-[#b8933d]"><Printer className="h-4 w-4 mr-2" /> Étiquette</Button>
+                <Button
+                  className="bg-[#b8933d]"
+                  onClick={() => {
+                    const addr = order.shipping_address;
+                    if (!addr) { toast.error("Adresse de livraison manquante"); return; }
+                    const label = `DESTINATAIRE:\n${addr.first_name || ''} ${addr.last_name || ''}\n${addr.address_line1 || addr.street || ''}\n${addr.postal_code || ''} ${addr.city || ''}\n${addr.country || 'France'}\nTél: ${addr.phone || ''}\n\nCOMMANDE: ${order.order_number}\nPOIDS: ${order.total_virtual_weight || 0}g\nEXPÉDITEUR: KAVERN - 1062 Rue d'Armentières, 59850 Nieppe`;
+                    const w = window.open('', '_blank');
+                    if (w) {
+                      w.document.write(`<html><head><title>Étiquette ${order.order_number}</title><style>body{font-family:monospace;padding:40px;font-size:14px;} pre{border:2px solid #000;padding:30px;max-width:400px;} @media print{body{padding:0;}}</style></head><body><pre>${label}</pre><script>window.print();<\/script></body></html>`);
+                      w.document.close();
+                    }
+                  }}
+                ><Printer className="h-4 w-4 mr-2" /> Étiquette</Button>
               </CardContent>
             </Card>
           ))}

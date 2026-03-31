@@ -41,8 +41,10 @@ import {
   Truck,
   Trash2,
   MapPin,
-  Box
+  Box,
+  CheckSquare
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 
 interface Order {
@@ -91,6 +93,7 @@ const statusLabels: Record<string, string> = {
 const paymentStatusLabels: Record<string, string> = {
   pending: "En attente",
   pending_transfer: "En attente de virement",
+  pending_store: "En attente paiement boutique",
   processing: "En cours",
   completed: "Payée",
   paid: "Payée",
@@ -108,6 +111,9 @@ export default function OrdersPage() {
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
+  const [bulkStatusAction, setBulkStatusAction] = useState("");
+  const [bulkPaymentAction, setBulkPaymentAction] = useState("");
 
   useEffect(() => {
     loadOrders();
@@ -261,9 +267,16 @@ export default function OrdersPage() {
 
   const handleUpdatePaymentStatus = async (orderId: string, newStatus: string) => {
     try {
+      const order = orders.find(o => o.id === orderId);
+      const previousStatus = order?.payment_status;
+
       const { error } = await supabase
         .from("orders")
-        .update({ payment_status: newStatus, updated_at: new Date().toISOString() })
+        .update({
+          payment_status: newStatus,
+          updated_at: new Date().toISOString(),
+          ...((['completed', 'paid'].includes(newStatus)) ? { paid_at: new Date().toISOString() } : {})
+        })
         .eq("id", orderId);
 
       if (error) throw error;
@@ -274,6 +287,26 @@ export default function OrdersPage() {
 
       if (selectedOrder && selectedOrder.id === orderId) {
         setSelectedOrder({ ...selectedOrder, payment_status: newStatus });
+      }
+
+      // Cashback 2% : créditer quand on valide manuellement un paiement (virement/boutique)
+      const wasPending = ['pending', 'pending_transfer', 'pending_store'].includes(previousStatus || '');
+      const isNowPaid = ['completed', 'paid'].includes(newStatus);
+      if (wasPending && isNowPaid && order) {
+        try {
+          const cashbackAmount = Number(order.subtotal) * 0.02;
+          if (cashbackAmount > 0 && order.user_id) {
+            await supabase.rpc('add_loyalty_gain', {
+              p_user_id: order.user_id,
+              p_type: 'order_cashback',
+              p_base_amount: cashbackAmount,
+              p_description: `Cashback commande #${order.order_number}`
+            });
+            toast.success(`Cashback de ${cashbackAmount.toFixed(2)}€ crédité !`);
+          }
+        } catch (cashbackErr) {
+          console.error("Cashback error (non-blocking):", cashbackErr);
+        }
       }
 
       const label = paymentStatusLabels[newStatus] || newStatus;
@@ -423,6 +456,61 @@ export default function OrdersPage() {
     }
   };
 
+  const toggleSelectOrder = (orderId: string) => {
+    setSelectedOrderIds(prev => {
+      const next = new Set(prev);
+      if (next.has(orderId)) next.delete(orderId);
+      else next.add(orderId);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedOrderIds.size === filteredOrders.length) {
+      setSelectedOrderIds(new Set());
+    } else {
+      setSelectedOrderIds(new Set(filteredOrders.map(o => o.id)));
+    }
+  };
+
+  const handleBulkUpdateStatus = async (newStatus: string) => {
+    if (selectedOrderIds.size === 0) return;
+    try {
+      const ids = Array.from(selectedOrderIds);
+      const { error } = await supabase
+        .from("orders")
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .in("id", ids);
+      if (error) throw error;
+      setOrders(prev => prev.map(o => ids.includes(o.id) ? { ...o, status: newStatus } : o));
+      setSelectedOrderIds(new Set());
+      setBulkStatusAction("");
+      toast.success(`${ids.length} commande(s) → ${statusLabels[newStatus] || newStatus}`);
+    } catch (error) {
+      console.error("Bulk status update error:", error);
+      toast.error("Erreur lors de la mise à jour groupée");
+    }
+  };
+
+  const handleBulkUpdatePayment = async (newStatus: string) => {
+    if (selectedOrderIds.size === 0) return;
+    try {
+      const ids = Array.from(selectedOrderIds);
+      const { error } = await supabase
+        .from("orders")
+        .update({ payment_status: newStatus, updated_at: new Date().toISOString() })
+        .in("id", ids);
+      if (error) throw error;
+      setOrders(prev => prev.map(o => ids.includes(o.id) ? { ...o, payment_status: newStatus } : o));
+      setSelectedOrderIds(new Set());
+      setBulkPaymentAction("");
+      toast.success(`${ids.length} commande(s) → ${paymentStatusLabels[newStatus] || newStatus}`);
+    } catch (error) {
+      console.error("Bulk payment update error:", error);
+      toast.error("Erreur lors de la mise à jour groupée");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -510,6 +598,39 @@ export default function OrdersPage() {
         </CardContent>
       </Card>
 
+      {/* Barre d'actions groupées */}
+      {selectedOrderIds.size > 0 && (
+        <Card className="border-[#D4AF37] bg-[#D4AF37]/5">
+          <CardContent className="py-3 flex flex-wrap items-center gap-3">
+            <Badge className="bg-[#D4AF37] text-white">{selectedOrderIds.size} sélectionnée(s)</Badge>
+            <Select value={bulkStatusAction} onValueChange={(v) => { setBulkStatusAction(v); handleBulkUpdateStatus(v); }}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Changer statut..." />
+              </SelectTrigger>
+              <SelectContent className="z-[9999] bg-white">
+                <SelectItem value="pending">En attente</SelectItem>
+                <SelectItem value="processing">En cours</SelectItem>
+                <SelectItem value="shipped">En livraison</SelectItem>
+                <SelectItem value="delivered">Livrée</SelectItem>
+                <SelectItem value="cancelled">Annulée</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={bulkPaymentAction} onValueChange={(v) => { setBulkPaymentAction(v); handleBulkUpdatePayment(v); }}>
+              <SelectTrigger className="w-52">
+                <SelectValue placeholder="Changer paiement..." />
+              </SelectTrigger>
+              <SelectContent className="z-[9999] bg-white">
+                <SelectItem value="pending">En attente</SelectItem>
+                <SelectItem value="pending_transfer">En attente de virement</SelectItem>
+                <SelectItem value="completed">Payée</SelectItem>
+                <SelectItem value="cancelled">Annulée</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={() => setSelectedOrderIds(new Set())}>Tout désélectionner</Button>
+          </CardContent>
+        </Card>
+      )}
+
       {filteredOrders.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
@@ -531,6 +652,12 @@ export default function OrdersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={selectedOrderIds.size === filteredOrders.length && filteredOrders.length > 0}
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </TableHead>
                     <TableHead>N° Commande</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Client</TableHead>
@@ -542,7 +669,13 @@ export default function OrdersPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredOrders.map((order) => (
-                    <TableRow key={order.id} className="hover:bg-gray-50">
+                    <TableRow key={order.id} className={`hover:bg-gray-50 ${selectedOrderIds.has(order.id) ? 'bg-[#D4AF37]/5' : ''}`}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedOrderIds.has(order.id)}
+                          onCheckedChange={() => toggleSelectOrder(order.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           {order.is_open_package && order.open_package && (
@@ -625,7 +758,7 @@ export default function OrdersPage() {
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] md:max-w-4xl max-h-[90vh] overflow-y-auto">
           {selectedOrder && (
             <>
               <DialogHeader>
@@ -642,7 +775,7 @@ export default function OrdersPage() {
               </DialogHeader>
 
               <div className="space-y-6 mt-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-sm">Statut commande</CardTitle>
@@ -695,7 +828,7 @@ export default function OrdersPage() {
 
                 <Separator />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
                       <MapPin className="h-5 w-5 text-[#D4AF37]" />

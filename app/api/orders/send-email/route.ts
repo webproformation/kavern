@@ -106,16 +106,16 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
+    const smtpPort = parseInt(process.env.SMTP_PORT || "465");
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'mail.kavern.fr',
-      port: parseInt(process.env.SMTP_PORT || "587"),
-      secure: false,
+      host: process.env.SMTP_HOST || 'kavern-france.fr',
+      port: smtpPort,
+      secure: process.env.SMTP_SECURE === 'true' || smtpPort === 465,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
       tls: {
-        ciphers: 'SSLv3',
         rejectUnauthorized: false,
       },
     });

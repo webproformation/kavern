@@ -80,8 +80,7 @@ export default function CouponsPage() {
       setUserCoupons(myWalletCoupons || []);
 
       // Liste des utilisés
-      const mappedUsage = (usageHistory || []).map(mapCouponType);
-      const usedList = mappedUsage.map((usage: any) => ({
+      const usedList = (usageHistory || []).map((usage: any) => ({
         id: usage.id,
         user_id: usage.user_id,
         coupon_type_id: usage.coupon_type_id,
@@ -100,7 +99,7 @@ export default function CouponsPage() {
       const now = new Date();
       const in7Days = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-      const expiring = availableList.filter((c: UserCoupon) => {
+      const expiring = (myWalletCoupons || []).filter((c: UserCoupon) => {
         if (!c.valid_until) return false;
         const validUntil = new Date(c.valid_until);
         return validUntil >= now && validUntil <= in7Days;

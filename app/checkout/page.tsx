@@ -527,6 +527,9 @@ export default function CheckoutPage() {
     try {
       const orderNumber = `CMD-${Date.now()}`;
 
+      // Calculer le poids total du panier en grammes
+      const totalVirtualWeight = Math.round(cart.reduce((sum, item) => sum + ((item as any).weight || 300) * (item.quantity || 1), 0));
+
       // Préparer les items pour le trigger de décrémentation stock
       const itemsForTrigger = cart.map(item => ({
         product_id: item.id,
@@ -534,12 +537,17 @@ export default function CheckoutPage() {
         variation_id: item.variationId || null,
       }));
 
+      // Déterminer le payment_status selon le mode de paiement
+      const isBankTransfer = selectedPaymentMethod?.code === 'bank_transfer' || selectedPaymentMethod?.code === 'virement';
+      const isStorePayment = selectedPaymentMethod?.code === 'paiement_boutique' || selectedPaymentMethod?.code === 'store_payment' || selectedPaymentMethod?.type === 'store';
+      const initialPaymentStatus = isBankTransfer ? 'pending_transfer' : (isStorePayment ? 'pending_store' : 'pending');
+
       const orderData = {
         user_id: user.id,
         order_number: orderNumber,
         status: 'pending',
         items: itemsForTrigger,
-        payment_status: 'pending',
+        payment_status: initialPaymentStatus,
         subtotal: subtotal.toFixed(2),
         shipping_cost: shippingCost.toFixed(2),
         tax_amount: tvaAmount.toFixed(2),
@@ -559,6 +567,8 @@ export default function CheckoutPage() {
         newsletter_consent: newsletterConsent,
         rgpd_consent: rgpdConsent,
         is_open_package: addToOpenPackage,
+        total_virtual_weight: totalVirtualWeight,
+        shipping_type: addToOpenPackage ? 'open_package' : 'immediate',
       };
 
       const { data: newOrder, error: orderError } = await supabase.from('orders').insert([orderData]).select().single();
