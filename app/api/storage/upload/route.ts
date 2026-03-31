@@ -37,10 +37,19 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get('file') as File;
     let bucket = (formData.get('bucket') as string) || 'media';
-    const folder = (formData.get('folder') as string) || '';
+    let folder = (formData.get('folder') as string) || '';
+    // Sanitize folder: strip path traversal et caractères dangereux
+    folder = folder.replace(/\.\./g, '').replace(/[^a-zA-Z0-9_\-\/]/g, '').replace(/\/+/g, '/').replace(/^\/|\/$/g, '');
+
+    // Whitelist bucket names
+    const ALLOWED_BUCKETS = ['media', 'medias', 'products', 'avatars', 'invoices'];
 
     // Normalisation vers 'media'
     if (bucket === 'medias') bucket = 'media';
+
+    if (!ALLOWED_BUCKETS.includes(bucket)) {
+      return NextResponse.json({ success: false, error: `Bucket non autorisé: ${bucket}` }, { status: 400 });
+    }
 
     if (!file) {
       return NextResponse.json({ success: false, error: 'Aucun fichier fourni' }, { status: 400 });
@@ -106,6 +115,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('[UPLOAD] Erreur critique:', error.message);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Erreur interne' }, { status: 500 });
   }
 }

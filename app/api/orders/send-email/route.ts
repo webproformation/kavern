@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     if (orderError) {
       console.error('[SEND-EMAIL] Erreur récupération commande:', orderError);
-      return NextResponse.json({ error: "Erreur commande", details: orderError.message }, { status: 500 });
+      return NextResponse.json({ error: "Erreur commande" }, { status: 500 });
     }
 
     if (!order) {
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     if (profileError) {
       console.error('[SEND-EMAIL] Erreur récupération profil:', profileError);
-      return NextResponse.json({ error: "Erreur profil", details: profileError.message }, { status: 500 });
+      return NextResponse.json({ error: "Erreur profil" }, { status: 500 });
     }
 
     if (!profile || !profile.email) {
@@ -132,8 +132,7 @@ export async function POST(request: NextRequest) {
     } catch (smtpError: any) {
       console.error('[SEND-EMAIL] Erreur connexion SMTP:', smtpError.message);
       return NextResponse.json({
-        error: "Erreur connexion SMTP",
-        details: smtpError.message
+        error: "Erreur connexion SMTP"
       }, { status: 500 });
     }
 
@@ -338,9 +337,7 @@ export async function POST(request: NextRequest) {
     console.error("[SEND-EMAIL] Stack:", error.stack);
     return NextResponse.json(
       {
-        error: "Erreur lors de l'envoi de l'email",
-        details: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        error: "Erreur lors de l'envoi de l'email"
       },
       { status: 500 }
     );

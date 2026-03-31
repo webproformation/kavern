@@ -211,7 +211,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           );
 
           if (existingIndex >= 0) {
-            mergedCart[existingIndex].quantity += localItem.quantity;
+            mergedCart[existingIndex].quantity = Math.max(mergedCart[existingIndex].quantity, localItem.quantity);
             hasMerged = true;
           } else {
             // Assigner un ID unique lors de la fusion pour React

@@ -13,7 +13,7 @@ interface OpenPackageAdmin {
   id: string;
   user_id: string;
   status: string;
-  shipping_cost_paid: boolean;
+  shipping_cost_paid: number;
   opened_at: string;
   closes_at: string;
   shipped_at: string | null;
@@ -224,7 +224,7 @@ export default function AdminOpenPackagesPage() {
                       <Truck className="w-4 h-4" />
                       Frais de port
                     </p>
-                    <p className="font-semibold">{pkg.shipping_cost_paid ? 'Payés ✓' : 'Non payés'}</p>
+                    <p className="font-semibold">{Number(pkg.shipping_cost_paid) > 0 ? `${Number(pkg.shipping_cost_paid).toFixed(2)}€ ✓` : 'Non payés'}</p>
                   </div>
                   <div className="flex items-end gap-2">
                     <Link href={`/admin/open-packages/${pkg.id}`}>

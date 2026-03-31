@@ -103,7 +103,7 @@ export type OpenPackage = {
   id: string;
   user_id: string;
   status: 'active' | 'closed' | 'ready_to_prepare' | 'shipped';
-  shipping_cost_paid: boolean;
+  shipping_cost_paid: number;
   opened_at: string;
   closes_at: string;
   ready_at: string | null;

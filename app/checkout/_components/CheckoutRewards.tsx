@@ -114,7 +114,7 @@ export function CheckoutRewards({
                 <Checkbox
                   id="useWallet"
                   checked={useWallet}
-                  disabled={!!discountAmount || !!couponCode}
+                  disabled={false}
                   onCheckedChange={(checked) => {
                     setUseWallet(checked as boolean);
                     if (!checked) {

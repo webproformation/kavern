@@ -305,7 +305,7 @@ export default function OrdersPage() {
       if (wasPending && isNowPaid && order) {
         // Cashback
         try {
-          const cashbackAmount = Number(order.subtotal) * 0.02;
+          const cashbackAmount = Number(order.total || order.subtotal) * 0.02;
           if (cashbackAmount > 0 && order.user_id) {
             await supabase.rpc('add_loyalty_gain', {
               p_user_id: order.user_id,
@@ -507,9 +507,12 @@ export default function OrdersPage() {
     if (selectedOrderIds.size === 0) return;
     try {
       const ids = Array.from(selectedOrderIds);
+      const updateData: any = { status: newStatus, updated_at: new Date().toISOString() };
+      if (newStatus === 'shipped') updateData.shipped_at = new Date().toISOString();
+
       const { error } = await supabase
         .from("orders")
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .update(updateData)
         .in("id", ids);
       if (error) throw error;
       setOrders(prev => prev.map(o => ids.includes(o.id) ? { ...o, status: newStatus } : o));
@@ -526,11 +529,36 @@ export default function OrdersPage() {
     if (selectedOrderIds.size === 0) return;
     try {
       const ids = Array.from(selectedOrderIds);
+      // Identifier les commandes qui passent de pending → paid (pour cashback + facture)
+      const pendingToPaid = newStatus === 'paid'
+        ? orders.filter(o => ids.includes(o.id) && o.payment_status !== 'paid')
+        : [];
+
       const { error } = await supabase
         .from("orders")
-        .update({ payment_status: newStatus, updated_at: new Date().toISOString() })
+        .update({
+          payment_status: newStatus,
+          updated_at: new Date().toISOString(),
+          ...(newStatus === 'paid' ? { paid_at: new Date().toISOString() } : {}),
+        })
         .in("id", ids);
       if (error) throw error;
+
+      // Cashback + facture pour les commandes qui passent en "paid"
+      for (const order of pendingToPaid) {
+        try {
+          const cashbackAmount = Number(order.total || order.subtotal) * 0.02;
+          if (cashbackAmount > 0 && order.user_id) {
+            await supabase.rpc('add_loyalty_gain', {
+              p_user_id: order.user_id,
+              p_type: 'order_cashback',
+              p_base_amount: cashbackAmount,
+              p_description: `Cashback commande #${order.order_number}`
+            });
+          }
+        } catch (e) { console.error('Bulk cashback error:', e); }
+      }
+
       setOrders(prev => prev.map(o => ids.includes(o.id) ? { ...o, payment_status: newStatus } : o));
       setSelectedOrderIds(new Set());
       setBulkPaymentAction("");

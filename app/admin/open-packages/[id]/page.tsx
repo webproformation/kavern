@@ -336,7 +336,7 @@ export default function OpenPackageDetailPage() {
             <div className="space-y-2 text-sm">
               <div>
                 <span className="text-gray-600">Frais de port:</span>
-                <p className="font-semibold">{packageData.shipping_cost_paid ? 'Payés ✓' : 'Non payés'}</p>
+                <p className="font-semibold">{Number(packageData.shipping_cost_paid) > 0 ? `${Number(packageData.shipping_cost_paid).toFixed(2)}€ ✓` : 'Non payés'}</p>
               </div>
               {packageData.tracking_number && (
                 <div>

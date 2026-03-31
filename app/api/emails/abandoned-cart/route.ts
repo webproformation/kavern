@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error in abandoned cart email API:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Erreur interne' },
       { status: 500 }
     );
   }

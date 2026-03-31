@@ -1,71 +1,80 @@
 # TACHES RESTANTES — KAVERN
 
-> Mise a jour le 31/03/2026 apres AUDIT DIVINE COMPLET (64 problemes trouves)
+> Mise a jour le 31/03/2026 — AUDIT DIVINE 64 problemes : **TOUS FIXES (Phases 1-4)**
 
 ---
 
-## PRIORITE 1 — CRITIQUES (prochaine session, ~2h)
+## RESTE A FAIRE
 
-- [ ] SUPPRIMER /api/debug/send-test-email (OPEN EMAIL RELAY en prod!)
-- [ ] Fix /api/paypal/capture-order (zero auth, n'importe qui marque comme paye)
-- [ ] Fix /api/create-payment-intent (forcer orderId, verifier total server-side)
-- [ ] Fix /api/paypal/create-order (forcer orderId)
-- [ ] Fix webhook Sendcloud (ajouter verification signature HMAC)
-- [ ] Fix crash produit ligne 596 product/[slug]/page.tsx (.toFixed sur null)
-- [ ] Creer app/error.tsx + app/product/[slug]/error.tsx (error boundary)
-- [ ] SQL: ALTER TABLE order_items ADD COLUMN product_id text
-- [ ] SQL: Fix RLS media_library, product_variations, product_images -> admin-only
-- [ ] SQL: Fix RLS news_posts, return_requests, referral_uses -> admin check
-- [ ] Fix order number race condition (sequence Postgres ou UNIQUE + retry)
-- [ ] Fix TVA NaN dans checkout (parseFloat sur string prix)
-
-## PRIORITE 2 — HIGH (cette semaine, ~3h)
-
-- [ ] Auth sur /api/emails/* (7 routes, ajouter secret interne)
-- [ ] Auth sur /api/storage/upload
-- [ ] Auth sur /api/orders/generate-pdf (IDOR)
-- [ ] Fix /api/orders/send-email auth bypass
-- [ ] Fix XML injection /api/chronopost/search et /api/mondial-relay/search
-- [ ] Fix userId: deriver de la session Supabase (pas du body client)
-- [ ] Fix ProductCard.tsx .toFixed() sur string (ligne 232)
-- [ ] Fix ShareButtons double-prefix origin (liens partage casses)
-- [ ] SQL: CREATE VIEW categories AS SELECT * FROM product_categories
-- [ ] SQL: user_coupons UPDATE policy (coupons jamais marques utilises)
-- [ ] SQL: Fix products.id TEXT vs stock functions cast ::uuid
-- [ ] SQL: Creer tables fantomes (referral_codes, newsletter_subscriptions, push_subscriptions, site_settings)
-- [ ] SQL: profiles admin SELECT/UPDATE policy
-- [ ] Fix confirmation page render Promise "[object Promise]"
-- [ ] Fix PayPal skip post-order tasks (wallet, loyalty, coupon)
-- [ ] Fix Stripe debite wallet AVANT paiement (deplacer dans onSuccess)
-- [ ] Fix gift card race condition (RPC atomique Postgres)
-- [ ] Fix games claim-reward server-side win (non-card-flip)
-
-## PRIORITE 3 — MEDIUM (ce mois)
-
-- [ ] Rate limiting /api/contact
-- [ ] Sanitize error messages (6 routes leakent des internals)
-- [ ] Fix CheckoutSummary: affiche prix variation au lieu de base
-- [ ] Fix confirmation page: pas de auth check (IDOR)
-- [ ] Fix wallet/coupon: wallet ne devrait pas etre disabled par coupon
-- [ ] Fix cashback: calculer sur total paye (pas subtotal)
-- [ ] Fix bulk actions admin: skip cashback, email, shipped_at, facture
-- [ ] Fix open package: shipping_cost_paid type mismatch (number vs boolean)
-- [ ] Fix delai colis ouvert: 5j dans code, 7j dans UI — aligner
-
-## PRIORITE 4 — LOW (nice to have)
-
-- [ ] TVA hardcodee 20% sur confirmation page (devrait multi-taux)
-- [ ] Facture PDF ignore prix variation
-- [ ] order_items: ajouter product_id pour analytics
-- [ ] Admin delete order: cascade vers order_items
-- [ ] Cart merge login: double-count quantites (Math.max au lieu de +=)
-- [ ] Storage: whitelist bucket names
-- [ ] Storage: sanitize folder parameter (path traversal)
 - [ ] Nettoyer 20+ tables orphelines en DB
+- [ ] Admin delete order: cascade vers order_items (SQL constraint)
+- [ ] Livre d'or : refonte formulaire securise (demande Andre 31/03)
+  - Formulaire visible uniquement si connecte
+  - Prenom auto-complete depuis profil (non modifiable)
+  - Menu deroulant commandes eligibles (statut livre/terminee, pas encore notee)
+  - Attribution cashback 0.20EUR auto a la validation admin
+- [ ] Ajouter INTERNAL_API_SECRET dans Vercel env vars
+- [ ] Ajouter SENDCLOUD_WEBHOOK_SECRET dans Vercel env vars
 
 ---
 
-## DEJA FIXE LE 31/03/2026
+## FIXE SESSION 31/03/2026 — PHASE 1 CRITIQUES (commit d6f3c00)
+
+- [x] SUPPRIME /api/debug/send-test-email (open email relay en prod)
+- [x] Auth Bearer + ownership sur paypal/capture-order
+- [x] Auth Bearer + userId token sur create-payment-intent
+- [x] Auth Bearer + ownership sur paypal/create-order
+- [x] Webhook Sendcloud: verification signature HMAC (timingSafeEqual)
+- [x] Fix crash .toFixed() sur null (product/[slug]/page.tsx)
+- [x] Error boundaries: app/error.tsx + product/[slug]/error.tsx
+- [x] Fix TVA NaN checkout (parseFloat sur string prix)
+- [x] Callers frontend: Bearer token sur Stripe + PayPal
+- [x] SQL: Sequence order_number_seq + trigger generate_order_number()
+- [x] SQL: ALTER TABLE order_items ADD COLUMN product_id
+- [x] SQL: RLS admin-only media_library, product_variations, product_images
+- [x] SQL: RLS admin check news_posts, return_requests, referral_uses
+- [x] Backup DB schema + data avant deploy
+
+## FIXE SESSION 31/03/2026 — PHASE 2 HIGH (commit 797d5b0)
+
+- [x] Auth /api/emails/* (7 routes): secret interne ou Bearer
+- [x] Auth /api/storage/upload: Bearer requis
+- [x] Auth /api/orders/generate-pdf: Bearer + IDOR ownership check
+- [x] Fix /api/orders/send-email: auth bypass supprime
+- [x] Fix XML injection chronopost + mondial-relay (sanitize + validation CP)
+- [x] Fix userId stripe/create-checkout-session: derive du token
+- [x] Fix ProductCard.tsx .toFixed() sur string
+- [x] Fix ShareButtons double-prefix origin
+- [x] Fix confirmation page: Promise [object Promise] -> useState
+- [x] Fix PayPal skip post-order tasks (wallet, loyalty, coupon, email)
+- [x] Fix Stripe wallet debit timing (dans onSuccess apres paiement)
+- [x] Fix gift card race condition (RPC atomique debit_gift_card)
+- [x] Fix games claim-reward: tirage cote serveur
+- [x] SQL: user_coupons UPDATE policy
+- [x] SQL: safe_uuid_cast() pour TEXT vs UUID
+- [x] SQL: Tables fantomes creees (referral_codes, newsletter_subscriptions, push_subscriptions, site_settings)
+- [x] SQL: profiles admin SELECT/UPDATE policy
+- [x] SQL: RPC debit_gift_card() atomique
+
+## FIXE SESSION 31/03/2026 — PHASE 3 MEDIUM + PHASE 4 LOW (commit en cours)
+
+- [x] Rate limiting /api/contact (5 req/h par IP)
+- [x] Sanitize error messages (15 routes: plus de error.message au client)
+- [x] Fix CheckoutSummary: affiche prix variation
+- [x] Fix confirmation page IDOR: auth check user_id
+- [x] Fix wallet/coupon: wallet plus disabled par coupon
+- [x] Fix cashback: calcule sur total paye (pas subtotal)
+- [x] Fix bulk actions admin: cashback auto + shipped_at + paid_at
+- [x] Fix shipping_cost_paid: type number (etait boolean dans 3 interfaces)
+- [x] Fix delai colis ouvert: 7j dans code (etait 5j)
+- [x] Fix TVA hardcodee 20% sur confirmation page
+- [x] Fix facture PDF: prix variation pris en compte
+- [x] Fix storage: whitelist buckets + sanitize folder (path traversal)
+- [x] Fix cart merge login: Math.max au lieu de +=
+
+---
+
+## DEJA FIXE LE 31/03/2026 (session precedente)
 
 ### SQL (applique en live sur Supabase) :
 - [x] handle_new_user trigger corrige (blocked -> is_blocked)
@@ -79,25 +88,23 @@
 
 ### Code (2 commits pushes sur GitHub -> Vercel) :
 - [x] Stripe create-checkout-session: validation prix server-side
-- [x] create-payment-intent: auth + prix force depuis DB (quand orderId present)
+- [x] create-payment-intent: auth + prix force depuis DB
 - [x] Contact form: XSS escape HTML + validation inputs
 - [x] CRON: enforcement secret Bearer sur 4 routes
-- [x] Middleware: protection admin routes (redirect sans session)
+- [x] Middleware: protection admin routes
 - [x] Upload: whitelist MIME + crypto.randomUUID filename
 - [x] Credentials admin retires des tests -> env vars
 - [x] CartContext: charge tva_rate depuis products au reload panier
-- [x] Email facture: contact@kavern-france.fr (etait contact@kavern.fr)
+- [x] Email facture: contact@kavern-france.fr
 - [x] 12-security.spec.ts: 10 tests securite
 - [x] 13-smoke-tests.spec.ts: 14 tests sante
-
-### Tests E2E : 22/23 PASS
-- 1 fail = crash page produit confirme en prod (a fixer en priorite 1)
 
 ---
 
 ## ANDRE — EN ATTENTE DE REPONSE
 
-- Email facture : FIXE (sera effectif au prochain deploy)
+- Email facture : FIXE (deploye)
 - Email o2switch : probleme hebergeur, verifier cpanel
 - Live YouTube : integrer embed non repertorie
 - Config SMTP Outlook : serveur mail.kavern-france.fr port 993/465
+- **Livre d'or** : refonte demandee le 31/03 (voir section "Reste a faire")

@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     } catch (err: any) {
       console.error('Webhook signature verification failed:', err.message);
-      return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
+      return NextResponse.json({ error: 'Erreur de signature webhook' }, { status: 400 });
     }
 
     switch (event.type) {
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
             // Cashback & Coupons Croisés
             const userId = session.metadata?.userId;
             if (userId) {
-                 const cashbackAmount = orderDetails.subtotal * 0.02;
+                 const cashbackAmount = Number(orderDetails.total || orderDetails.subtotal) * 0.02;
                  await supabase.rpc('add_loyalty_gain', { p_user_id: userId, p_type: 'order_cashback', p_base_amount: cashbackAmount, p_description: `Cashback commande ${orderDetails.order_number}` });
             }
 
@@ -151,6 +151,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Webhook error:', error);
-    return NextResponse.json({ error: error.message || 'Webhook processing failed' }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur interne' }, { status: 500 });
   }
 }

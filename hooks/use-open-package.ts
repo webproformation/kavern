@@ -8,7 +8,7 @@ export interface OpenPackage {
   id: string;
   user_id: string;
   status: 'active' | 'closed' | 'shipped';
-  shipping_cost_paid: boolean;
+  shipping_cost_paid: number;
   shipping_method_id: string | null;
   shipping_address_id: string | null;
   opened_at: string;

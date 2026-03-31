@@ -464,7 +464,7 @@ export default function CheckoutPage() {
 
       if (createPendingPackage && !addToOpenPackage) {
         const openedAt = new Date();
-        const closesAt = new Date(openedAt.getTime() + (5 * 24 * 60 * 60 * 1000));
+        const closesAt = new Date(openedAt.getTime() + (7 * 24 * 60 * 60 * 1000));
         // Vérifier que l'adresse existe avant de la passer en FK
         const validAddressId = selectedAddressId && selectedAddressId.length > 10 ? selectedAddressId : null;
         const { data: newPackage, error: pkgError } = await supabase.from('open_packages').insert([{

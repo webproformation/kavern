@@ -143,7 +143,7 @@ export const generateInvoicePDF = async (order: any, invoiceNumber: string) => {
 
     if (subLines.length > 0) productName += "\n" + subLines.join("\n");
 
-    const p = parseFloat(item.price || item.unit_price || 0);
+    const p = parseFloat(item.variation_price || item.price || item.unit_price || 0);
     const q = item.quantity || 1;
     const tvaRate = parseFloat(item.tva_rate || item.tax_rate || 20);
     const sku = String(item.sku || '').trim();

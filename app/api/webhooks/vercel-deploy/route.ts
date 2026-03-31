@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('[VERCEL-DEPLOY] Webhook error:', error);
     return NextResponse.json(
-      { error: 'Webhook processing failed', details: error.message },
+      { error: 'Erreur interne' },
       { status: 500 }
     );
   }

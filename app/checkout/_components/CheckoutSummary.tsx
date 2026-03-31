@@ -148,7 +148,7 @@ export function CheckoutSummary({
                     </div>
                   )}
                 </div>
-                <span className="font-semibold ml-2">{(parseFloat(item.price || "0") * item.quantity).toFixed(2)} €</span>
+                <span className="font-semibold ml-2">{(parseFloat(item.variationPrice || item.price || "0") * item.quantity).toFixed(2)} €</span>
               </div>
             ))}
           </div>

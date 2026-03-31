@@ -100,10 +100,18 @@ function OrderConfirmationContent() {
 
   async function loadOrderDetails(id: string) {
     try {
+      // AUTH: vérifier que la commande appartient à l'utilisateur connecté
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/auth/login');
+        return;
+      }
+
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .select('*')
         .eq('id', id)
+        .eq('user_id', user.id)
         .single();
 
       if (orderError) throw orderError;
@@ -418,7 +426,7 @@ function OrderConfirmationContent() {
               {walletValue > 0 && (<div className="flex justify-between text-sm text-purple-600"><span>Cagnotte fidélité utilisée</span><span className="font-medium">-{walletValue.toFixed(2)} €</span></div>)}
               <Separator />
               <div className="flex justify-between text-lg font-bold pt-2"><span>Total TTC</span><span className="text-[#D4AF37]">{totalValue.toFixed(2)} €</span></div>
-              <div className="flex justify-between text-xs text-gray-500"><span>dont TVA (20%)</span><span>{taxValue.toFixed(2)} €</span></div>
+              <div className="flex justify-between text-xs text-gray-500"><span>dont TVA</span><span>{taxValue.toFixed(2)} €</span></div>
             </div>
           </CardContent>
         </Card>
