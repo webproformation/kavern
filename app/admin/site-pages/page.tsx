@@ -92,7 +92,7 @@ export default function SitePagesAdminPage() {
     try {
       const { data, error } = await supabase
         .from("pages_seo")
-        .select("*")
+        .select("id, slug, title, page_type, is_published, meta_title, meta_description, updated_at")
         .order("updated_at", { ascending: false });
 
       if (error) throw error;

@@ -547,7 +547,6 @@ export default function CheckoutPage() {
         wallet_amount_used: (Number(walletAmountToUse) + Number(loyaltyAmountToUse)).toFixed(2),
         total: totalAfterWallet.toFixed(2),
         shipping_address: isStorePickup ? null : selectedAddress,
-        billing_address: useDifferentBillingAddress ? addresses.find(a => a.id === billingAddressId) || selectedAddress : selectedAddress,
         shipping_street: selectedAddress?.address_line1 || '',
         shipping_phone: selectedAddress?.phone || '',
         shipping_method_id: isStorePickup ? null : (selectedShippingMethodId || null),

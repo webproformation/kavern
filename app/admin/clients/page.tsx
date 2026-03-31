@@ -117,30 +117,10 @@ export default function ClientsPage() {
   const syncAuthUsers = async () => {
     setSyncing(true);
     try {
-      const { data: { users: authUsers }, error } = await supabase.auth.admin.listUsers();
-
-      if (error) throw error;
-
-      let syncedCount = 0;
-      for (const authUser of authUsers) {
-        const { data: existingProfile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', authUser.id)
-          .single();
-
-        if (!existingProfile) {
-          await supabase.from('profiles').insert({
-            id: authUser.id,
-            email: authUser.email,
-            created_at: authUser.created_at,
-          });
-          syncedCount++;
-        }
-      }
-
-      toast.success(`${syncedCount} nouveau(x) profil(s) synchronisé(s)`);
+      // Recharger simplement la liste des profils depuis Supabase
+      // (la sync auth.admin nécessite la service_role key, inaccessible côté client)
       await loadProfiles();
+      toast.success('Liste des clients actualisée');
     } catch (error) {
       toast.error('Erreur lors de la synchronisation');
     } finally {

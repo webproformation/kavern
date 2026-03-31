@@ -136,6 +136,11 @@ export default function ProductPage() {
           .eq("category_id", categoryId);
         
         const productIds = mapping?.map(m => m.product_id) || [];
+        if (productIds.length === 0) {
+          setPackSourceProducts([]);
+          setPackLoading(false);
+          return;
+        }
         query = query.in("id", productIds);
       }
 

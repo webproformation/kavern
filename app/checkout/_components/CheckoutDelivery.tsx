@@ -206,12 +206,12 @@ export function CheckoutDelivery({
                 </div>
               </RadioGroup>
 
-              {selectedShippingMethod?.is_relay && (
+              {selectedShippingMethod?.is_relay && selectedShippingMethod?.code !== 'shop_to_shop' && (
                 <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
                   <RelayPointSelector
                     provider={(() => {
                       const code = selectedShippingMethod.code;
-                      if (code === 'mondial_relay' || code === 'shop_to_shop') return 'mondial-relay';
+                      if (code === 'mondial_relay') return 'mondial-relay';
                       if (code === 'chronopost_relay') return 'chronopost';
                       if (code === 'gls_relay') return 'gls';
                       return code as 'mondial-relay' | 'chronopost' | 'gls';
@@ -245,6 +245,18 @@ export function CheckoutDelivery({
               )}
             </CardContent>
           </Card>
+
+          {/* Shop to Shop — message spécifique */}
+          {selectedShippingMethod?.code === 'shop_to_shop' && (
+            <Card className="border-l-4 border-[#C6A15B]">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <Package className="h-5 w-5 text-[#C6A15B]" />
+                  <p>Votre colis sera envoyé via <strong>Shop to Shop</strong> et déposé dans le point relais le plus proche de chez vous. Vous recevrez un email avec les détails de suivi.</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
 

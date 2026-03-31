@@ -20,10 +20,11 @@ export const revalidate = 0;
 async function getDashboardStats() {
   const supabase = createClient();
 
-  const [productsResult, categoriesResult, ordersResult] = await Promise.all([
+  const [productsResult, categoriesResult, ordersResult, clientsResult] = await Promise.all([
     supabase.from("products").select("*", { count: "exact" }),
     supabase.from("categories").select("*", { count: "exact" }),
     supabase.from("orders").select("*", { count: "exact" }),
+    supabase.from("profiles").select("*", { count: "exact" }),
   ]);
 
   const recentOrders = await supabase
@@ -36,6 +37,7 @@ async function getDashboardStats() {
     productsCount: productsResult.count || 0,
     categoriesCount: categoriesResult.count || 0,
     ordersCount: ordersResult.count || 0,
+    clientsCount: clientsResult.count || 0,
     recentOrders: recentOrders.data || [],
   };
 }
@@ -183,7 +185,7 @@ export default async function AdminDashboard() {
             <Users className="h-5 w-5 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-gray-900">0</div>
+            <div className="text-3xl font-bold text-gray-900">{stats.clientsCount}</div>
             <p className="text-xs text-gray-500 mt-2">
               Clients enregistrés
             </p>

@@ -118,7 +118,7 @@ export default function NewProductPage() {
     isPack, packSlots, packSourceCategoryId
   };
 
-  const { clearSavedData } = useAutoSave(`new_product_creation`, currentFormData, (savedData: any) => {
+  const { clearSavedData } = useAutoSave(`new_product_${newProductId}`, currentFormData, (savedData: any) => {
     if (savedData.name !== undefined) setName(savedData.name);
     if (savedData.slug !== undefined) setSlug(savedData.slug);
     if (savedData.sku !== undefined) setSku(savedData.sku);
