@@ -593,7 +593,7 @@ export default function ProductPage() {
                {relatedProducts.map((rel) => (
                  <Link key={rel.id} href={`/product/${rel.slug}`} className="group space-y-3">
                    <div className="aspect-[4/5] rounded-2xl overflow-hidden bg-gray-100 relative shadow-sm transition-all group-hover:shadow-xl group-hover:-translate-y-1"><img src={rel.image_url} alt={rel.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" /><div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" /></div>
-                   <div className="space-y-1 px-1"><h3 className="font-bold text-gray-900 line-clamp-1 text-sm group-hover:text-[#b8933d] transition-colors">{rel.name}</h3><p className="text-[#b8933d] font-black text-base">{(rel.sale_price || rel.regular_price).toFixed(2)} €</p></div>
+                   <div className="space-y-1 px-1"><h3 className="font-bold text-gray-900 line-clamp-1 text-sm group-hover:text-[#b8933d] transition-colors">{rel.name}</h3><p className="text-[#b8933d] font-black text-base">{(Number(rel.sale_price || rel.regular_price) || 0).toFixed(2)} €</p></div>
                  </Link>
                ))}
              </div>

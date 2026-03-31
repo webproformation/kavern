@@ -21,17 +21,8 @@ import { CheckoutPayment } from './_components/CheckoutPayment';
 import { CheckoutRewards } from './_components/CheckoutRewards';
 import { CheckoutSummary } from './_components/CheckoutSummary';
 
-// Génère un numéro de commande séquentiel court : CMD-0001, CMD-0002...
-async function generateOrderNumber(): Promise<string> {
-  try {
-    const { count } = await supabase.from('orders').select('*', { count: 'exact', head: true });
-    const nextNum = (count || 0) + 1;
-    return `CMD-${String(nextNum).padStart(4, '0')}`;
-  } catch {
-    // Fallback si la requête échoue
-    return `CMD-${String(Date.now()).slice(-6)}`;
-  }
-}
+// Le numéro de commande est maintenant généré automatiquement
+// par le trigger Postgres generate_order_number() à l'insertion.
 
 interface Address {
   id: string;
@@ -210,7 +201,7 @@ export default function CheckoutPage() {
   const tvaBreakdown: Record<string, { ht: number; tva: number; ttc: number }> = {};
   cart.forEach(item => {
     const rate = (item as any).tva_rate ? parseFloat((item as any).tva_rate) / 100 : DEFAULT_TVA_RATE;
-    const ttc = (item.price || 0) * (item.quantity || 1);
+    const ttc = (parseFloat(String(item.price)) || 0) * (item.quantity || 1);
     const ht = ttc / (1 + rate);
     const tva = ttc - ht;
     const key = `${(rate * 100).toFixed(1)}`;
@@ -367,8 +358,7 @@ export default function CheckoutPage() {
 
   const handlePayPalSuccess = async (paypalOrderId: string) => {
     try {
-      // Creer la commande en DB (meme logique que handleSubmit)
-      const orderNumber = await generateOrderNumber();
+      // Creer la commande en DB (order_number auto via trigger Postgres)
       const itemsForTrigger = cart.map(item => ({
         product_id: item.id,
         quantity: item.quantity || 1,
@@ -379,7 +369,6 @@ export default function CheckoutPage() {
 
       const orderData = {
         user_id: user!.id,
-        order_number: orderNumber,
         status: 'processing', // Directement processing pour declencher le trigger stock
         items: itemsForTrigger,
         payment_status: 'paid',
@@ -557,7 +546,7 @@ export default function CheckoutPage() {
     setLoading(true);
 
     try {
-      const orderNumber = await generateOrderNumber();
+      // order_number auto via trigger Postgres
 
       // Calculer le poids total du panier en grammes
       const totalVirtualWeight = Math.round(cart.reduce((sum, item) => sum + ((item as any).weight || 300) * (item.quantity || 1), 0));
@@ -576,7 +565,6 @@ export default function CheckoutPage() {
 
       const orderData = {
         user_id: user.id,
-        order_number: orderNumber,
         status: 'pending',
         items: itemsForTrigger,
         payment_status: initialPaymentStatus,
@@ -606,6 +594,9 @@ export default function CheckoutPage() {
       const { data: newOrder, error: orderError } = await supabase.from('orders').insert([orderData]).select().single();
       if (orderError) throw orderError;
 
+      // order_number généré par le trigger Postgres
+      const orderNumber = newOrder.order_number;
+
       const orderItems = cart.map(item => ({
         order_id: newOrder.id,
         product_name: item.name || 'Produit',
@@ -624,7 +615,6 @@ export default function CheckoutPage() {
         setCreatedOrderNumber(orderNumber);
         setShowStripePayment(true);
         setLoading(false);
-        // Opérations annexes en arrière-plan pour Stripe (elles seront aussi exécutées au retour)
         runPostOrderTasks(newOrder.id, orderNumber);
         return;
       }
@@ -634,7 +624,6 @@ export default function CheckoutPage() {
       toast.success(`Commande ${orderNumber} validée avec succès !`, { position: 'bottom-right' });
       router.push(`/checkout/confirmation?order_id=${newOrder.id}`);
 
-      // Opérations secondaires en arrière-plan (ne bloquent pas la redirection)
       runPostOrderTasks(newOrder.id, orderNumber);
       
     } catch (error) {

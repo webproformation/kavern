@@ -22,7 +22,46 @@ const generateAccessToken = async () => {
 
 export async function POST(request: Request) {
   try {
+    // AUTH: Vérifier que l'utilisateur est authentifié
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    const token = authHeader.substring(7);
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     const { orderID, dbOrderId } = await request.json();
+
+    if (!orderID) {
+      return NextResponse.json({ error: 'orderID requis' }, { status: 400 });
+    }
+
+    // Vérifier que la commande appartient à l'utilisateur
+    if (dbOrderId) {
+      const { data: order, error: orderErr } = await supabase
+        .from('orders')
+        .select('user_id')
+        .eq('id', dbOrderId)
+        .single();
+
+      if (orderErr || !order) {
+        return NextResponse.json({ error: 'Commande introuvable' }, { status: 404 });
+      }
+
+      if (order.user_id !== user.id) {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+      }
+    }
 
     const accessToken = await generateAccessToken();
     const url = `${base}/v2/checkout/orders/${orderID}/capture`;
@@ -41,18 +80,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: data.message || 'Capture failed' }, { status: 400 });
     }
 
-    // Mettre a jour la commande en DB si dbOrderId est fourni
-    if (dbOrderId && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY
-      );
-
+    // Mettre à jour la commande en DB
+    if (dbOrderId) {
       const { error: updateError } = await supabase
         .from('orders')
         .update({
           payment_status: 'paid',
-          status: 'processing', // Declenche le trigger stock
+          status: 'processing',
           paid_at: new Date().toISOString(),
           paypal_order_id: orderID,
           payment_method: 'PayPal',
@@ -67,6 +101,6 @@ export async function POST(request: Request) {
     return NextResponse.json(data);
   } catch (error: any) {
     console.error("PayPal Capture Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur interne' }, { status: 500 });
   }
 }

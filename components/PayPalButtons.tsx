@@ -2,6 +2,7 @@
 
 import { PayPalButtons as PayPalButtonsSDK, PayPalScriptProvider } from '@paypal/react-paypal-js';
 import { useState } from 'react';
+import { supabase } from '@/lib/supabase';
 
 interface PayPalButtonsProps {
   amount: number;
@@ -55,10 +56,15 @@ export function PayPalButtons({
           }}
           createOrder={async () => {
             try {
+              const { data: { session } } = await supabase.auth.getSession();
+              const token = session?.access_token;
+              if (!token) throw new Error('Non authentifié');
+
               const response = await fetch('/api/paypal/create-order', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                   amount: amount.toFixed(2),
@@ -81,10 +87,15 @@ export function PayPalButtons({
           }}
           onApprove={async (data) => {
             try {
+              const { data: { session } } = await supabase.auth.getSession();
+              const token = session?.access_token;
+              if (!token) throw new Error('Non authentifié');
+
               const response = await fetch('/api/paypal/capture-order', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                   orderID: data.orderID,

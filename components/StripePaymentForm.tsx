@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Lock } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 // Assurez-vous que votre clé publique est bien dans .env.local
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -130,18 +131,24 @@ export function StripePaymentForm({ userId, total, orderId, onSuccess, customerE
 
   useEffect(() => {
     if (orderId) {
-        fetch('/api/create-payment-intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-            amount: total, 
-            orderId: orderId, 
-            userId: userId,
-            customerEmail: customerEmail 
-        }),
-        })
-        .then((res) => res.json())
-        .then((data) => setClientSecret(data.clientSecret));
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          const token = session?.access_token;
+          if (!token) return;
+          fetch('/api/create-payment-intent', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              amount: total,
+              orderId: orderId,
+              customerEmail: customerEmail
+            }),
+          })
+          .then((res) => res.json())
+          .then((data) => setClientSecret(data.clientSecret));
+        });
     }
   }, [total, userId, orderId, customerEmail]);
 

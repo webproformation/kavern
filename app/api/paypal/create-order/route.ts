@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
+const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
@@ -9,21 +9,20 @@ const supabase = createClient(
 const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || process.env.PAYPAL_CLIENT_ID;
 const { PAYPAL_CLIENT_SECRET, PAYPAL_ENVIRONMENT } = process.env;
 
-const base = PAYPAL_ENVIRONMENT === 'sandbox' 
-  ? 'https://api-m.sandbox.paypal.com' 
+const base = PAYPAL_ENVIRONMENT === 'sandbox'
+  ? 'https://api-m.sandbox.paypal.com'
   : 'https://api-m.paypal.com';
 
-// Fonction pour générer un token d'accès PayPal
 const generateAccessToken = async () => {
   try {
     if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
       throw new Error("MISSING_API_CREDENTIALS");
     }
-    
+
     const auth = Buffer.from(
       PAYPAL_CLIENT_ID + ":" + PAYPAL_CLIENT_SECRET
     ).toString("base64");
-    
+
     const response = await fetch(`${base}/v1/oauth2/token`, {
       method: "POST",
       body: "grant_type=client_credentials",
@@ -31,7 +30,7 @@ const generateAccessToken = async () => {
         Authorization: `Basic ${auth}`,
       },
     });
-    
+
     const data = await response.json();
     return data.access_token;
   } catch (error) {
@@ -42,6 +41,19 @@ const generateAccessToken = async () => {
 
 export async function POST(request: Request) {
   try {
+    // AUTH: Vérifier l'utilisateur
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const token = authHeader.substring(7);
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     const { amount, orderId } = await request.json();
 
     if (!amount) {
@@ -51,15 +63,27 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validation côté serveur : vérifier que le montant correspond à la commande
+    // SECURITY: Si orderId fourni, vérifier ownership et forcer le montant server-side
+    let serverAmount = amount;
     if (orderId) {
-      const { data: order } = await supabase
+      const { data: order, error: orderError } = await supabaseAdmin
         .from('orders')
-        .select('total')
+        .select('total, user_id')
         .eq('id', orderId)
         .single();
 
-      if (order && Math.abs(parseFloat(amount) - parseFloat(order.total)) > 0.02) {
+      if (orderError || !order) {
+        return NextResponse.json({ error: 'Commande introuvable' }, { status: 404 });
+      }
+
+      if (order.user_id !== user.id) {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+      }
+
+      // Forcer le total depuis la DB
+      serverAmount = order.total;
+
+      if (Math.abs(parseFloat(amount) - parseFloat(order.total)) > 0.02) {
         console.error(`[PayPal] Montant invalide: reçu ${amount}, attendu ${order.total} pour commande ${orderId}`);
         return NextResponse.json(
           { error: 'Le montant ne correspond pas à la commande' },
@@ -83,7 +107,7 @@ export async function POST(request: Request) {
         {
           amount: {
             currency_code: 'EUR',
-            value: amount.toString(), // PayPal veut une string "100.00"
+            value: parseFloat(serverAmount).toFixed(2),
           },
         },
       ],
@@ -103,7 +127,7 @@ export async function POST(request: Request) {
     if (response.status !== 201) {
         console.error("PayPal Order Error:", data);
         return NextResponse.json(
-            { error: data.message || 'Failed to create order' }, 
+            { error: 'Erreur création PayPal' },
             { status: 500 }
         );
     }
@@ -112,7 +136,7 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('PayPal API Error:', error);
     return NextResponse.json(
-      { error: error.message },
+      { error: 'Erreur interne' },
       { status: 500 }
     );
   }
