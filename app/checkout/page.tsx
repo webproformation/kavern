@@ -21,6 +21,18 @@ import { CheckoutPayment } from './_components/CheckoutPayment';
 import { CheckoutRewards } from './_components/CheckoutRewards';
 import { CheckoutSummary } from './_components/CheckoutSummary';
 
+// Génère un numéro de commande séquentiel court : CMD-0001, CMD-0002...
+async function generateOrderNumber(): Promise<string> {
+  try {
+    const { count } = await supabase.from('orders').select('*', { count: 'exact', head: true });
+    const nextNum = (count || 0) + 1;
+    return `CMD-${String(nextNum).padStart(4, '0')}`;
+  } catch {
+    // Fallback si la requête échoue
+    return `CMD-${String(Date.now()).slice(-6)}`;
+  }
+}
+
 interface Address {
   id: string;
   label: string;
@@ -343,7 +355,7 @@ export default function CheckoutPage() {
   const handlePayPalSuccess = async (paypalOrderId: string) => {
     try {
       // Creer la commande en DB (meme logique que handleSubmit)
-      const orderNumber = `CMD-${Date.now()}`;
+      const orderNumber = await generateOrderNumber();
       const itemsForTrigger = cart.map(item => ({
         product_id: item.id,
         quantity: item.quantity || 1,
@@ -443,15 +455,22 @@ export default function CheckoutPage() {
       if (createPendingPackage && !addToOpenPackage) {
         const openedAt = new Date();
         const closesAt = new Date(openedAt.getTime() + (5 * 24 * 60 * 60 * 1000));
-        const { data: newPackage } = await supabase.from('open_packages').insert([{
+        // Vérifier que l'adresse existe avant de la passer en FK
+        const validAddressId = selectedAddressId && selectedAddressId.length > 10 ? selectedAddressId : null;
+        const { data: newPackage, error: pkgError } = await supabase.from('open_packages').insert([{
             user_id: user!.id,
             status: 'active',
             shipping_cost_paid: shippingCost,
             shipping_method_id: selectedShippingMethodId || null,
-            shipping_address_id: selectedAddressId || null,
+            shipping_address_id: validAddressId,
             opened_at: openedAt.toISOString(),
             closes_at: closesAt.toISOString(),
         }]).select().single();
+
+        if (pkgError) {
+          console.error('[Colis Ouvert] Erreur création:', pkgError);
+          toast.error('Erreur lors de la création du colis ouvert');
+        }
 
         if (newPackage) {
           await supabase.from('open_package_orders').insert([{ open_package_id: newPackage.id, order_id: orderId, is_paid: false }]);
@@ -525,7 +544,7 @@ export default function CheckoutPage() {
     setLoading(true);
 
     try {
-      const orderNumber = `CMD-${Date.now()}`;
+      const orderNumber = await generateOrderNumber();
 
       // Calculer le poids total du panier en grammes
       const totalVirtualWeight = Math.round(cart.reduce((sum, item) => sum + ((item as any).weight || 300) * (item.quantity || 1), 0));

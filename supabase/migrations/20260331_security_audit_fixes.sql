@@ -227,6 +227,107 @@ CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at DESC);
 
 ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
 
+-- =====================================================
+-- 8. STOCK RESTORE ON CANCELLATION
+-- Quand une commande passe à 'cancelled', on remet le stock
+-- =====================================================
+
+CREATE OR REPLACE FUNCTION restore_order_stock()
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  item RECORD;
+BEGIN
+  IF NEW.status = 'cancelled' AND OLD.status != 'cancelled' THEN
+    FOR item IN
+      SELECT oi.product_id, oi.quantity, oi.variation_data
+      FROM order_items oi
+      WHERE oi.order_id = NEW.id
+    LOOP
+      UPDATE products
+      SET stock_quantity = COALESCE(stock_quantity, 0) + item.quantity,
+          stock_status = 'instock'
+      WHERE id = item.product_id::uuid
+        AND manage_stock = true;
+
+      IF item.variation_data IS NOT NULL AND item.variation_data->>'variation_id' IS NOT NULL THEN
+        UPDATE product_variations
+        SET stock_quantity = COALESCE(stock_quantity, 0) + item.quantity
+        WHERE id = (item.variation_data->>'variation_id')::uuid;
+      END IF;
+    END LOOP;
+  END IF;
+  RETURN NEW;
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE WARNING 'Erreur restore_order_stock pour order %: %', NEW.id, SQLERRM;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS tr_order_stock_restore ON orders;
+CREATE TRIGGER tr_order_stock_restore
+  AFTER UPDATE ON orders
+  FOR EACH ROW
+  WHEN (NEW.status = 'cancelled' AND OLD.status IS DISTINCT FROM 'cancelled')
+  EXECUTE FUNCTION restore_order_stock();
+
+-- =====================================================
+-- 9. FACTURE CONSOLIDÉE COLIS OUVERT (à la clôture)
+-- Quand un colis ouvert passe à 'closed' ou 'shipped', générer 1 facture globale
+-- =====================================================
+
+CREATE OR REPLACE FUNCTION generate_open_package_invoice()
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_total NUMERIC := 0;
+  v_subtotal NUMERIC := 0;
+  v_tax NUMERIC := 0;
+  v_user_id UUID;
+  v_first_order_id UUID;
+BEGIN
+  IF (NEW.status IN ('closed', 'shipped')) AND (OLD.status NOT IN ('closed', 'shipped')) THEN
+    -- Calculer les totaux de toutes les commandes du colis
+    SELECT
+      COALESCE(SUM(o.subtotal), 0),
+      COALESCE(SUM(o.tax_amount), 0),
+      COALESCE(SUM(o.total), 0),
+      MIN(o.user_id),
+      MIN(o.id)
+    INTO v_subtotal, v_tax, v_total, v_user_id, v_first_order_id
+    FROM open_package_orders opo
+    JOIN orders o ON o.id = opo.order_id
+    WHERE opo.open_package_id = NEW.id;
+
+    -- Générer UNE facture globale
+    IF v_total > 0 AND v_first_order_id IS NOT NULL THEN
+      INSERT INTO invoices (order_id, user_id, type, subtotal, tax_amount, total, status, issued_at)
+      VALUES (v_first_order_id, v_user_id, 'invoice', v_subtotal, v_tax, v_total, 'paid', NOW());
+    END IF;
+  END IF;
+
+  RETURN NEW;
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE WARNING 'Erreur generate_open_package_invoice: %', SQLERRM;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS tr_open_package_invoice ON open_packages;
+CREATE TRIGGER tr_open_package_invoice
+  AFTER UPDATE ON open_packages
+  FOR EACH ROW
+  WHEN (NEW.status IN ('closed', 'shipped') AND OLD.status NOT IN ('closed', 'shipped'))
+  EXECUTE FUNCTION generate_open_package_invoice();
+
 -- Seuls les admins peuvent lire l'audit log
 DROP POLICY IF EXISTS "Admins read audit log" ON audit_log;
 CREATE POLICY "Admins read audit log"

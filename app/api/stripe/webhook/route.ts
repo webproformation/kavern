@@ -104,16 +104,28 @@ export async function POST(request: NextRequest) {
                 }
             }
 
-            // ... (Logique Cashback & Coupons Croisés - inchangée) ...
+            // Cashback & Coupons Croisés
             const userId = session.metadata?.userId;
             if (userId) {
-                // Votre logique existante pour cashback et coupons...
-                // (Je ne la répète pas ici pour faire court, mais gardez-la telle quelle !)
                  const cashbackAmount = orderDetails.subtotal * 0.02;
                  await supabase.rpc('add_loyalty_gain', { p_user_id: userId, p_type: 'order_cashback', p_base_amount: cashbackAmount, p_description: `Cashback commande ${orderDetails.order_number}` });
-                 
-                 // Création coupon croisé...
-                 // ...
+            }
+
+            // Génération facture auto (sauf colis ouvert — facture à la clôture)
+            if (!orderDetails.is_open_package) {
+              await supabase.from('invoices').insert({
+                order_id: orderId,
+                user_id: orderDetails.user_id,
+                type: 'invoice',
+                subtotal: orderDetails.subtotal,
+                tax_amount: orderDetails.tax_amount,
+                total: orderDetails.total,
+                status: 'paid',
+                issued_at: new Date().toISOString(),
+              }).then(({ error: invErr }) => {
+                if (invErr) console.error('Invoice generation error:', invErr);
+                else console.info(`[STRIPE] Facture générée pour commande ${orderDetails.order_number}`);
+              });
             }
           }
         }

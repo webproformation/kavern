@@ -270,29 +270,40 @@ export default function OrdersPage() {
       const order = orders.find(o => o.id === orderId);
       const previousStatus = order?.payment_status;
 
+      const wasPending = ['pending', 'pending_transfer', 'pending_store'].includes(previousStatus || '');
+      const isNowPaid = ['completed', 'paid'].includes(newStatus);
+
+      // Quand paiement validé : aussi passer status → processing (déclenche le trigger stock)
+      const updateData: any = {
+        payment_status: newStatus,
+        updated_at: new Date().toISOString(),
+      };
+      if (isNowPaid) {
+        updateData.paid_at = new Date().toISOString();
+        if (order && ['pending', 'pending_transfer', 'pending_store'].includes(order.status)) {
+          updateData.status = 'processing';
+        }
+      }
+
       const { error } = await supabase
         .from("orders")
-        .update({
-          payment_status: newStatus,
-          updated_at: new Date().toISOString(),
-          ...((['completed', 'paid'].includes(newStatus)) ? { paid_at: new Date().toISOString() } : {})
-        })
+        .update(updateData)
         .eq("id", orderId);
 
       if (error) throw error;
 
+      const updatedOrder = { ...order!, payment_status: newStatus, ...(updateData.status ? { status: updateData.status } : {}) };
       setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, payment_status: newStatus } : o))
+        prev.map((o) => (o.id === orderId ? { ...o, ...updateData } : o))
       );
 
       if (selectedOrder && selectedOrder.id === orderId) {
-        setSelectedOrder({ ...selectedOrder, payment_status: newStatus });
+        setSelectedOrder({ ...selectedOrder, ...updateData });
       }
 
-      // Cashback 2% : créditer quand on valide manuellement un paiement (virement/boutique)
-      const wasPending = ['pending', 'pending_transfer', 'pending_store'].includes(previousStatus || '');
-      const isNowPaid = ['completed', 'paid'].includes(newStatus);
+      // Cashback 2% + Génération facture quand on valide manuellement un paiement
       if (wasPending && isNowPaid && order) {
+        // Cashback
         try {
           const cashbackAmount = Number(order.subtotal) * 0.02;
           if (cashbackAmount > 0 && order.user_id) {
@@ -307,10 +318,29 @@ export default function OrdersPage() {
         } catch (cashbackErr) {
           console.error("Cashback error (non-blocking):", cashbackErr);
         }
+
+        // Générer la facture (sauf colis ouvert — facture à la clôture)
+        if (!order.is_open_package) {
+          try {
+            await supabase.from('invoices').insert({
+              order_id: order.id,
+              user_id: order.user_id,
+              type: 'invoice',
+              subtotal: order.subtotal,
+              tax_amount: order.tax_amount,
+              total: order.total,
+              status: 'paid',
+              issued_at: new Date().toISOString(),
+            });
+            toast.success('Facture générée automatiquement');
+          } catch (invoiceErr) {
+            console.error("Invoice generation error:", invoiceErr);
+          }
+        }
       }
 
       const label = paymentStatusLabels[newStatus] || newStatus;
-      toast.success(`Paiement mis à jour : ${label}`);
+      toast.success(`Paiement mis à jour : ${label}${isNowPaid && updateData.status ? ' — Stock mis à jour' : ''}`);
     } catch (error) {
       console.error("Error updating payment status:", error);
       toast.error("Erreur lors de la mise à jour");
