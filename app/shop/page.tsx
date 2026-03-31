@@ -123,7 +123,7 @@ export default function ShopPage() {
         
         const finalProducts = productsData.map(p => ({
           ...p,
-          product_variations: variationsData?.filter(v => v.product_id === p.id) || []
+          product_variations: variationsData?.filter(v => v.product_id === p.id && v.is_active !== false) || []
         }));
 
         const globalSet = new Set<string>();

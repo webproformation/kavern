@@ -73,7 +73,7 @@ interface PaymentMethod {
   config?: any;
 }
 
-const TVA_RATE = 0.20;
+const DEFAULT_TVA_RATE = 0.20;
 const MIN_ORDER_AMOUNT = 10;
 const MAX_PACKAGE_WEIGHT_KG = 10;
 
@@ -206,7 +206,20 @@ export default function CheckoutPage() {
   const totalBeforeDiscount = subtotal + shippingCost + insuranceCost + paymentFee;
   const totalAfterDiscount = Math.max(0, totalBeforeDiscount - (Number(discountAmount) || 0) - (Number(referralDiscount) || 0));
   const totalAfterWallet = Math.max(0, totalAfterDiscount - (Number(walletAmountToUse) || 0) - (Number(loyaltyAmountToUse) || 0) - (Number(giftCardAmount) || 0));
-  const tvaAmount = totalAfterWallet * TVA_RATE / (1 + TVA_RATE);
+  // TVA multi-taux : calculer par produit selon son tva_rate
+  const tvaBreakdown: Record<string, { ht: number; tva: number; ttc: number }> = {};
+  cart.forEach(item => {
+    const rate = (item as any).tva_rate ? parseFloat((item as any).tva_rate) / 100 : DEFAULT_TVA_RATE;
+    const ttc = (item.price || 0) * (item.quantity || 1);
+    const ht = ttc / (1 + rate);
+    const tva = ttc - ht;
+    const key = `${(rate * 100).toFixed(1)}`;
+    if (!tvaBreakdown[key]) tvaBreakdown[key] = { ht: 0, tva: 0, ttc: 0 };
+    tvaBreakdown[key].ht += ht;
+    tvaBreakdown[key].tva += tva;
+    tvaBreakdown[key].ttc += ttc;
+  });
+  const tvaAmount = Object.values(tvaBreakdown).reduce((sum, v) => sum + v.tva, 0);
   const totalHT = totalAfterWallet - tvaAmount;
 
   const isGiftCardPayment = selectedPaymentMethod?.type === 'gift_card';
@@ -814,6 +827,7 @@ export default function CheckoutPage() {
               loyaltyAmountToUse={loyaltyAmountToUse}
               totalAfterWallet={totalAfterWallet}
               tvaAmount={tvaAmount}
+              tvaBreakdown={tvaBreakdown}
               totalHT={totalHT}
               notes={notes}
               setNotes={setNotes}

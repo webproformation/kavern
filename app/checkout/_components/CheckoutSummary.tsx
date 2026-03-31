@@ -26,6 +26,7 @@ interface CheckoutSummaryProps {
   loyaltyAmountToUse: number;
   totalAfterWallet: number;
   tvaAmount: number;
+  tvaBreakdown?: Record<string, { ht: number; tva: number; ttc: number }>;
   totalHT: number;
   notes: string;
   setNotes: (val: string) => void;
@@ -54,6 +55,7 @@ export function CheckoutSummary({
   loyaltyAmountToUse,
   totalAfterWallet,
   tvaAmount,
+  tvaBreakdown,
   totalHT,
   notes,
   setNotes,
@@ -168,7 +170,15 @@ export function CheckoutSummary({
 
           <div className="space-y-1">
             <div className="flex justify-between items-center"><span className="font-bold text-lg">Total TTC</span><span className="font-bold text-2xl text-[#C6A15B]">{totalAfterWallet.toFixed(2)} €</span></div>
-            <div className="flex justify-between text-xs text-gray-500"><span>dont TVA (20%)</span><span>{tvaAmount.toFixed(2)} €</span></div>
+            {tvaBreakdown && Object.keys(tvaBreakdown).length > 1 ? (
+              Object.entries(tvaBreakdown).map(([rate, vals]) => (
+                <div key={rate} className="flex justify-between text-xs text-gray-500">
+                  <span>dont TVA ({rate}%)</span><span>{vals.tva.toFixed(2)} €</span>
+                </div>
+              ))
+            ) : (
+              <div className="flex justify-between text-xs text-gray-500"><span>dont TVA ({Object.keys(tvaBreakdown || {})[0] || '20'}%)</span><span>{tvaAmount.toFixed(2)} €</span></div>
+            )}
             <div className="flex justify-between text-xs text-gray-500"><span>Total HT</span><span>{totalHT.toFixed(2)} €</span></div>
           </div>
 

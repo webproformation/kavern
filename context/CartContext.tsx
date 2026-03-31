@@ -314,6 +314,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           // DONNÉES DU PACK
           isPack: product.isPack || false,
           packItems: product.packItems || null,
+          tva_rate: product.tva_rate || product.tvaRate || 20,
           cartItemId: uuidv4(),
           stockQuantity: stockQty === Infinity ? undefined : stockQty,
         };
