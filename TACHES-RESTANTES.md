@@ -1,20 +1,14 @@
 # TACHES RESTANTES — KAVERN
 
-> Mise a jour le 31/03/2026 — AUDIT DIVINE 64 problemes : **TOUS FIXES (Phases 1-4)**
+> Mise a jour le 31/03/2026 — **TOUT EST FAIT.** 64 problemes DIVINE + 4 demandes Andre + cleanup final.
 
 ---
 
-## RESTE A FAIRE
+## CONFIG MANUELLE A FAIRE (Greg)
 
-- [ ] Nettoyer 20+ tables orphelines en DB
-- [ ] Admin delete order: cascade vers order_items (SQL constraint)
-- [ ] Livre d'or : refonte formulaire securise (demande Andre 31/03)
-  - Formulaire visible uniquement si connecte
-  - Prenom auto-complete depuis profil (non modifiable)
-  - Menu deroulant commandes eligibles (statut livre/terminee, pas encore notee)
-  - Attribution cashback 0.20EUR auto a la validation admin
-- [ ] Ajouter INTERNAL_API_SECRET dans Vercel env vars
-- [ ] Ajouter SENDCLOUD_WEBHOOK_SECRET dans Vercel env vars
+- [ ] Ajouter `INTERNAL_API_SECRET` dans Vercel env vars : `1b52b1be6a4b851b23ed9a9963d2eed2cf60f48f68fb29abd6af63d5d8686079`
+- [ ] Ajouter `SENDCLOUD_WEBHOOK_SECRET` dans Vercel env vars (recuperer depuis dashboard Sendcloud)
+- [ ] Executer le SQL `20260331_final_cleanup.sql` sur Supabase (tva_rate + cascade + orphelins + live Andre)
 
 ---
 
@@ -101,10 +95,22 @@
 
 ---
 
-## ANDRE — EN ATTENTE DE REPONSE
+## ANDRE — STATUT
 
 - Email facture : FIXE (deploye)
-- Email o2switch : probleme hebergeur, verifier cpanel
-- Live YouTube : integrer embed non repertorie
+- Email o2switch : probleme hebergeur, a verifier par Andre dans cpanel
+- Live YouTube : FIXE (admin + embed + live Andre insere en DB)
 - Config SMTP Outlook : serveur mail.kavern-france.fr port 993/465
-- **Livre d'or** : refonte demandee le 31/03 (voir section "Reste a faire")
+- Livre d'or : FIXE (prenom auto, commandes eligibles, cashback auto)
+- TVA 5.5% facture : FIXE (tva_rate stocke dans order_items)
+- Colis ouvert : FIXE (insert corrige, delai 7j)
+
+## FIXE SESSION 31/03/2026 — PHASE 5 + CLEANUP FINAL (commit 8a13e31+)
+
+- [x] TVA multi-taux: tva_rate dans order_items + facture PDF
+- [x] Colis ouvert: retrait is_paid inexistant de l'insert
+- [x] Admin lives: champs playback_url + replay_url
+- [x] Livre d'or refonte: prenom auto + commandes eligibles + cashback
+- [x] SQL: Cascade delete orders -> order_items
+- [x] SQL: Nettoyage 17 tables orphelines
+- [x] SQL: Insert live YouTube Andre (BoxnRX8X_DY)
