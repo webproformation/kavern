@@ -4,13 +4,20 @@ import crypto from 'crypto';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { postalCode, city } = body;
+
+    // Sanitize XML: strip dangerous characters
+    const sanitize = (s: string) => String(s).replace(/[<>&"']/g, '').trim();
+    const postalCode = sanitize(body.postalCode || '');
 
     if (!postalCode) {
       return NextResponse.json({ error: 'Code postal requis' }, { status: 400 });
     }
 
-    const searchCity = city || '';
+    if (!/^\d{5}$/.test(postalCode)) {
+      return NextResponse.json({ error: 'Code postal invalide' }, { status: 400 });
+    }
+
+    const searchCity = sanitize(body.city || '');
     const mondialRelayId = process.env.MONDIAL_RELAY_ID;
     const mondialRelayKey = process.env.MONDIAL_RELAY_KEY;
     const countryCode = 'FR';

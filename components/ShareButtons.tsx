@@ -14,7 +14,9 @@ interface ShareButtonsProps {
 export function ShareButtons({ url, title, description }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false);
 
-  const fullUrl = typeof window !== "undefined" ? `${window.location.origin}${url}` : url;
+  const fullUrl = typeof window !== "undefined"
+    ? (url.startsWith('http') ? url : `${window.location.origin}${url}`)
+    : url;
 
   const handleFacebookShare = () => {
     const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(fullUrl)}`;

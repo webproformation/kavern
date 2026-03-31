@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 if (!process.env.STRIPE_SECRET_KEY) {
   console.error('CRITICAL: STRIPE_SECRET_KEY is not defined in environment variables');
@@ -26,27 +26,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // AUTH: Vérifier l'utilisateur via le token
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    const token = authHeader.substring(7);
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     const body = await request.json();
 
     const {
       orderId,
-      userId,
       items,
       total,
       shipping_cost,
       metadata
     } = body;
 
-    if (!orderId || !userId || !items || !Array.isArray(items) || items.length === 0) {
-      console.error('Missing required fields:', { orderId, userId, itemsCount: items?.length });
+    if (!orderId || !items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
-        { error: 'Missing required fields: orderId, userId, or items' },
+        { error: 'Missing required fields: orderId or items' },
         { status: 400 }
       );
     }
 
-    // SECURITY: Verify order total server-side (prevent price manipulation)
-    const { data: order, error: orderError } = await supabase
+    // SECURITY: Verify order total server-side
+    const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
       .select('total, user_id')
       .eq('id', orderId)
@@ -56,8 +71,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Commande introuvable' }, { status: 404 });
     }
 
-    // Verify the user owns this order
-    if (order.user_id !== userId) {
+    // Verify ownership via authenticated user
+    if (order.user_id !== user.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
     }
 
@@ -113,14 +128,14 @@ export async function POST(request: NextRequest) {
       customer_email: metadata?.email || undefined,
       metadata: {
         orderId: orderId.toString(),
-        userId: userId.toString(),
+        userId: user.id,
         ...(metadata || {}),
       },
     };
 
     const session = await stripe.checkout.sessions.create(sessionParams);
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from('orders')
       .update({
         stripe_session_id: session.id,

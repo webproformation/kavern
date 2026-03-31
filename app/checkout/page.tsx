@@ -408,9 +408,13 @@ export default function CheckoutPage() {
 
       await supabase.from('order_items').insert(orderItems);
 
+      const orderNumber = newOrder.order_number;
       clearCart();
       toast.success('Paiement PayPal reussi !');
       router.push(`/checkout/confirmation?order_id=${newOrder.id}`);
+
+      // Exécuter les tâches post-commande (wallet, loyalty, coupon, email...)
+      runPostOrderTasks(newOrder.id, orderNumber);
     } catch (err: any) {
       console.error('[PayPal] Erreur creation commande:', err);
       toast.error('Paiement recu mais erreur de creation commande. Contactez le support.');
@@ -435,9 +439,13 @@ export default function CheckoutPage() {
           price: parseFloat(item.variationPrice || item.price) || 0
         }));
 
+        const { data: { session: emailSession } } = await supabase.auth.getSession();
         fetch('/api/emails/order-confirmation', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${emailSession?.access_token || ''}`,
+          },
           body: JSON.stringify({
             orderId,
             email: profile.email,
@@ -501,14 +509,11 @@ export default function CheckoutPage() {
       }
 
       if (giftCardApplied && giftCardId && giftCardAmount > 0) {
-        await supabase.from('gift_cards').update({
-          current_balance: Math.max(0, (await supabase.from('gift_cards').select('current_balance').eq('id', giftCardId).single()).data?.current_balance - giftCardAmount),
-        }).eq('id', giftCardId);
-        await supabase.from('gift_card_transactions').insert({
-          gift_card_id: giftCardId,
-          order_id: orderId,
-          amount: giftCardAmount,
-          type: 'usage',
+        // Débit atomique via RPC Postgres (évite race condition)
+        await supabase.rpc('debit_gift_card', {
+          p_gift_card_id: giftCardId,
+          p_amount: giftCardAmount,
+          p_order_id: orderId,
         });
       }
     } catch (err) {
@@ -610,12 +615,12 @@ export default function CheckoutPage() {
       await supabase.from('order_items').insert(orderItems);
 
       // --- STRIPE : afficher le formulaire de paiement ---
+      // NE PAS appeler runPostOrderTasks ici — attendre le onSuccess Stripe
       if ((selectedPaymentMethod?.code === 'stripe' || selectedPaymentMethod?.provider === 'stripe') && totalAfterWallet > 0) {
         setCreatedOrderId(newOrder.id);
         setCreatedOrderNumber(orderNumber);
         setShowStripePayment(true);
         setLoading(false);
-        runPostOrderTasks(newOrder.id, orderNumber);
         return;
       }
 
@@ -675,7 +680,7 @@ export default function CheckoutPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <StripePaymentForm orderId={createdOrderId} userId={user.id} total={totalAfterWallet} onSuccess={() => { clearCart(); router.push(`/checkout/confirmation?order_id=${createdOrderId}`); }} customerEmail={profile?.email} orderNumber={createdOrderNumber || undefined} />
+                <StripePaymentForm orderId={createdOrderId} userId={user.id} total={totalAfterWallet} onSuccess={() => { clearCart(); runPostOrderTasks(createdOrderId!, createdOrderNumber || ''); router.push(`/checkout/confirmation?order_id=${createdOrderId}`); }} customerEmail={profile?.email} orderNumber={createdOrderNumber || undefined} />
               </CardContent>
             </Card>
           </div>

@@ -24,6 +24,16 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 
 export async function POST(request: NextRequest) {
   try {
+    // AUTH: Vérifier que l'utilisateur est authentifié
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
+    }
+    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.substring(7));
+    if (authError || !user) {
+      return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
     let bucket = (formData.get('bucket') as string) || 'media';

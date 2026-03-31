@@ -16,15 +16,19 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // AUTH CHECK : admin seulement
+    // AUTH CHECK : admin ou secret interne
     const authHeader = request.headers.get('authorization');
-    if (authHeader?.startsWith('Bearer ')) {
+    const internalSecret = request.headers.get('x-internal-secret');
+    if (internalSecret === process.env.INTERNAL_API_SECRET) {
+      // Appel interne autorisé
+    } else if (authHeader?.startsWith('Bearer ')) {
       const { data: { user } } = await supabase.auth.getUser(authHeader.substring(7));
       if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
       const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
       if (!profile?.is_admin) return NextResponse.json({ error: 'Admin uniquement' }, { status: 403 });
+    } else {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
-    // Note: pas de rejet si pas de header auth (compatibilité appels internes webhook)
 
     const { data: order, error: orderError } = await supabase
       .from("orders")

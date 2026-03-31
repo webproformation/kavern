@@ -150,9 +150,12 @@ export async function POST(request: NextRequest) {
     }
 
     // --- AUTRES JEUX (roue, carte à gratter, etc.) ---
-    // Logique restaurée intégralement
-    if (!has_won) {
-      return NextResponse.json({ success: true, message: "Perdu enregistré" });
+    // SECURITY: Tirage côté serveur (ne pas faire confiance au client)
+    const winProbability = 33.33; // Probabilité identique au card flip
+    const serverHasWon = (Math.random() * 100) <= winProbability;
+
+    if (!serverHasWon) {
+      return NextResponse.json({ success: true, has_won: false, message: "Perdu enregistré" });
     }
 
     if (!coupon_code) {

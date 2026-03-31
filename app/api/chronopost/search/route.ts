@@ -2,13 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { postalCode, city } = await request.json();
+    const body = await request.json();
+
+    // Sanitize XML: strip dangerous characters
+    const sanitize = (s: string) => String(s).replace(/[<>&"']/g, '').trim();
+    const postalCode = sanitize(body.postalCode || '');
+    const city = sanitize(body.city || '');
 
     if (!postalCode || !city) {
       return NextResponse.json(
         { error: 'Code postal et ville requis' },
         { status: 400 }
       );
+    }
+
+    if (!/^\d{5}$/.test(postalCode)) {
+      return NextResponse.json({ error: 'Code postal invalide' }, { status: 400 });
     }
 
     const chronopostAccount = process.env.CHRONOPOST_ACCOUNT_NUMBER;

@@ -59,6 +59,7 @@ function OrderConfirmationContent() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userEmail, setUserEmail] = useState<string>('');
 
   const orderId = searchParams.get('order_id') || searchParams.get('order') || searchParams.get('paypal');
   const redirectStatus = searchParams.get('redirect_status');
@@ -70,6 +71,12 @@ function OrderConfirmationContent() {
         window.scrollTo({ top: 0, behavior: 'instant' });
     }, 100);
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user?.email) setUserEmail(data.user.email);
+    });
   }, []);
 
   useEffect(() => {
@@ -223,7 +230,7 @@ function OrderConfirmationContent() {
                         <div><p className="text-xs text-[#D4AF37] font-bold uppercase tracking-widest mb-1">Référence à indiquer</p><p className="text-2xl font-mono font-bold text-black tracking-wide">{order.order_number}</p></div>
                         <Button onClick={() => copyToClipboard(order.order_number)} variant="outline" className="border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-white"><Copy className="h-4 w-4 mr-2" /> Copier</Button>
                     </div>
-                    <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-500 text-center border border-gray-100">Un email récapitulatif contenant ce RIB vous a été envoyé à <br/><span className="font-medium text-gray-900">{supabase.auth.getUser().then(u => u.data.user?.email)}</span></div>
+                    <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-500 text-center border border-gray-100">Un email récapitulatif contenant ce RIB vous a été envoyé à <br/><span className="font-medium text-gray-900">{userEmail || '...'}</span></div>
                 </div>
             </div>
           </div>

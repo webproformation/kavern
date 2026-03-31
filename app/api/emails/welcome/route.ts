@@ -3,6 +3,12 @@ import { sendWelcomeEmail } from '@/lib/email-sender';
 
 export async function POST(request: NextRequest) {
   try {
+    const authHeader = request.headers.get('authorization');
+    const internalSecret = request.headers.get('x-internal-secret');
+    if (internalSecret !== process.env.INTERNAL_API_SECRET && !authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     const body = await request.json();
     const email = body.to || body.email;
     const firstName = body.data?.firstName || body.firstName || 'Voisine';

@@ -229,7 +229,7 @@ export function ProductCard({ product, showAddToCart = false }: ProductCardProps
         {/* Prix */}
         <div className="flex items-baseline gap-2 pt-1">
           <span className={`font-bold text-base ${hasDiscount ? 'text-[#b8933d]' : 'text-gray-900'}`}>
-            {displayPrice.toFixed(2)} €
+            {(Number(displayPrice) || 0).toFixed(2)} €
           </span>
           {hasDiscount && (
             <span className="text-gray-400 line-through text-[10px]">

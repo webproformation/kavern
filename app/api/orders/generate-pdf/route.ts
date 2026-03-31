@@ -8,21 +8,36 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function POST(req: NextRequest) {
   try {
+    // AUTH: Vérifier l'utilisateur
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.substring(7));
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     const body = await req.json();
     let order = body.order;
     const orderId = body.orderId;
 
     // PROTECTION : Récupération de la commande si on n'a que l'ID
     if (!order && orderId) {
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      
       const { data: orderData, error: orderError } = await supabase
         .from("orders")
         .select("*")
         .eq("id", orderId)
         .single();
-        
+
       if (orderError || !orderData) throw new Error("Commande introuvable");
+
+      // IDOR check: vérifier ownership (sauf admin)
+      const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
+      if (!profile?.is_admin && orderData.user_id !== user.id) {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+      }
 
       const { data: itemsData } = await supabase
         .from("order_items")

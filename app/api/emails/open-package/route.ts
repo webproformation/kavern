@@ -4,6 +4,12 @@ import { createClient } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
+    const authHeader = request.headers.get('authorization');
+    const internalSecret = request.headers.get('x-internal-secret');
+    if (internalSecret !== process.env.INTERNAL_API_SECRET && !authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     const { packageId, orderId, type } = await request.json();
 
     if (!packageId || !orderId || !type) {
