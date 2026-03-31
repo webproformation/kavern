@@ -1,4 +1,10 @@
 import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || process.env.PAYPAL_CLIENT_ID;
 const { PAYPAL_CLIENT_SECRET, PAYPAL_ENVIRONMENT } = process.env;
@@ -36,13 +42,30 @@ const generateAccessToken = async () => {
 
 export async function POST(request: Request) {
   try {
-    const { amount } = await request.json();
+    const { amount, orderId } = await request.json();
 
     if (!amount) {
       return NextResponse.json(
         { error: 'Amount is required' },
         { status: 400 }
       );
+    }
+
+    // Validation côté serveur : vérifier que le montant correspond à la commande
+    if (orderId) {
+      const { data: order } = await supabase
+        .from('orders')
+        .select('total')
+        .eq('id', orderId)
+        .single();
+
+      if (order && Math.abs(parseFloat(amount) - parseFloat(order.total)) > 0.02) {
+        console.error(`[PayPal] Montant invalide: reçu ${amount}, attendu ${order.total} pour commande ${orderId}`);
+        return NextResponse.json(
+          { error: 'Le montant ne correspond pas à la commande' },
+          { status: 400 }
+        );
+      }
     }
 
     const accessToken = await generateAccessToken();

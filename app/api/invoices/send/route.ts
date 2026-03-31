@@ -18,6 +18,23 @@ export async function POST(req: Request) {
       serviceRoleKey
     );
 
+    // AUTH CHECK : vérifier que l'appelant est admin
+    const authHeader = req.headers.get('authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+      if (user) {
+        const { data: profile } = await supabaseAdmin.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
+        if (!profile?.is_admin) {
+          return NextResponse.json({ error: 'Accès interdit — Admin uniquement' }, { status: 403 });
+        }
+      } else {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      }
+    } else {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
     // 3. RÉCUPÉRATION
     const { data: invoice, error: invoiceError } = await supabaseAdmin
       .from('invoices')

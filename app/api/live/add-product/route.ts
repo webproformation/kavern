@@ -14,6 +14,20 @@ const supabaseAdmin = createClient(
 
 export async function POST(request: NextRequest) {
   try {
+    // AUTH CHECK : admin seulement
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const { data: { user } } = await supabaseAdmin.auth.getUser(authHeader.substring(7));
+    if (!user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const { data: adminProfile } = await supabaseAdmin.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
+    if (!adminProfile?.is_admin) {
+      return NextResponse.json({ error: 'Accès interdit — Admin uniquement' }, { status: 403 });
+    }
+
     const body = await request.json();
 
     const {

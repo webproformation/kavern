@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendReviewRequestEmail } from '@/lib/email-sender';
 import { createClient } from '@/lib/supabase';
 
-const CRON_SECRET = process.env.CRON_SECRET || 'your-secret-key-here';
+const CRON_SECRET = process.env.CRON_SECRET;
 
 export async function POST(request: NextRequest) {
   try {

@@ -16,6 +16,16 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // AUTH CHECK : admin seulement
+    const authHeader = request.headers.get('authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      const { data: { user } } = await supabase.auth.getUser(authHeader.substring(7));
+      if (!user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+      const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
+      if (!profile?.is_admin) return NextResponse.json({ error: 'Admin uniquement' }, { status: 403 });
+    }
+    // Note: pas de rejet si pas de header auth (compatibilité appels internes webhook)
+
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .select("*")
@@ -54,42 +64,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Format email invalide" }, { status: 400 });
     }
 
+    // Requête unique avec JOINs (évite N+1 queries)
     const { data: orderItems } = await supabase
       .from("order_items")
       .select("*")
       .eq("order_id", orderId);
 
-    // Enrichir les items avec les infos produit
-    const enrichedItems = await Promise.all(
-      (orderItems || []).map(async (item: any) => {
-        const { data: product } = await supabase
-          .from("products")
-          .select("sku, image_url")
-          .eq("id", item.product_id)
-          .maybeSingle();
+    // Récupérer tous les produits en une seule requête
+    const productIds = [...new Set((orderItems || []).map((i: any) => i.product_id).filter(Boolean))];
+    const { data: products } = productIds.length > 0
+      ? await supabase.from("products").select("id, sku, image_url").in("id", productIds)
+      : { data: [] };
+    const productsMap = new Map((products || []).map((p: any) => [p.id, p]));
 
-        let variationImage = null;
-        if (item.variation_id) {
-          const { data: variation } = await supabase
-            .from("product_variations")
-            .select("image_url")
-            .eq("id", item.variation_id)
-            .maybeSingle();
-          variationImage = variation?.image_url;
-        }
+    // Récupérer toutes les variations en une seule requête
+    const variationIds = [...new Set((orderItems || []).map((i: any) => i.variation_id).filter(Boolean))];
+    const { data: variations } = variationIds.length > 0
+      ? await supabase.from("product_variations").select("id, image_url").in("id", variationIds)
+      : { data: [] };
+    const variationsMap = new Map((variations || []).map((v: any) => [v.id, v]));
 
-        const imageUrl = variationImage || product?.image_url || null;
-        const fullImageUrl = imageUrl
-          ? (imageUrl.startsWith('http') ? imageUrl : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${imageUrl}`)
-          : null;
-
-        return {
-          ...item,
-          sku: product?.sku,
-          image_url: fullImageUrl,
-        };
-      })
-    );
+    const enrichedItems = (orderItems || []).map((item: any) => {
+      const product = productsMap.get(item.product_id);
+      const variation = item.variation_id ? variationsMap.get(item.variation_id) : null;
+      const imageUrl = variation?.image_url || product?.image_url || null;
+      const fullImageUrl = imageUrl
+        ? (imageUrl.startsWith('http') ? imageUrl : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/media/${imageUrl}`)
+        : null;
+      return { ...item, sku: product?.sku, image_url: fullImageUrl };
+    });
 
     const missingVars: string[] = [];
     if (!process.env.SMTP_HOST) missingVars.push('SMTP_HOST');

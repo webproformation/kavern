@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendAbandonedCartEmail } from '@/lib/email-sender';
 import { createClient } from '@/lib/supabase';
 
-const CRON_SECRET = process.env.CRON_SECRET || 'your-secret-key-here';
+const CRON_SECRET = process.env.CRON_SECRET;
+if (!CRON_SECRET) console.warn('[CRON] CRON_SECRET non configuré — les cron jobs seront refusés');
 
 export async function POST(request: NextRequest) {
   try {
