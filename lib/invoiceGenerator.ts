@@ -89,7 +89,7 @@ export const generateInvoicePDF = async (order: any, invoiceNumber: string) => {
     "KAVERN",
     "1062 Rue d'Armentières",
     "59850 Nieppe, France",
-    "Email: contact@kavern.fr",
+    "Email: contact@kavern-france.fr",
     "SIREN: 102 355 443",
     "TVA: FR37102355443"
   ], 14, currentY + 6);
