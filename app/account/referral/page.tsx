@@ -45,6 +45,10 @@ export default function ReferralPage() {
   useEffect(() => {
     if (profile?.id) {
       loadReferralData()
+    } else if (profile === null) {
+      // Profile pas encore chargé ou inexistant — arrêter le spinner
+      const timeout = setTimeout(() => setLoading(false), 3000)
+      return () => clearTimeout(timeout)
     }
   }, [profile])
 

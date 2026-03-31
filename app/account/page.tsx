@@ -167,8 +167,12 @@ export default function AccountPage() {
 
   if (!profile) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex flex-col items-center justify-center py-12 gap-4">
         <Loader2 className="h-8 w-8 animate-spin text-[#D4AF37]" />
+        <p className="text-gray-500 text-sm">Chargement de votre profil...</p>
+        <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+          Recharger la page
+        </Button>
       </div>
     );
   }

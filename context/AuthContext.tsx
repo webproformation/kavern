@@ -83,19 +83,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .select('*')
         .eq('id', userId)
         .maybeSingle();
-        
+
       if (data) {
         setProfile(data);
-        useAuthStore.getState().setProfile(data); 
-        
-        if (data.blocked) { 
-          await signOut(); 
-          return; 
+        useAuthStore.getState().setProfile(data);
+
+        if (data.blocked) {
+          await signOut();
+          return;
         }
         await checkDailyLogin(userId);
+      } else {
+        // FALLBACK : Le trigger handle_new_user a échoué silencieusement.
+        // On crée le profil manuellement depuis les métadonnées auth.
+        console.warn('[AuthContext] Profil introuvable pour', userId, '— création fallback');
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          const meta = authUser.user_metadata || {};
+          const { data: newProfile, error: insertErr } = await supabase
+            .from('profiles')
+            .upsert({
+              id: userId,
+              email: authUser.email || '',
+              full_name: `${meta.first_name || ''} ${meta.last_name || ''}`.trim() || authUser.email || '',
+              first_name: meta.first_name || '',
+              last_name: meta.last_name || '',
+              phone: meta.phone || '',
+              avatar_url: '',
+              birth_date: meta.birth_date || null,
+              wallet_balance: 5.00,
+              loyalty_euros: 0,
+              current_tier: 1,
+              tier_multiplier: 1,
+              is_admin: false,
+              blocked: false,
+              cancelled_orders_count: 0,
+            }, { onConflict: 'id' })
+            .select()
+            .single();
+
+          if (insertErr) {
+            console.error('[AuthContext] Fallback profil échoué:', insertErr.message);
+          } else if (newProfile) {
+            console.info('[AuthContext] Profil créé en fallback avec 5€ de bienvenue');
+            setProfile(newProfile);
+            useAuthStore.getState().setProfile(newProfile);
+            // Envoyer le mail de bienvenue (best-effort)
+            fetch('/api/emails/welcome', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: authUser.email, firstName: meta.first_name || '' })
+            }).catch(() => {});
+          }
+        }
       }
-    } finally { 
-      loadingProfileRef.current = false; 
+    } finally {
+      loadingProfileRef.current = false;
     }
   };
 
