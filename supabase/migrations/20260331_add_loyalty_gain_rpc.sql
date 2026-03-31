@@ -52,6 +52,10 @@ END $$;
 -- Migration: Créer la fonction RPC add_loyalty_gain (wrapper de add_loyalty_transaction)
 -- Raison: Le code frontend appelle add_loyalty_gain mais seule add_loyalty_transaction existait
 
+-- Drop l'ancienne version (type de retour différent)
+DROP FUNCTION IF EXISTS add_loyalty_gain(UUID, TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS add_loyalty_gain(UUID, TEXT, DECIMAL, TEXT);
+
 CREATE OR REPLACE FUNCTION add_loyalty_gain(
   p_user_id UUID,
   p_type TEXT,
