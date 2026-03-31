@@ -3,14 +3,11 @@ import { sendAbandonedCartEmail } from '@/lib/email-sender';
 import { createClient } from '@/lib/supabase';
 
 const CRON_SECRET = process.env.CRON_SECRET;
-if (!CRON_SECRET) console.warn('[CRON] CRON_SECRET non configuré — les cron jobs seront refusés');
 
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization');
-    const providedSecret = authHeader?.replace('Bearer ', '');
-
-    if (providedSecret !== CRON_SECRET) {
+    if (!CRON_SECRET || authHeader !== `Bearer ${CRON_SECRET}`) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

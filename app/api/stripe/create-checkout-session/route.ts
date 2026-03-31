@@ -45,6 +45,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // SECURITY: Verify order total server-side (prevent price manipulation)
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('total, user_id')
+      .eq('id', orderId)
+      .single();
+
+    if (orderError || !order) {
+      return NextResponse.json({ error: 'Commande introuvable' }, { status: 404 });
+    }
+
+    // Verify the user owns this order
+    if (order.user_id !== userId) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+    }
+
+    // Verify total matches (tolerance of 0.02€ for rounding)
+    const clientTotal = parseFloat(total || '0');
+    const serverTotal = parseFloat(order.total);
+    if (Math.abs(clientTotal - serverTotal) > 0.02) {
+      console.error('Price manipulation detected:', { clientTotal, serverTotal, orderId });
+      return NextResponse.json({ error: 'Le montant ne correspond pas à la commande' }, { status: 400 });
+    }
+
     const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map((item: any) => {

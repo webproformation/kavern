@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { randomUUID } from 'crypto';
 
 // Utilisation des variables d'environnement du projet actuel
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -35,10 +36,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Aucun fichier fourni' }, { status: 400 });
     }
 
+    const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'pdf', 'mp4', 'webm'];
     const fileExt = file.name.split('.').pop()?.toLowerCase();
-    const fileName = folder 
-      ? `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}` 
-      : `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    if (!fileExt || !ALLOWED_EXTENSIONS.includes(fileExt)) {
+      return NextResponse.json({ success: false, error: `Extension non autorisée: .${fileExt || '???'}. Extensions acceptées: ${ALLOWED_EXTENSIONS.join(', ')}` }, { status: 400 });
+    }
+
+    const uniqueId = randomUUID();
+    const fileName = folder
+      ? `${folder}/${Date.now()}-${uniqueId}.${fileExt}`
+      : `${Date.now()}-${uniqueId}.${fileExt}`;
 
     const arrayBuffer = await file.arrayBuffer();
     const fileBuffer = Buffer.from(arrayBuffer);

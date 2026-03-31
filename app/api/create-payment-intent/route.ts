@@ -18,6 +18,26 @@ export async function POST(request: Request) {
       total = amount;
     }
 
+    // SECURITY: If orderId provided, verify order ownership and amount
+    if (orderId) {
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .select('total, user_id')
+        .eq('id', orderId)
+        .single();
+
+      if (orderError || !order) {
+        return NextResponse.json({ error: 'Commande introuvable' }, { status: 404 });
+      }
+
+      if (order.user_id !== userId) {
+        return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+      }
+
+      // Force server-side total
+      total = order.total;
+    }
+
     // Validation stricte
     if (!total || !userId) {
       console.error("❌ Données manquantes:", { orderId, userId, total });

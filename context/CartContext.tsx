@@ -81,6 +81,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return [];
       }
 
+      // Récupérer les tva_rate des produits en une requête
+      const productIds = (data || []).map(item => item.product_id).filter(Boolean);
+      let tvaRates: Record<string, number> = {};
+      if (productIds.length > 0) {
+        const { data: products } = await supabase
+          .from('products')
+          .select('id, tva_rate')
+          .in('id', productIds);
+        if (products) {
+          tvaRates = Object.fromEntries(products.map(p => [p.id, p.tva_rate ?? 20]));
+        }
+      }
+
       return (data || []).map(item => ({
         id: item.product_id,
         name: item.product_name,
@@ -96,6 +109,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         isPack: item.variation_data?.isPack || false,
         packItems: item.variation_data?.packItems || null,
         cartItemId: uuidv4(), // Assure l'unicité à la récupération
+        tva_rate: tvaRates[item.product_id] ?? 20,
       }));
     } catch (error: any) {
       if (error.name !== 'AbortError') {

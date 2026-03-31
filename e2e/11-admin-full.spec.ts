@@ -1,7 +1,7 @@
 import { test, expect, Page } from '@playwright/test';
 
-const ADMIN_EMAIL = 'contact@webproformation.fr';
-const ADMIN_PASSWORD = '73xpBdZbT877Xm';
+const ADMIN_EMAIL = process.env.PLAYWRIGHT_ADMIN_EMAIL || 'admin@test.local';
+const ADMIN_PASSWORD = process.env.PLAYWRIGHT_ADMIN_PASSWORD || '';
 
 async function loginAdmin(page: Page) {
   await page.goto('/auth/login');
