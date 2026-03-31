@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       // Notifier l'admin par email si SMTP est configuré
       if (process.env.SMTP_HOST && process.env.SMTP_USER) {
         try {
-          const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://kavern.vercel.app';
+          const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://kavern-france.fr';
           await fetch(`${siteUrl}/api/send-email`, {
             method: 'POST',
             headers: {

@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
             // Envoi email confirmation via API route interne
             if (orderDetails.profiles?.email) {
                 try {
-                  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://kavern.vercel.app';
+                  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://kavern-france.fr';
                   await fetch(`${siteUrl}/api/emails/order-confirmation`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

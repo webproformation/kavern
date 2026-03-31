@@ -7,6 +7,7 @@ import { AppLifecycle } from '@/components/AppLifecycle'; // Nouveau composant
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://kavern-france.fr'),
   title: 'KAVERN - L\'artisanat et l\'inattendu',
   description: 'Concept Store en ligne - Bougies artisanales, epicerie fine, mode et lives shopping',
   manifest: '/manifest.json',

@@ -22,6 +22,9 @@ interface Product {
   image_url: string | null;
   gallery_images: string[] | null;
   stock_quantity: number;
+  has_variations?: boolean;
+  is_variable_product?: boolean;
+  product_variations?: { stock_quantity: number }[];
 }
 
 function WishlistProductCard({
@@ -43,7 +46,11 @@ function WishlistProductCard({
   ].filter(Boolean) as string[];
 
   const hasDiscount = product.sale_price && product.sale_price < product.regular_price;
-  const isInStock = product.stock_quantity > 0;
+  const hasVariations = (product.is_variable_product || product.has_variations) && (product.product_variations?.length ?? 0) > 0;
+  const totalStock = hasVariations
+    ? product.product_variations!.reduce((sum, v) => sum + (v.stock_quantity ?? 0), 0)
+    : product.stock_quantity;
+  const isInStock = hasVariations ? totalStock > 0 : (totalStock === null || totalStock === undefined || totalStock > 0);
   const displayPrice = product.sale_price || product.regular_price;
 
   const handlePrevImage = (e: React.MouseEvent) => {
@@ -230,7 +237,7 @@ export default function WishlistPage() {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, slug, regular_price, sale_price, image_url, gallery_images, stock_quantity')
+        .select('id, name, slug, regular_price, sale_price, image_url, gallery_images, stock_quantity, has_variations, is_variable_product, product_variations(stock_quantity)')
         .in('id', wishlistItems);
 
       if (error) throw error;

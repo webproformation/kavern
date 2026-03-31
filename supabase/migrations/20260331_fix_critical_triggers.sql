@@ -73,7 +73,7 @@ BEGIN
   INSERT INTO public.profiles (
     id, email, full_name, first_name, last_name, phone, avatar_url, birth_date,
     wallet_balance, loyalty_euros, current_tier, tier_multiplier,
-    is_admin, blocked, blocked_reason, blocked_at, cancelled_orders_count,
+    is_admin, is_blocked, blocked_reason, blocked_at, cancelled_orders_count,
     created_at, updated_at
   )
   VALUES (

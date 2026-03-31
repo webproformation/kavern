@@ -252,9 +252,7 @@ export default function LivePage() {
                   {new Date(upcomingLives[0].scheduled_start).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
                 </p>
 
-                <Button className="bg-[#D4AF37] hover:bg-[#C6A15B] text-black font-bold text-lg px-8 py-6 rounded-full shadow-xl">
-                  <Bell className="h-5 w-5 mr-2" /> M&apos;alerter pour le prochain Live
-                </Button>
+                <PushNotificationButton />
               </div>
             </div>
           )}

@@ -211,7 +211,8 @@ export function CheckoutDelivery({
                   <RelayPointSelector
                     provider={(() => {
                       const code = selectedShippingMethod.code;
-                      if (code === 'mondial_relay' || code === 'shop_to_shop') return 'mondial-relay';
+                      if (code === 'mondial_relay') return 'mondial-relay';
+                      if (code === 'shop_to_shop') return (selectedShippingMethod?.provider || 'chronopost') as 'mondial-relay' | 'chronopost' | 'gls';
                       if (code === 'chronopost_relay') return 'chronopost';
                       if (code === 'gls_relay') return 'gls';
                       return code as 'mondial-relay' | 'chronopost' | 'gls';

@@ -198,10 +198,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    // Nettoyer le panier localStorage AVANT déconnexion (évite fuite entre comptes)
+    // Nettoyer le panier et la wishlist localStorage AVANT déconnexion (évite fuite entre comptes)
     try {
       localStorage.removeItem('kavern_cart');
       localStorage.removeItem('cart');
+      localStorage.removeItem('wishlist');
     } catch {}
     await supabase.auth.signOut();
     setUser(null);
