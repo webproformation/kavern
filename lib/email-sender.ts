@@ -11,6 +11,7 @@ import { PackageClosingWarningEmail } from '@/components/emails/PackageClosingWa
 import { ReviewRequestEmail } from '@/components/emails/ReviewRequestEmail';
 import { PasswordResetEmail } from '@/components/emails/PasswordResetEmail';
 import { DiamondFoundEmail } from '@/components/emails/DiamondFoundEmail';
+import { BirthdayEmail } from '@/components/emails/BirthdayEmail';
 
 interface SendEmailResult {
   success: boolean;
@@ -276,6 +277,28 @@ export async function sendDiamondFoundEmail(
     return { success: true, messageId: info.messageId };
   } catch (error: any) {
     console.error('Error sending diamond found email:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function sendBirthdayEmail(
+  to: string,
+  firstName: string,
+  amount: number
+): Promise<SendEmailResult> {
+  try {
+    const emailHtml = await render(BirthdayEmail({ firstName, amount }));
+
+    const info = await transporter.sendMail({
+      from: FROM_EMAIL,
+      to,
+      subject: `🎁 Joyeux Anniversaire ${firstName} ! Votre cadeau vous attend...`,
+      html: emailHtml,
+    });
+
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error('Error sending birthday email:', error);
     return { success: false, error: error.message };
   }
 }
