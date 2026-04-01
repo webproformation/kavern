@@ -93,10 +93,14 @@ export default function AdminInvoicesListingPage() {
         return;
       }
       const { data: orderItems } = await supabase.from('order_items').select('*').eq('order_id', inv.order_id);
+      const { data: profileData } = inv.order.user_id
+        ? await supabase.from('profiles').select('first_name, last_name, email, phone').eq('id', inv.order.user_id).single()
+        : { data: null };
       const orderForPdf = {
         ...inv.order,
         items: orderItems || [],
         order_items: orderItems || [],
+        profiles: profileData || {},
         payment_method: 'N/A',
       };
       const doc = await generateInvoicePDF(orderForPdf, inv.order.order_number);

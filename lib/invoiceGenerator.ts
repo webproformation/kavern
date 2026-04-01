@@ -99,31 +99,39 @@ export const generateInvoicePDF = async (order: any, invoiceNumber: string) => {
     `Date : ${format(new Date(order.created_at || new Date()), 'dd MMMM yyyy', { locale: fr })}`
   ], 110, currentY + 6);
 
-  // 3. ADRESSE DE LIVRAISON
+  // 3. INFORMATIONS CLIENT (obligatoire sur une facture)
   currentY += 40;
   doc.setTextColor(...primaryColor); doc.setFont("helvetica", "bold");
-  doc.text("Adresse de Livraison", 110, currentY);
+  doc.text("Client", 110, currentY);
   doc.setTextColor(...blackColor); doc.setFont("helvetica", "normal");
-  
+
   const ship = order.relay_point_data || order.shipping_address || {};
-  let addrLines = [];
-  
+  const customerName = `${ship.first_name || order.profiles?.first_name || ''} ${ship.last_name || order.profiles?.last_name || ''}`.trim();
+  const customerEmail = order.profiles?.email || '';
+  const customerPhone = ship.phone || order.profiles?.phone || '';
+
+  const clientLines = [
+    customerName || 'Client',
+    ship.address_line1 || '',
+    ship.address_line2 || '',
+    `${ship.postal_code || ''} ${ship.city || ''}`.trim(),
+    ship.country || 'France',
+    customerEmail ? `Email: ${customerEmail}` : '',
+    customerPhone ? `Tél: ${customerPhone}` : '',
+  ].filter(l => l !== '');
+  doc.text(clientLines, 110, currentY + 6);
+
+  // Adresse de livraison (si point relais, afficher en dessous)
   if (order.relay_point_data) {
-      addrLines = [
-          ship.name || "Point Relais",
-          ship.address || "",
-          "France (POINT RELAIS)"
-      ];
-  } else {
-      addrLines = [
-        `${ship.first_name || ''} ${ship.last_name || ''}`.trim(),
-        ship.address_line1 || '',
-        ship.address_line2 || '',
-        `${ship.postal_code || ''} ${ship.city || ''}`.trim(),
-        ship.country || 'France'
-      ].filter(l => l !== '');
+    const relayY = currentY + 6 + clientLines.length * 5 + 8;
+    doc.setTextColor(...primaryColor); doc.setFont("helvetica", "bold");
+    doc.text("Livraison Point Relais", 110, relayY);
+    doc.setTextColor(...blackColor); doc.setFont("helvetica", "normal");
+    doc.text([
+      ship.name || "Point Relais",
+      ship.address || "",
+    ], 110, relayY + 6);
   }
-  doc.text(addrLines, 110, currentY + 6);
 
   // 4. TABLEAU DES PRODUITS
   const items = order.items || order.order_items || [];

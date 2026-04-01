@@ -128,10 +128,17 @@ export default function OrdersPage() {
 
     try {
       // On prépare l'objet pour le générateur PDF
+      // Récupérer les infos client pour la facture
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, email, phone')
+        .eq('id', user!.id)
+        .single();
+
       const orderForPdf = {
         ...order,
         items: order.order_items || [],
-        // On récupère le NOM du moyen de paiement s'il existe, sinon fallback
+        profiles: profileData || {},
         payment_method: order.payment_method?.name || 'CB / Stripe'
       };
 
