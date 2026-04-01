@@ -4,12 +4,9 @@ import { updateSession } from '@/utils/supabase/middleware';
 export async function middleware(request: NextRequest) {
   const { response, user } = await updateSession(request);
 
-  // Protect /admin routes: redirect unauthenticated users to login
-  if (request.nextUrl.pathname.startsWith('/admin') && !user) {
-    const loginUrl = new URL('/auth/login', request.url);
-    loginUrl.searchParams.set('redirect', request.nextUrl.pathname);
-    return NextResponse.redirect(loginUrl);
-  }
+  // Note: la protection admin est gérée côté client dans app/admin/layout.tsx
+  // Le middleware ne bloque plus car getUser() peut retourner null sur des sessions valides
+  // quand le token est en cours de refresh
 
   return response;
 }
