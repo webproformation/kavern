@@ -47,27 +47,5 @@ CREATE POLICY "rls_live_streams_admin"
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
 
--- ========================
--- wishlist : policy admin (bug #2 André)
--- ========================
-DROP POLICY IF EXISTS "Users can view their own wishlist" ON wishlist;
-DROP POLICY IF EXISTS "Users can add to their wishlist" ON wishlist;
-DROP POLICY IF EXISTS "Users can remove from their wishlist" ON wishlist;
-DROP POLICY IF EXISTS "Admins can manage all wishlists" ON wishlist;
-
-CREATE POLICY "Users can view their own wishlist"
-  ON wishlist FOR SELECT TO authenticated
-  USING (auth.uid()::text = user_id::text);
-
-CREATE POLICY "Users can add to their wishlist"
-  ON wishlist FOR INSERT TO authenticated
-  WITH CHECK (auth.uid()::text = user_id::text);
-
-CREATE POLICY "Users can remove from their wishlist"
-  ON wishlist FOR DELETE TO authenticated
-  USING (auth.uid()::text = user_id::text);
-
-CREATE POLICY "Admins can manage all wishlists"
-  ON wishlist FOR ALL TO authenticated
-  USING (public.is_admin())
-  WITH CHECK (public.is_admin());
+-- NOTE: table wishlist (singulier) a été supprimée lors du cleanup 20260331.
+-- La wishlist fonctionne désormais via localStorage uniquement (WishlistContext.tsx).
