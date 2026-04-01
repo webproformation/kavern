@@ -30,7 +30,6 @@ $$;
 
 -- =====================================================================
 -- 1. TABLES CATALOGUE / PUBLIQUES EN LECTURE
---    (products, categories, looks, slides, media, shipping_methods, etc.)
 --    SELECT pour tous, INSERT/UPDATE/DELETE pour admin + service_role
 -- =====================================================================
 
@@ -190,16 +189,9 @@ CREATE POLICY "rls_look_products_service" ON look_products
   FOR ALL USING (auth.role() = 'service_role');
 
 -- SLIDES
-ALTER TABLE slides ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "rls_slides_public_read" ON slides;
-CREATE POLICY "rls_slides_public_read" ON slides
   FOR SELECT USING (true);
-DROP POLICY IF EXISTS "rls_slides_admin_write" ON slides;
-CREATE POLICY "rls_slides_admin_write" ON slides
   FOR ALL TO authenticated
   USING (public.is_admin()) WITH CHECK (public.is_admin());
-DROP POLICY IF EXISTS "rls_slides_service" ON slides;
-CREATE POLICY "rls_slides_service" ON slides
   FOR ALL USING (auth.role() = 'service_role');
 
 -- HOME_SLIDES
@@ -242,16 +234,9 @@ CREATE POLICY "rls_media_service" ON media
   FOR ALL USING (auth.role() = 'service_role');
 
 -- MEDIA_LIBRARY
-ALTER TABLE media_library ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "rls_media_library_public_read" ON media_library;
-CREATE POLICY "rls_media_library_public_read" ON media_library
   FOR SELECT USING (true);
-DROP POLICY IF EXISTS "rls_media_library_admin_write" ON media_library;
-CREATE POLICY "rls_media_library_admin_write" ON media_library
   FOR ALL TO authenticated
   USING (public.is_admin()) WITH CHECK (public.is_admin());
-DROP POLICY IF EXISTS "rls_media_library_service" ON media_library;
-CREATE POLICY "rls_media_library_service" ON media_library
   FOR ALL USING (auth.role() = 'service_role');
 
 -- SHIPPING_METHODS
@@ -335,21 +320,11 @@ CREATE POLICY "rls_customer_reviews_service" ON customer_reviews
   FOR ALL USING (auth.role() = 'service_role');
 
 -- WOOCOMMERCE_CACHE (public product data cache)
-ALTER TABLE woocommerce_cache ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "rls_woocommerce_cache_public_read" ON woocommerce_cache;
-CREATE POLICY "rls_woocommerce_cache_public_read" ON woocommerce_cache
   FOR SELECT USING (true);
-DROP POLICY IF EXISTS "rls_woocommerce_cache_service" ON woocommerce_cache;
-CREATE POLICY "rls_woocommerce_cache_service" ON woocommerce_cache
   FOR ALL USING (auth.role() = 'service_role');
 
 -- WOOCOMMERCE_CATEGORIES_CACHE
-ALTER TABLE woocommerce_categories_cache ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "rls_woocommerce_categories_cache_public_read" ON woocommerce_categories_cache;
-CREATE POLICY "rls_woocommerce_categories_cache_public_read" ON woocommerce_categories_cache
   FOR SELECT USING (true);
-DROP POLICY IF EXISTS "rls_woocommerce_categories_cache_service" ON woocommerce_categories_cache;
-CREATE POLICY "rls_woocommerce_categories_cache_service" ON woocommerce_categories_cache
   FOR ALL USING (auth.role() = 'service_role');
 
 -- =====================================================================
@@ -357,29 +332,15 @@ CREATE POLICY "rls_woocommerce_categories_cache_service" ON woocommerce_categori
 -- =====================================================================
 
 -- LIVE_SESSIONS
-ALTER TABLE live_sessions ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "rls_live_sessions_public_read" ON live_sessions;
-CREATE POLICY "rls_live_sessions_public_read" ON live_sessions
   FOR SELECT USING (true);
-DROP POLICY IF EXISTS "rls_live_sessions_admin_write" ON live_sessions;
-CREATE POLICY "rls_live_sessions_admin_write" ON live_sessions
   FOR ALL TO authenticated
   USING (public.is_admin()) WITH CHECK (public.is_admin());
-DROP POLICY IF EXISTS "rls_live_sessions_service" ON live_sessions;
-CREATE POLICY "rls_live_sessions_service" ON live_sessions
   FOR ALL USING (auth.role() = 'service_role');
 
 -- LIVE_CHAPTERS
-ALTER TABLE live_chapters ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "rls_live_chapters_public_read" ON live_chapters;
-CREATE POLICY "rls_live_chapters_public_read" ON live_chapters
   FOR SELECT USING (true);
-DROP POLICY IF EXISTS "rls_live_chapters_admin_write" ON live_chapters;
-CREATE POLICY "rls_live_chapters_admin_write" ON live_chapters
   FOR ALL TO authenticated
   USING (public.is_admin()) WITH CHECK (public.is_admin());
-DROP POLICY IF EXISTS "rls_live_chapters_service" ON live_chapters;
-CREATE POLICY "rls_live_chapters_service" ON live_chapters
   FOR ALL USING (auth.role() = 'service_role');
 
 -- LIVE_SHARED_PRODUCTS
@@ -477,17 +438,10 @@ CREATE POLICY "rls_user_profiles_service" ON user_profiles
   FOR ALL USING (auth.role() = 'service_role');
 
 -- USER_ROLES (SENSIBLE: controle les roles admin/customer)
-ALTER TABLE user_roles ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "rls_user_roles_read_own" ON user_roles;
-CREATE POLICY "rls_user_roles_read_own" ON user_roles
   FOR SELECT TO authenticated
   USING (auth.uid() = user_id);
-DROP POLICY IF EXISTS "rls_user_roles_admin" ON user_roles;
-CREATE POLICY "rls_user_roles_admin" ON user_roles
   FOR ALL TO authenticated
   USING (public.is_admin()) WITH CHECK (public.is_admin());
-DROP POLICY IF EXISTS "rls_user_roles_service" ON user_roles;
-CREATE POLICY "rls_user_roles_service" ON user_roles
   FOR ALL USING (auth.role() = 'service_role');
 
 -- ORDERS (a user_id — deja des policies dans migration precedente)
@@ -528,18 +482,13 @@ CREATE POLICY "rls_cart_items_service" ON cart_items
   FOR ALL USING (auth.role() = 'service_role');
 
 -- WISHLISTS (a user_id)
-ALTER TABLE wishlists ENABLE ROW LEVEL SECURITY;
 -- Already has policies from previous migration
 
 -- WISHLIST_ITEMS (session-based)
-ALTER TABLE wishlist_items ENABLE ROW LEVEL SECURITY;
 -- Already has policies from previous migration
 
 -- WALLET_CREDITS (SENSIBLE: solde financier)
-ALTER TABLE wallet_credits ENABLE ROW LEVEL SECURITY;
 -- Already has policies from previous migration
-DROP POLICY IF EXISTS "rls_wallet_credits_admin" ON wallet_credits;
-CREATE POLICY "rls_wallet_credits_admin" ON wallet_credits
   FOR ALL TO authenticated
   USING (public.is_admin()) WITH CHECK (public.is_admin());
 
@@ -653,17 +602,10 @@ CREATE POLICY "rls_shipments_service" ON shipments
   FOR ALL USING (auth.role() = 'service_role');
 
 -- DELIVERY_BATCHES (a user_id)
-ALTER TABLE delivery_batches ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "rls_delivery_batches_read_own" ON delivery_batches;
-CREATE POLICY "rls_delivery_batches_read_own" ON delivery_batches
   FOR SELECT TO authenticated
   USING (auth.uid() = user_id);
-DROP POLICY IF EXISTS "rls_delivery_batches_admin" ON delivery_batches;
-CREATE POLICY "rls_delivery_batches_admin" ON delivery_batches
   FOR ALL TO authenticated
   USING (public.is_admin()) WITH CHECK (public.is_admin());
-DROP POLICY IF EXISTS "rls_delivery_batches_service" ON delivery_batches;
-CREATE POLICY "rls_delivery_batches_service" ON delivery_batches
   FOR ALL USING (auth.role() = 'service_role');
 
 -- OPEN_PACKAGES (a user_id)
@@ -826,20 +768,11 @@ CREATE POLICY "rls_push_subscriptions_service" ON push_subscriptions
   FOR ALL USING (auth.role() = 'service_role');
 
 -- LIVRE_DOR (guestbook — public read, authenticated insert)
-ALTER TABLE livre_dor ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "rls_livre_dor_public_read" ON livre_dor;
-CREATE POLICY "rls_livre_dor_public_read" ON livre_dor
   FOR SELECT USING (true);
-DROP POLICY IF EXISTS "rls_livre_dor_insert_auth" ON livre_dor;
-CREATE POLICY "rls_livre_dor_insert_auth" ON livre_dor
   FOR INSERT TO authenticated
   WITH CHECK (true);
-DROP POLICY IF EXISTS "rls_livre_dor_admin" ON livre_dor;
-CREATE POLICY "rls_livre_dor_admin" ON livre_dor
   FOR ALL TO authenticated
   USING (public.is_admin()) WITH CHECK (public.is_admin());
-DROP POLICY IF EXISTS "rls_livre_dor_service" ON livre_dor;
-CREATE POLICY "rls_livre_dor_service" ON livre_dor
   FOR ALL USING (auth.role() = 'service_role');
 
 -- =====================================================================
@@ -998,39 +931,20 @@ CREATE POLICY "rls_obs_settings_service" ON obs_settings
   FOR ALL USING (auth.role() = 'service_role');
 
 -- LIVE_STREAM_ANALYTICS (admin only)
-ALTER TABLE live_stream_analytics ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "rls_live_stream_analytics_admin" ON live_stream_analytics;
-CREATE POLICY "rls_live_stream_analytics_admin" ON live_stream_analytics
   FOR ALL TO authenticated
   USING (public.is_admin()) WITH CHECK (public.is_admin());
-DROP POLICY IF EXISTS "rls_live_stream_analytics_service" ON live_stream_analytics;
-CREATE POLICY "rls_live_stream_analytics_service" ON live_stream_analytics
   FOR ALL USING (auth.role() = 'service_role');
 
 -- ANALYTICS_SESSIONS (admin only — contient user tracking data)
-ALTER TABLE analytics_sessions ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "rls_analytics_sessions_admin" ON analytics_sessions;
-CREATE POLICY "rls_analytics_sessions_admin" ON analytics_sessions
   FOR SELECT TO authenticated
   USING (public.is_admin());
-DROP POLICY IF EXISTS "rls_analytics_sessions_insert" ON analytics_sessions;
-CREATE POLICY "rls_analytics_sessions_insert" ON analytics_sessions
   FOR INSERT WITH CHECK (true);  -- Allow tracking insert from anon
-DROP POLICY IF EXISTS "rls_analytics_sessions_service" ON analytics_sessions;
-CREATE POLICY "rls_analytics_sessions_service" ON analytics_sessions
   FOR ALL USING (auth.role() = 'service_role');
 
 -- PAGE_VISITS (admin only — contient user tracking data)
-ALTER TABLE page_visits ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "rls_page_visits_admin" ON page_visits;
-CREATE POLICY "rls_page_visits_admin" ON page_visits
   FOR SELECT TO authenticated
   USING (public.is_admin());
-DROP POLICY IF EXISTS "rls_page_visits_insert" ON page_visits;
-CREATE POLICY "rls_page_visits_insert" ON page_visits
   FOR INSERT WITH CHECK (true);  -- Allow tracking insert from anon
-DROP POLICY IF EXISTS "rls_page_visits_service" ON page_visits;
-CREATE POLICY "rls_page_visits_service" ON page_visits
   FOR ALL USING (auth.role() = 'service_role');
 
 -- EMAIL_LOGS (admin only — contient historique emails)
@@ -1078,31 +992,17 @@ CREATE POLICY "rls_newsletter_service" ON newsletter_subscriptions
   FOR ALL USING (auth.role() = 'service_role');
 
 -- COOKIE_CONSENT_LOGS (SENSIBLE: contient user tracking + consent data)
-ALTER TABLE cookie_consent_logs ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "rls_cookie_consent_insert" ON cookie_consent_logs;
-CREATE POLICY "rls_cookie_consent_insert" ON cookie_consent_logs
   FOR INSERT WITH CHECK (true);  -- Anyone can log consent
-DROP POLICY IF EXISTS "rls_cookie_consent_admin" ON cookie_consent_logs;
-CREATE POLICY "rls_cookie_consent_admin" ON cookie_consent_logs
   FOR SELECT TO authenticated
   USING (public.is_admin());
-DROP POLICY IF EXISTS "rls_cookie_consent_service" ON cookie_consent_logs;
-CREATE POLICY "rls_cookie_consent_service" ON cookie_consent_logs
   FOR ALL USING (auth.role() = 'service_role');
 
 -- USER_SESSIONS (SENSIBLE: contient session tracking)
-ALTER TABLE user_sessions ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "rls_user_sessions_own" ON user_sessions;
-CREATE POLICY "rls_user_sessions_own" ON user_sessions
   FOR ALL TO authenticated
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
-DROP POLICY IF EXISTS "rls_user_sessions_admin" ON user_sessions;
-CREATE POLICY "rls_user_sessions_admin" ON user_sessions
   FOR ALL TO authenticated
   USING (public.is_admin()) WITH CHECK (public.is_admin());
-DROP POLICY IF EXISTS "rls_user_sessions_service" ON user_sessions;
-CREATE POLICY "rls_user_sessions_service" ON user_sessions
   FOR ALL USING (auth.role() = 'service_role');
 
 -- GIFT_CARDS (re-enable — already has RLS + policies from previous migration)
