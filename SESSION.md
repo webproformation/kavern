@@ -2,6 +2,38 @@
 
 ---
 
+## Session 01/04/2026 (soir) — Audit QA automatise + corrections SEO/a11y
+
+### Audit automatise (97 tests E2E Playwright)
+
+| Module | Tests | Resultat |
+|--------|-------|----------|
+| Pages publiques | 16 | 16/16 PASS |
+| Auth | 5 | 5/5 PASS |
+| Catalogue | 10 | 10/10 PASS |
+| E-commerce | 4 | 4/4 PASS |
+| Compte utilisateur | 10 | 10/10 PASS |
+| Admin (13 pages) | 18 | 18/18 PASS |
+| Formulaires | 4 | 4/4 PASS |
+| SEO/a11y/responsive | 30 | 5 FAIL (meta, H1, canonical) |
+| Performance | 2 | 2/2 PASS |
+
+### Corrections appliquees
+
+SEO :
+- Meta descriptions uniques sur 10 pages principales
+- H1 sr-only sur accueil
+- Canonical URLs via layout racine (alternates)
+- metadataBase corrige (www.kavern-france.fr)
+- Title template '%s | KAVERN'
+
+Accessibilite :
+- aria-label newsletter footer
+
+### Score apres corrections : 67 → ~90/100 (estime)
+
+---
+
 ## Session 01/04/2026 — Bugs André (TVA, live, pages SEO, wishlist)
 
 ### Bugs fixes

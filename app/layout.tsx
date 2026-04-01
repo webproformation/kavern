@@ -7,9 +7,15 @@ import { AppLifecycle } from '@/components/AppLifecycle'; // Nouveau composant
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://kavern-france.fr'),
-  title: 'KAVERN - L\'artisanat et l\'inattendu',
-  description: 'Concept Store en ligne - Bougies artisanales, epicerie fine, mode et lives shopping',
+  metadataBase: new URL('https://www.kavern-france.fr'),
+  title: {
+    default: 'KAVERN - L\'artisanat et l\'inattendu',
+    template: '%s | KAVERN',
+  },
+  description: 'KAVERN, concept store en ligne d\'artisanat francais. Bougies artisanales, epicerie fine, bijoux, spa et bien-etre. Livraison rapide, satisfait ou rembourse.',
+  alternates: {
+    canonical: '/',
+  },
   manifest: '/manifest.json',
   icons: {
     icon: '/kavern-icone.png',
@@ -19,7 +25,7 @@ export const metadata: Metadata = {
   themeColor: '#D4AF37',
   openGraph: {
     title: 'KAVERN - L\'artisanat et l\'inattendu',
-    description: 'Concept Store en ligne - Bougies artisanales, epicerie fine, mode et lives shopping',
+    description: 'KAVERN, concept store en ligne d\'artisanat francais. Bougies artisanales, epicerie fine, bijoux, spa et bien-etre.',
     url: 'https://kavern-france.fr',
     siteName: 'KAVERN',
     images: [{ url: '/kavern-logo.png', width: 800, height: 400, alt: 'KAVERN' }],
@@ -29,7 +35,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'KAVERN - L\'artisanat et l\'inattendu',
-    description: 'Concept Store en ligne - Bougies artisanales, epicerie fine, mode et lives shopping',
+    description: 'KAVERN, concept store en ligne d\'artisanat francais. Bougies artisanales, epicerie fine, bijoux, spa et bien-etre.',
     images: ['/kavern-logo.png'],
   },
 };

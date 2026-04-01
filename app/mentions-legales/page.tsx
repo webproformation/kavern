@@ -1,4 +1,13 @@
+import type { Metadata } from 'next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+export const metadata: Metadata = {
+  title: 'Mentions Legales',
+  description: 'Mentions legales du site kavern-france.fr. Editeur, hebergement, propriete intellectuelle.',
+  alternates: {
+    canonical: '/mentions-legales',
+  },
+};
 
 export default function MentionsLegalesPage() {
   return (

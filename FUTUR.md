@@ -1,7 +1,7 @@
 # FUTUR — KAVERN E-commerce
 
 > Plan de verification et evolution du site KAVERN
-> Mis a jour le 26/03/2026
+> Mis a jour le 31/03/2026 — APRES AUDIT DIVINE (64 problemes identifies)
 
 ---
 
@@ -255,3 +255,60 @@
 | **Click & Collect** | Retrait en magasin | MOYENNE |
 | **Abonnements** | Box mensuelle (Stripe recurring) | GROS |
 | **Avis verifies** | Integration Trustpilot ou similaire | MOYENNE |
+
+---
+
+## AUDIT DIVINE — 31 mars 2026
+
+> Audit securite + bugs + DB complet. Detail dans `DIVINE-AUDIT-RESULTATS.md`
+> Plan d'action priorise dans `TACHES-RESTANTES.md`
+
+### Bilan session 31/03 — Ce qui a ete fait
+
+| Action | Status |
+|--------|--------|
+| Trigger handle_new_user fixe (blocked -> is_blocked) | FAIT SQL |
+| Profil Andre cree + 5EUR bienvenue | FAIT SQL |
+| Cashback 2% trigger (apply_order_cashback) | FAIT SQL |
+| Stock manage_stock active sur produits | FAIT SQL |
+| RLS profiles + loyalty pour users normaux | FAIT SQL |
+| Shop to Shop = Chronopost | FAIT SQL |
+| Stripe validation prix server-side | FAIT CODE |
+| Contact form anti-XSS | FAIT CODE |
+| CRON secret enforcement (4 routes) | FAIT CODE |
+| Middleware admin protection | FAIT CODE |
+| Upload MIME whitelist + crypto filename | FAIT CODE |
+| CartContext tva_rate reload | FAIT CODE |
+| Email facture contact@kavern-france.fr | FAIT CODE |
+| 24 tests E2E (securite + smoke) | FAIT CODE |
+| Tests: 22/23 PASS (1 crash produit confirme) | FAIT |
+
+### Ce qui reste (64 problemes, 4 phases)
+
+| Phase | Nb | Effort | Contenu |
+|-------|----|--------|---------|
+| Phase 1 CRITIQUES | 12 | ~2h | Supprimer debug relay, fix PayPal auth, crash produit, order_items product_id, RLS, race condition, TVA NaN |
+| Phase 2 HIGH | 18 | ~3h | Auth sur 10 routes, XML injection, ShareButtons, view categories, coupon FK, Promise render, Stripe/PayPal flow, games |
+| Phase 3 MEDIUM | 15 | ~2h | Rate limiting, error messages, bulk actions, cashback calcul, IDOR, type mismatches |
+| Phase 4 LOW | 11 | ~1h | Invoice variation, cart merge, cascade delete, tables orphelines |
+
+### Andre — En attente
+
+| Sujet | Status |
+|-------|--------|
+| Page profil ne charge pas | FIXE (trigger + profil cree) |
+| 5EUR bienvenue | FIXE (profil avec wallet_balance=5.00) |
+| Bonus quotidien | FIXE (RLS loyalty) |
+| Nouveau compte pas dans admin | FIXE (profil existe) |
+| Shop to Shop = Chronopost | FIXE (SQL) |
+| Stock ne decremente pas | FIXE (manage_stock=true) + RESTE order_items.product_id |
+| Cashback 2% | FIXE (trigger cree) + RESTE cashback sur total pas subtotal |
+| TVA multi-taux panier | FIXE (tva_rate dans CartContext) |
+| TVA facture | DEJA OK dans le vrai repo |
+| Virement = "en attente de virement" | DEJA OK dans le vrai repo |
+| Email facture mauvaise adresse | FIXE (contact@kavern-france.fr) |
+| Email o2switch ne marche plus | A VERIFIER (cpanel, espace disque) |
+| Live YouTube OBS | A INTEGRER (embed non repertorie) |
+| Avis impossible | A INVESTIGUER (RLS guestbook) |
+| Colis ouvert | PARTIELLEMENT OK (flow existe, nommage "mes colis ouverts") |
+| Produit test config lot | A VERIFIER (status draft?) |

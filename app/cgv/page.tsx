@@ -1,5 +1,14 @@
+import type { Metadata } from 'next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: 'Conditions Generales de Vente',
+  description: 'CGV KAVERN : conditions de vente, livraison, retours et remboursements de votre concept store artisanal en ligne.',
+  alternates: {
+    canonical: '/cgv',
+  },
+};
 
 export default function CGVPage() {
   return (

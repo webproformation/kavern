@@ -1,5 +1,14 @@
+import type { Metadata } from 'next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: 'Politique de Confidentialite',
+  description: 'Politique de confidentialite KAVERN. Protection de vos donnees personnelles conformement au RGPD.',
+  alternates: {
+    canonical: '/politique-confidentialite',
+  },
+};
 
 export default function PolitiqueConfidentialitePage() {
   return (

@@ -1,6 +1,6 @@
 # TACHES RESTANTES — KAVERN
 
-> Mise a jour le 01/04/2026
+> Mise a jour le 01/04/2026 (soir — apres audit QA automatise)
 
 ---
 
@@ -93,6 +93,37 @@
 - [x] Email facture: contact@kavern-france.fr
 - [x] 12-security.spec.ts: 10 tests securite
 - [x] 13-smoke-tests.spec.ts: 14 tests sante
+
+---
+
+## FIXE SESSION 01/04/2026 (soir) — AUDIT QA AUTOMATISE
+
+Audit automatise complet : 97 tests E2E Playwright sur kavern-france.fr
+Score avant corrections : 67/100 (perf 100, secu 100, SEO 33, a11y 2)
+
+### SEO (corrige)
+- [x] Meta descriptions uniques sur 10 pages (accueil, contact, qui-sommes-nous, actualites, livre-dor, live, carte-cadeau, CGV, mentions, confidentialite, retours)
+- [x] H1 sur la page d'accueil (sr-only pour garder le design slider)
+- [x] Canonical URLs automatiques sur toutes les pages (via layout racine)
+- [x] OG + Twitter cards enrichies (description plus complete)
+- [x] metadataBase corrige (www.kavern-france.fr au lieu de kavern-france.fr)
+- [x] Title template '%s | KAVERN' pour les pages enfants
+
+### Accessibilite (corrige)
+- [x] aria-label sur le champ newsletter du footer
+- [x] Labels login/register/contact : deja en place (confirme par audit)
+
+### Ce qui allait deja bien
+- Performance : 100/100
+- Securite : 100/100
+- Bonnes pratiques : 100/100
+- Toutes les 28 pages publiques en 200 OK
+- 13 pages admin OK
+- 9 pages compte utilisateur OK
+- Formulaire contact complet avec labels
+- Pas d'erreurs JavaScript
+- Pas d'images cassees
+- Responsive mobile OK
 
 ---
 

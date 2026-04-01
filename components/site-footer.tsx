@@ -271,6 +271,7 @@ export function SiteFooter() {
                     onChange={(e) => setEmail(e.target.value)}
                     className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
                     required
+                    aria-label="Adresse email pour la newsletter"
                   />
                   <Button
                     type="submit"

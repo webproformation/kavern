@@ -1,5 +1,14 @@
+import type { Metadata } from 'next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: 'Retours et Remboursements',
+  description: 'Politique de retours KAVERN : echange ou remboursement sous 14 jours. Satisfait ou rembourse.',
+  alternates: {
+    canonical: '/retours-remboursements',
+  },
+};
 
 export default function RetoursRemboursementsPage() {
   return (
