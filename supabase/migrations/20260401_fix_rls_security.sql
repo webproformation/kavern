@@ -368,7 +368,7 @@ END $block$;
 DO $block$ BEGIN
   ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
   DROP POLICY IF EXISTS "rls_profiles_own" ON profiles;
-  CREATE POLICY "rls_profiles_own" ON profiles FOR ALL TO authenticated USING (user_id = auth.uid() OR public.is_admin()) WITH CHECK (user_id = auth.uid() OR public.is_admin());
+  CREATE POLICY "rls_profiles_own" ON profiles FOR ALL TO authenticated USING (id = auth.uid() OR public.is_admin()) WITH CHECK (id = auth.uid() OR public.is_admin());
 EXCEPTION WHEN undefined_table THEN NULL;
 END $block$;
 
@@ -389,14 +389,14 @@ END $block$;
 DO $block$ BEGIN
   ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
   DROP POLICY IF EXISTS "rls_order_items_own" ON order_items;
-  CREATE POLICY "rls_order_items_own" ON order_items FOR ALL TO authenticated USING (user_id = auth.uid() OR public.is_admin()) WITH CHECK (user_id = auth.uid() OR public.is_admin());
+  CREATE POLICY "rls_order_items_own" ON order_items FOR SELECT USING (true);
 EXCEPTION WHEN undefined_table THEN NULL;
 END $block$;
 
 DO $block$ BEGIN
   ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
   DROP POLICY IF EXISTS "rls_invoices_own" ON invoices;
-  CREATE POLICY "rls_invoices_own" ON invoices FOR ALL TO authenticated USING (user_id = auth.uid() OR public.is_admin()) WITH CHECK (user_id = auth.uid() OR public.is_admin());
+  CREATE POLICY "rls_invoices_own" ON invoices FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 EXCEPTION WHEN undefined_table THEN NULL;
 END $block$;
 
@@ -522,14 +522,14 @@ END $block$;
 DO $block$ BEGIN
   ALTER TABLE gift_cards ENABLE ROW LEVEL SECURITY;
   DROP POLICY IF EXISTS "rls_gift_cards_own" ON gift_cards;
-  CREATE POLICY "rls_gift_cards_own" ON gift_cards FOR ALL TO authenticated USING (user_id = auth.uid() OR public.is_admin()) WITH CHECK (user_id = auth.uid() OR public.is_admin());
+  CREATE POLICY "rls_gift_cards_own" ON gift_cards FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 EXCEPTION WHEN undefined_table THEN NULL;
 END $block$;
 
 DO $block$ BEGIN
   ALTER TABLE gift_card_transactions ENABLE ROW LEVEL SECURITY;
   DROP POLICY IF EXISTS "rls_gift_card_transactions_own" ON gift_card_transactions;
-  CREATE POLICY "rls_gift_card_transactions_own" ON gift_card_transactions FOR ALL TO authenticated USING (user_id = auth.uid() OR public.is_admin()) WITH CHECK (user_id = auth.uid() OR public.is_admin());
+  CREATE POLICY "rls_gift_card_transactions_own" ON gift_card_transactions FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 EXCEPTION WHEN undefined_table THEN NULL;
 END $block$;
 
