@@ -1,14 +1,15 @@
 # TACHES RESTANTES — KAVERN
 
-> Mise a jour le 31/03/2026 — **TOUT EST FAIT.** 64 problemes DIVINE + 4 demandes Andre + cleanup final.
+> Mise a jour le 01/04/2026
 
 ---
 
-## CONFIG MANUELLE A FAIRE (Greg)
+## A FAIRE MAINTENANT (Greg)
 
+- [ ] Executer `20260401_fix_pages_seo_and_live_rls.sql` sur Supabase SQL Editor (debloque pages SEO + live + wishlist)
 - [ ] Ajouter `INTERNAL_API_SECRET` dans Vercel env vars : `1b52b1be6a4b851b23ed9a9963d2eed2cf60f48f68fb29abd6af63d5d8686079`
 - [ ] Ajouter `SENDCLOUD_WEBHOOK_SECRET` dans Vercel env vars (recuperer depuis dashboard Sendcloud)
-- [ ] Executer le SQL `20260331_final_cleanup.sql` sur Supabase (tva_rate + cascade + orphelins + live Andre)
+- [ ] Executer le SQL `20260331_final_cleanup.sql` sur Supabase (si pas encore fait)
 
 ---
 

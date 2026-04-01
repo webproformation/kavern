@@ -2,6 +2,36 @@
 
 ---
 
+## Session 01/04/2026 — Bugs André (TVA, live, pages SEO, wishlist)
+
+### Bugs fixes
+
+| Bug | Cause | Fix |
+|-----|-------|-----|
+| TVA 5.5% affiche 20% dans panier | cart/page.tsx hardcode /1.20 | Calcul multi-taux dynamique + tva_rate passe dans addToCart (product, ProductCard, wishlist) |
+| Live "Demarrer" erreur | status 'completed' vs DB CHECK 'ended' | Remplace 'completed' par 'ended' dans admin/lives/page.tsx |
+| Pages SEO "erreur creation" | Migration 20260331 DROP policy sans recréer | Migration SQL: is_admin() + policies pages_seo/live_streams/wishlist |
+| Wishlist erreur admin | Pas de policy admin sur wishlist | Policy admin ALL ajoutee |
+
+### Fichiers modifies
+
+- `app/admin/lives/page.tsx` — 'completed' → 'ended'
+- `app/admin/site-pages/new/page.tsx` — meilleur message d'erreur
+- `app/cart/page.tsx` — TVA multi-taux dynamique
+- `app/product/[slug]/page.tsx` — tva_rate passe a addToCart
+- `app/wishlist/page.tsx` — tva_rate passe a addToCart
+- `components/ProductCard.tsx` — tva_rate passe a addToCart
+- `supabase/migrations/20260401_fix_pages_seo_and_live_rls.sql` — RLS fix urgents
+
+### SQL a executer sur Supabase
+- `20260401_fix_pages_seo_and_live_rls.sql` — is_admin(), pages_seo, live_streams, wishlist
+
+### Note importante
+- Le dossier de travail reel est `C:\Users\conta\kavern` (pas SAUVEGARDES PROJETS)
+- Toujours faire git pull dans le bon dossier apres push
+
+---
+
 ## Session 26/03/2026 — Audit complet, corrections, securite, nettoyage
 
 ### Score final

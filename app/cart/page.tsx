@@ -52,6 +52,21 @@ export default function CartPage() {
 
   const finalTotal = Math.max(0, cartTotal - walletAmount);
 
+  // TVA multi-taux : même calcul que checkout (tva_rate stocké en %, ex: 20, 5.5)
+  const tvaByRate: Record<string, { ht: number; tva: number }> = {};
+  cart.forEach(item => {
+    const rate = (item as any).tva_rate ? parseFloat((item as any).tva_rate) / 100 : 0.20;
+    const ttc = parsePrice(item.variationPrice || item.price) * item.quantity;
+    const ht = ttc / (1 + rate);
+    const tva = ttc - ht;
+    const key = `${(rate * 100).toFixed(1)}`;
+    if (!tvaByRate[key]) tvaByRate[key] = { ht: 0, tva: 0 };
+    tvaByRate[key].ht += ht;
+    tvaByRate[key].tva += tva;
+  });
+  const totalTVA = Object.values(tvaByRate).reduce((sum, v) => sum + v.tva, 0);
+  const totalHT = cartTotal - totalTVA;
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-16">
@@ -263,12 +278,14 @@ export default function CartPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Sous-total HT</span>
-                      <span className="font-medium">{((Number(cartTotal) || 0) / 1.20).toFixed(2)} €</span>
+                      <span className="font-medium">{totalHT.toFixed(2)} €</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">TVA (20%)</span>
-                      <span className="font-medium">{((Number(cartTotal) || 0) - ((Number(cartTotal) || 0) / 1.20)).toFixed(2)} €</span>
-                    </div>
+                    {Object.entries(tvaByRate).map(([rate, vals]) => (
+                      <div key={rate} className="flex justify-between text-sm">
+                        <span className="text-gray-600">TVA ({rate}%)</span>
+                        <span className="font-medium">{vals.tva.toFixed(2)} €</span>
+                      </div>
+                    ))}
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Frais de port</span>
                       <span className="text-sm text-gray-500">Calculés à l'étape suivante</span>

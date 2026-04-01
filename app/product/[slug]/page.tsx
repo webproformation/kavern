@@ -288,6 +288,7 @@ export default function ProductPage() {
       packItems: packDetails, // Transmis au CartContext
       stock_quantity: effectiveStock,
       stockQuantity: effectiveStock,
+      tva_rate: product.tva_rate ?? 20,
     }, quantity);
     
     toast.success(`${displayTitle} ajouté au panier`);

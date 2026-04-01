@@ -107,9 +107,13 @@ export default function NewPageSEO() {
       toast.success("Page créée avec succès");
       router.push("/admin/site-pages");
       router.refresh();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating page:", error);
-      toast.error("Erreur lors de la création");
+      const msg = error?.message || error?.details || "Erreur lors de la création";
+      toast.error(msg.includes("policy") || msg.includes("permission")
+        ? "Erreur de permission — vérifiez que la migration RLS a été exécutée"
+        : `Erreur lors de la création : ${msg}`
+      );
     } finally {
       setIsSubmitting(false);
     }

@@ -39,7 +39,7 @@ interface OpenPackageInfo {
 export default function AdminLivesPage() {
   const [lives, setLives] = useState<LiveStream[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'scheduled' | 'live' | 'completed'>('all');
+  const [filter, setFilter] = useState<'all' | 'scheduled' | 'live' | 'ended'>('all');
   const [activePackage, setActivePackage] = useState<OpenPackageInfo | null>(null);
 
   useEffect(() => {
@@ -130,12 +130,12 @@ export default function AdminLivesPage() {
   }
 
   async function toggleLiveStatus(live: LiveStream) {
-    const newStatus = live.status === 'live' ? 'completed' : 'live';
+    const newStatus = live.status === 'live' ? 'ended' : 'live';
     const updates: any = { status: newStatus };
 
     if (newStatus === 'live') {
       updates.actual_start = new Date().toISOString();
-    } else if (newStatus === 'completed') {
+    } else if (newStatus === 'ended') {
       updates.actual_end = new Date().toISOString();
     }
 
@@ -149,7 +149,7 @@ export default function AdminLivesPage() {
 
       if (newStatus === 'live') {
         await createOpenPackageForLive();
-      } else if (newStatus === 'completed') {
+      } else if (newStatus === 'ended') {
         await closeActiveOpenPackages();
       }
 
@@ -214,7 +214,7 @@ export default function AdminLivesPage() {
     const variants: Record<string, { color: string; label: string }> = {
       scheduled: { color: 'bg-blue-100 text-blue-800', label: 'Programmé' },
       live: { color: 'bg-red-100 text-red-800 animate-pulse', label: '🔴 EN DIRECT' },
-      completed: { color: 'bg-gray-100 text-gray-800', label: 'Terminé' }
+      ended: { color: 'bg-gray-100 text-gray-800', label: 'Terminé' }
     };
 
     const variant = variants[status] || variants.scheduled;
@@ -320,8 +320,8 @@ export default function AdminLivesPage() {
           En direct
         </Button>
         <Button
-          variant={filter === 'completed' ? 'default' : 'outline'}
-          onClick={() => setFilter('completed')}
+          variant={filter === 'ended' ? 'default' : 'outline'}
+          onClick={() => setFilter('ended')}
         >
           Terminés
         </Button>

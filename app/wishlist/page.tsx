@@ -263,6 +263,7 @@ export default function WishlistPage() {
       price: String(product.sale_price || product.regular_price),
       image: product.image_url ? { sourceUrl: product.image_url } : undefined,
       stock_quantity: product.stock_quantity,
+      tva_rate: (product as any).tva_rate ?? 20,
     });
   };
 

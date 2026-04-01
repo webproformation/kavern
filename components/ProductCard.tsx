@@ -103,6 +103,7 @@ export function ProductCard({ product, showAddToCart = false }: ProductCardProps
       image: { sourceUrl: product.image_url || '' },
       stock_quantity: totalStock,
       stockQuantity: totalStock,
+      tva_rate: product.tva_rate ?? 20,
     }, 1);
   };
 
