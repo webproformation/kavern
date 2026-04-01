@@ -417,7 +417,7 @@ END $block$;
 DO $block$ BEGIN
   ALTER TABLE open_package_orders ENABLE ROW LEVEL SECURITY;
   DROP POLICY IF EXISTS "rls_open_package_orders_own" ON open_package_orders;
-  CREATE POLICY "rls_open_package_orders_own" ON open_package_orders FOR ALL TO authenticated USING (user_id = auth.uid() OR public.is_admin()) WITH CHECK (user_id = auth.uid() OR public.is_admin());
+  CREATE POLICY "rls_open_package_orders_own" ON open_package_orders FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 EXCEPTION WHEN undefined_table THEN NULL;
 END $block$;
 
@@ -431,7 +431,7 @@ END $block$;
 DO $block$ BEGIN
   ALTER TABLE shipments ENABLE ROW LEVEL SECURITY;
   DROP POLICY IF EXISTS "rls_shipments_own" ON shipments;
-  CREATE POLICY "rls_shipments_own" ON shipments FOR ALL TO authenticated USING (user_id = auth.uid() OR public.is_admin()) WITH CHECK (user_id = auth.uid() OR public.is_admin());
+  CREATE POLICY "rls_shipments_own" ON shipments FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 EXCEPTION WHEN undefined_table THEN NULL;
 END $block$;
 
@@ -445,14 +445,14 @@ END $block$;
 DO $block$ BEGIN
   ALTER TABLE referral_uses ENABLE ROW LEVEL SECURITY;
   DROP POLICY IF EXISTS "rls_referral_uses_own" ON referral_uses;
-  CREATE POLICY "rls_referral_uses_own" ON referral_uses FOR ALL TO authenticated USING (user_id = auth.uid() OR public.is_admin()) WITH CHECK (user_id = auth.uid() OR public.is_admin());
+  CREATE POLICY "rls_referral_uses_own" ON referral_uses FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 EXCEPTION WHEN undefined_table THEN NULL;
 END $block$;
 
 DO $block$ BEGIN
   ALTER TABLE referrals ENABLE ROW LEVEL SECURITY;
   DROP POLICY IF EXISTS "rls_referrals_own" ON referrals;
-  CREATE POLICY "rls_referrals_own" ON referrals FOR ALL TO authenticated USING (user_id = auth.uid() OR public.is_admin()) WITH CHECK (user_id = auth.uid() OR public.is_admin());
+  CREATE POLICY "rls_referrals_own" ON referrals FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 EXCEPTION WHEN undefined_table THEN NULL;
 END $block$;
 
@@ -473,21 +473,21 @@ END $block$;
 DO $block$ BEGIN
   ALTER TABLE guestbook_entries ENABLE ROW LEVEL SECURITY;
   DROP POLICY IF EXISTS "rls_guestbook_entries_own" ON guestbook_entries;
-  CREATE POLICY "rls_guestbook_entries_own" ON guestbook_entries FOR ALL TO authenticated USING (user_id = auth.uid() OR public.is_admin()) WITH CHECK (user_id = auth.uid() OR public.is_admin());
+  CREATE POLICY "rls_guestbook_entries_own" ON guestbook_entries FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 EXCEPTION WHEN undefined_table THEN NULL;
 END $block$;
 
 DO $block$ BEGIN
   ALTER TABLE guestbook_hearts ENABLE ROW LEVEL SECURITY;
   DROP POLICY IF EXISTS "rls_guestbook_hearts_own" ON guestbook_hearts;
-  CREATE POLICY "rls_guestbook_hearts_own" ON guestbook_hearts FOR ALL TO authenticated USING (user_id = auth.uid() OR public.is_admin()) WITH CHECK (user_id = auth.uid() OR public.is_admin());
+  CREATE POLICY "rls_guestbook_hearts_own" ON guestbook_hearts FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 EXCEPTION WHEN undefined_table THEN NULL;
 END $block$;
 
 DO $block$ BEGIN
   ALTER TABLE ambassador_weekly ENABLE ROW LEVEL SECURITY;
   DROP POLICY IF EXISTS "rls_ambassador_weekly_own" ON ambassador_weekly;
-  CREATE POLICY "rls_ambassador_weekly_own" ON ambassador_weekly FOR ALL TO authenticated USING (user_id = auth.uid() OR public.is_admin()) WITH CHECK (user_id = auth.uid() OR public.is_admin());
+  CREATE POLICY "rls_ambassador_weekly_own" ON ambassador_weekly FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 EXCEPTION WHEN undefined_table THEN NULL;
 END $block$;
 
