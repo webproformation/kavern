@@ -1,6 +1,6 @@
 # TACHES RESTANTES — KAVERN
 
-> Mise a jour le 01/04/2026 (soir — apres audit QA automatise)
+> Mise a jour le 02/04/2026 (session bugs André + QA Engine cohérence métier)
 
 ---
 
@@ -10,6 +10,21 @@
 - [x] Ajouter `INTERNAL_API_SECRET` dans Vercel env vars — FAIT (il y a 2j)
 - [x] Ajouter `SENDCLOUD_WEBHOOK_SECRET` dans Vercel env vars — FAIT (il y a 2j)
 - [ ] Executer le SQL `20260331_final_cleanup.sql` sur Supabase (si pas encore fait)
+- [ ] Vérifier config SMTP dans Vercel (SMTP_HOST, SMTP_USER, SMTP_PASS) — André a eu des problèmes o2switch
+- [ ] Confirmer avec André : Stripe et PayPal testés et fonctionnels ?
+
+## FIXE SESSION 02/04/2026 — BUGS ANDRÉ + FAVICON
+
+- [x] Pack/Lot: isOutOfStock ignorait is_pack → affichait "En rupture" pour les packs
+- [x] Pack/Lot: ProductCard sans check is_pack → ajoutait coffret vide au panier
+- [x] Pack/Lot: RefreshCw non importé → crash error boundary sur toute fiche produit pack
+- [x] Card Flip: titre "Grand jeu de Janvier !" hardcodé → remplacé par game.name / game.description
+- [x] Coupons -0.00€: useUserCoupons utilisait coupons(*) au lieu de coupon:coupons(*) → alias corrigé
+- [x] Roue: segment.color vide → fallback sur wheel_design.wheelColors ajouté
+- [x] Pages SEO: app/page.tsx ne fetchait pas pages_seo → fetch server-side ajouté (avec try/catch)
+- [x] SQL: order_items.product_id ajouté en prod Supabase (TEXT, FK products.id)
+- [x] Favicon: app/icon.svg affichait "M" (Morgane) → supprimé, public/favicon.ico (logo KAVERN) utilisé
+- [x] OG: url sans www. corrigé + dimensions 800x400 → 1200x630
 
 ---
 
