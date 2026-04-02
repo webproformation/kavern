@@ -105,6 +105,16 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Écouter l'événement logout pour forcer le reset immédiat de la wishlist
+  useEffect(() => {
+    const handleLogout = () => {
+      setWishlistItems([]);
+      localStorage.removeItem('wishlist');
+    };
+    window.addEventListener('kavern:logout', handleLogout);
+    return () => window.removeEventListener('kavern:logout', handleLogout);
+  }, []);
+
   return (
     <WishlistContext.Provider
       value={{

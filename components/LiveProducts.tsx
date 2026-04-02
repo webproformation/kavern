@@ -16,6 +16,8 @@ interface Product {
   image_url: string | null;
   regular_price: number | null;
   sale_price: number | null;
+  tva_rate: number | null;
+  stock_quantity: number | null;
 }
 
 interface SharedProduct {
@@ -85,7 +87,9 @@ export function LiveProducts({ liveStreamId }: LiveProductsProps) {
           slug,
           image_url,
           regular_price,
-          sale_price
+          sale_price,
+          tva_rate,
+          stock_quantity
         )
       `)
       .eq('live_stream_id', liveStreamId)
@@ -112,7 +116,15 @@ export function LiveProducts({ liveStreamId }: LiveProductsProps) {
 
   async function handleAddToCart(product: Product) {
     try {
-      await addToCart(product.id, 1);
+      addToCart({
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        price: getPrice(product).toString(),
+        image: { sourceUrl: product.image_url || '' },
+        tva_rate: product.tva_rate ?? 20,
+        stock_quantity: product.stock_quantity,
+      }, 1);
       toast.success(`${product.name} ajouté au panier !`);
     } catch (error) {
       console.error('Error adding to cart:', error);

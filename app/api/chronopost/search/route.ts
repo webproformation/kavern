@@ -9,9 +9,9 @@ export async function POST(request: NextRequest) {
     const postalCode = sanitize(body.postalCode || '');
     const city = sanitize(body.city || '');
 
-    if (!postalCode || !city) {
+    if (!postalCode) {
       return NextResponse.json(
-        { error: 'Code postal et ville requis' },
+        { error: 'Code postal requis' },
         { status: 400 }
       );
     }
@@ -24,12 +24,14 @@ export async function POST(request: NextRequest) {
     const chronopostPassword = process.env.CHRONOPOST_PASSWORD;
 
     if (!chronopostAccount || !chronopostPassword) {
-      console.warn('Chronopost credentials not configured');
+      console.error('[Chronopost] ERREUR: Variables CHRONOPOST_ACCOUNT_NUMBER et/ou CHRONOPOST_PASSWORD non configurées dans les variables d\'environnement Vercel');
       return NextResponse.json({
         points: [],
-        message: 'Configuration Chronopost manquante'
+        error: 'Configuration Chronopost manquante — vérifiez les variables d\'environnement'
       });
     }
+
+    console.log(`[Chronopost] Recherche relay: CP=${postalCode}, ville=${city || '(non renseignée)'}, compte=${chronopostAccount.substring(0, 4)}***`);
 
     const response = await fetch('https://ws.chronopost.fr/recherchebt-ws-cxf/PointRelaisServiceWS?wsdl', {
       method: 'POST',
@@ -57,11 +59,25 @@ export async function POST(request: NextRequest) {
     });
 
     if (!response.ok) {
-      throw new Error('Erreur API Chronopost');
+      console.error(`[Chronopost] API HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(`Erreur API Chronopost (HTTP ${response.status})`);
     }
 
     const xmlData = await response.text();
+
+    // Vérifier les codes d'erreur Chronopost dans la réponse SOAP
+    const errorCodeMatch = xmlData.match(/<errorCode>(\d+)<\/errorCode>/);
+    const errorMessageMatch = xmlData.match(/<errorMessage>(.*?)<\/errorMessage>/);
+    if (errorCodeMatch && errorCodeMatch[1] !== '0') {
+      console.error(`[Chronopost] Erreur API code=${errorCodeMatch[1]}, message=${errorMessageMatch?.[1] || 'inconnu'}`);
+      return NextResponse.json({
+        points: [],
+        error: `Erreur Chronopost: ${errorMessageMatch?.[1] || 'Code ' + errorCodeMatch[1]}`
+      });
+    }
+
     const points = parseChronopostResponse(xmlData);
+    console.log(`[Chronopost] ${points.length} points relais trouvés pour CP=${postalCode}`);
 
     return NextResponse.json({ points });
 

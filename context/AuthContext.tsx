@@ -17,7 +17,8 @@ export interface Profile {
   wallet_balance: number; 
   loyalty_euros: number; 
   is_admin: boolean;
-  blocked: boolean;
+  is_blocked: boolean;
+  blocked: boolean; // alias pour compatibilité
 }
 
 interface AuthContextType {
@@ -88,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(data);
         useAuthStore.getState().setProfile(data);
 
-        if (data.blocked) {
+        if (data.is_blocked || data.blocked) {
           await signOut();
           return;
         }
@@ -116,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               current_tier: 1,
               tier_multiplier: 1,
               is_admin: false,
-              blocked: false,
+              is_blocked: false,
               cancelled_orders_count: 0,
             }, { onConflict: 'id' })
             .select()
@@ -209,6 +210,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(null);
     useAuthStore.getState().signOut();
     dailyLoginCheckedRef.current = false;
+    // Émettre un événement custom pour forcer le reset des contextes Cart et Wishlist
+    // (évite la race condition où le debounce re-sauvegarde l'ancien panier)
+    window.dispatchEvent(new Event('kavern:logout'));
   };
 
   const updateProfile = async (data: Partial<Profile>) => {

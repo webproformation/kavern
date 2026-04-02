@@ -378,7 +378,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const clearCart = async () => {
+  const clearCart = async (silent = false) => {
     setCart([]);
     localStorage.removeItem('cart');
 
@@ -389,10 +389,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
         .eq('user_id', user.id);
     }
 
-    toast.success('Panier vidé', {
-      position: 'bottom-right',
-    });
+    if (!silent) {
+      toast.success('Panier vidé', {
+        position: 'bottom-right',
+      });
+    }
   };
+
+  // Écouter l'événement logout pour forcer le reset immédiat du panier
+  useEffect(() => {
+    const handleLogout = () => {
+      setCart([]);
+      localStorage.removeItem('cart');
+    };
+    window.addEventListener('kavern:logout', handleLogout);
+    return () => window.removeEventListener('kavern:logout', handleLogout);
+  }, []);
 
   const cartTotal = cart.reduce((total, item) => {
     const price = parsePrice(item.variationPrice || item.price);
