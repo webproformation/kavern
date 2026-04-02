@@ -27,7 +27,8 @@ import {
   Mail,
   Bell,
   Box,
-  CheckCircle2
+  CheckCircle2,
+  RefreshCw
 } from "lucide-react";
 import { ProductGallery } from "@/components/ProductGallery";
 import { ProductVariationSelector } from "@/components/ProductVariationSelector";
