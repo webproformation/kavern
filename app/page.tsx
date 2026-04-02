@@ -19,12 +19,18 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const supabase = createClient();
-  const { data: seoPage } = await supabase
-    .from('pages_seo')
-    .select('content')
-    .eq('slug', 'accueil')
-    .maybeSingle();
+  let seoPage: { content: string } | null = null;
+  try {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from('pages_seo')
+      .select('content')
+      .eq('slug', 'accueil')
+      .maybeSingle();
+    seoPage = data;
+  } catch {
+    // Pas critique — la homepage s'affiche sans le contenu SEO si Supabase échoue
+  }
 
   return (
     <div className="min-h-screen bg-white">
