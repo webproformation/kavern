@@ -111,7 +111,7 @@ export default function MediaLibrary({
     try {
       // 1. Charger depuis la vue unified_media (filtrer les fichiers vides)
       const { data: dbMedia, error: dbError } = await supabase
-        .from('unified_media')
+        .from('media')
         .select('*')
         .eq('bucket_name', bucket)
         .gt('file_size', 0)

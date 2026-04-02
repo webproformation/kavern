@@ -128,7 +128,7 @@ export default function ReturnsManagementPage() {
 
   async function creditWallet(returnRequest: ReturnRequest) {
     const { error: walletError } = await supabase
-      .from('customer_wallet')
+      .from('store_credits')
       .upsert({
         user_id: returnRequest.user_id,
         balance: returnRequest.total_refund_amount

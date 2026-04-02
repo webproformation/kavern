@@ -100,7 +100,7 @@ export function useCustomerWallet() {
     try {
       setLoading(true)
       const { data, error } = await supabase
-        .from('customer_wallet')
+        .from('store_credits')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle()
@@ -109,7 +109,7 @@ export function useCustomerWallet() {
       
       if (!data) {
         const { data: newWallet, error: insertError } = await supabase
-          .from('customer_wallet')
+          .from('store_credits')
           .insert({ user_id: user.id })
           .select()
           .single()
