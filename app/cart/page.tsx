@@ -55,7 +55,7 @@ export default function CartPage() {
   // TVA multi-taux : même calcul que checkout (tva_rate stocké en %, ex: 20, 5.5)
   const tvaByRate: Record<string, { ht: number; tva: number }> = {};
   cart.forEach(item => {
-    const rate = (item as any).tva_rate ? parseFloat((item as any).tva_rate) / 100 : 0.20;
+    const rate = item.tva_rate ? parseFloat(String(item.tva_rate)) / 100 : 0.20;
     const ttc = parsePrice(item.variationPrice || item.price) * item.quantity;
     const ht = ttc / (1 + rate);
     const tva = ttc - ht;

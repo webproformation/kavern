@@ -25,6 +25,8 @@ interface CartItem {
   cartItemId?: string;
   // Stock max disponible pour bloquer le dépassement
   stockQuantity?: number;
+  // Taux de TVA du produit (5.5, 10, 20)
+  tva_rate?: number;
 }
 
 interface CartContextType {

@@ -199,17 +199,29 @@ function WishlistProductCard({
 
       {isInStock && (
         <div className="p-4 pt-0">
-          <Button
-            onClick={(e) => {
-              e.preventDefault();
-              onAddToCart(product);
-            }}
-            className="w-full bg-[#C6A15B] hover:bg-[#b8933d] text-white font-semibold rounded-xl"
-            size="sm"
-          >
-            <ShoppingCart className="h-4 w-4 mr-2" />
-            Ajouter au panier
-          </Button>
+          {product.has_variations || product.is_variable_product ? (
+            <Link href={`/product/${product.slug}`}>
+              <Button
+                className="w-full bg-[#C6A15B] hover:bg-[#b8933d] text-white font-semibold rounded-xl"
+                size="sm"
+              >
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Choisir ma pépite
+              </Button>
+            </Link>
+          ) : (
+            <Button
+              onClick={(e) => {
+                e.preventDefault();
+                onAddToCart(product);
+              }}
+              className="w-full bg-[#C6A15B] hover:bg-[#b8933d] text-white font-semibold rounded-xl"
+              size="sm"
+            >
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              Ajouter au panier
+            </Button>
+          )}
         </div>
       )}
     </Card>
