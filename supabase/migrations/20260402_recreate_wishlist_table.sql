@@ -38,5 +38,9 @@ CREATE POLICY "Users can remove from their wishlist"
   ON wishlist FOR DELETE
   USING (auth.uid() = user_id);
 
--- 4. Notify PostgREST to reload schema cache
+-- 4. GRANT permissions aux rôles Supabase (obligatoire en plus du RLS)
+GRANT SELECT, INSERT, DELETE ON wishlist TO authenticated;
+GRANT SELECT ON wishlist TO anon;
+
+-- 5. Notify PostgREST to reload schema cache
 NOTIFY pgrst, 'reload schema';
