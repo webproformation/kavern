@@ -3,133 +3,120 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-
-    // Sanitize XML: strip dangerous characters
-    const sanitize = (s: string) => String(s).replace(/[<>&"']/g, '').trim();
-    const postalCode = sanitize(body.postalCode || '');
-    const city = sanitize(body.city || '');
+    const postalCode = String(body.postalCode || '').trim();
+    const city = String(body.city || '').trim();
+    const carrier = String(body.carrier || 'chronopost').toLowerCase();
 
     if (!postalCode) {
-      return NextResponse.json(
-        { error: 'Code postal requis' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Code postal requis' }, { status: 400 });
     }
 
     if (!/^\d{5}$/.test(postalCode)) {
       return NextResponse.json({ error: 'Code postal invalide' }, { status: 400 });
     }
 
-    const chronopostAccount = process.env.CHRONOPOST_ACCOUNT_NUMBER;
-    const chronopostPassword = process.env.CHRONOPOST_PASSWORD;
+    const publicKey = process.env.SENDCLOUD_PUBLIC_KEY;
+    const secretKey = process.env.SENDCLOUD_SECRET_KEY;
 
-    if (!chronopostAccount || !chronopostPassword) {
-      console.error('[Chronopost] ERREUR: Variables CHRONOPOST_ACCOUNT_NUMBER et/ou CHRONOPOST_PASSWORD non configurées dans les variables d\'environnement Vercel');
+    if (!publicKey || !secretKey) {
+      console.error('[Sendcloud] ERREUR: SENDCLOUD_PUBLIC_KEY et/ou SENDCLOUD_SECRET_KEY non configurées');
       return NextResponse.json({
         points: [],
-        error: 'Configuration Chronopost manquante — vérifiez les variables d\'environnement'
+        error: 'Configuration Sendcloud manquante'
       });
     }
 
-    console.log(`[Chronopost] Recherche relay: CP=${postalCode}, ville=${city || '(non renseignée)'}, compte=${chronopostAccount.substring(0, 4)}***`);
+    // API Sendcloud Service Points
+    const params = new URLSearchParams({
+      country: 'FR',
+      postal_code: postalCode,
+      carrier: carrier,
+      radius: '10000', // 10km en mètres
+    });
 
-    const response = await fetch('https://ws.chronopost.fr/recherchebt-ws-cxf/PointRelaisServiceWS?wsdl', {
-      method: 'POST',
+    if (city) {
+      params.set('city', city);
+    }
+
+    const url = `https://servicepoints.sendcloud.sc/api/v2/service-points/?${params.toString()}`;
+    console.log(`[Sendcloud] Recherche relay: ${url}`);
+
+    const auth = Buffer.from(`${publicKey}:${secretKey}`).toString('base64');
+
+    const response = await fetch(url, {
       headers: {
-        'Content-Type': 'text/xml; charset=utf-8',
-        'SOAPAction': 'http://cxf.recherchepointrelais.webservice.chronopost.fr/recherchePointRelais'
+        'Authorization': `Basic ${auth}`,
+        'Accept': 'application/json',
       },
-      body: `<?xml version="1.0" encoding="UTF-8"?>
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
-                  xmlns:cxf="http://cxf.recherchepointrelais.webservice.chronopost.fr/">
-  <soapenv:Header/>
-  <soapenv:Body>
-    <cxf:recherchePointRelais>
-      <accountNumber>${chronopostAccount}</accountNumber>
-      <password>${chronopostPassword}</password>
-      <zipCode>${postalCode}</zipCode>
-      <city>${city}</city>
-      <countryCode>FR</countryCode>
-      <type>P</type>
-      <maxPointChronopost>10</maxPointChronopost>
-      <maxDistanceSearch>50</maxDistanceSearch>
-    </cxf:recherchePointRelais>
-  </soapenv:Body>
-</soapenv:Envelope>`
     });
 
     if (!response.ok) {
-      console.error(`[Chronopost] API HTTP ${response.status}: ${response.statusText}`);
-      throw new Error(`Erreur API Chronopost (HTTP ${response.status})`);
-    }
-
-    const xmlData = await response.text();
-
-    // Vérifier les codes d'erreur Chronopost dans la réponse SOAP
-    const errorCodeMatch = xmlData.match(/<errorCode>(\d+)<\/errorCode>/);
-    const errorMessageMatch = xmlData.match(/<errorMessage>(.*?)<\/errorMessage>/);
-    if (errorCodeMatch && errorCodeMatch[1] !== '0') {
-      console.error(`[Chronopost] Erreur API code=${errorCodeMatch[1]}, message=${errorMessageMatch?.[1] || 'inconnu'}`);
+      const errorText = await response.text();
+      console.error(`[Sendcloud] API HTTP ${response.status}: ${errorText.substring(0, 200)}`);
       return NextResponse.json({
         points: [],
-        error: `Erreur Chronopost: ${errorMessageMatch?.[1] || 'Code ' + errorCodeMatch[1]}`
+        error: `Erreur Sendcloud (HTTP ${response.status})`
       });
     }
 
-    const points = parseChronopostResponse(xmlData);
-    console.log(`[Chronopost] ${points.length} points relais trouvés pour CP=${postalCode}`);
+    const data = await response.json();
+    const servicePoints = data || [];
 
+    // Mapper au format attendu par le RelayPointSelector
+    const points = servicePoints.map((sp: any) => ({
+      id: String(sp.id),
+      name: sp.name || '',
+      address: sp.street || '',
+      city: sp.city || '',
+      postalCode: sp.postal_code || '',
+      country: sp.country || 'FR',
+      lat: sp.latitude,
+      lng: sp.longitude,
+      latitude: sp.latitude,
+      longitude: sp.longitude,
+      distance: sp.distance ?? null,
+      openingHours: formatOpeningHours(sp.open_tomorrow, sp.formatted_opening_times),
+      carrier: sp.carrier || carrier,
+      phone: sp.phone || '',
+      email: sp.email || '',
+    }));
+
+    console.log(`[Sendcloud] ${points.length} points relais trouvés pour CP=${postalCode}`);
     return NextResponse.json({ points });
 
   } catch (error: any) {
-    console.error('Chronopost search error:', error);
+    console.error('[Sendcloud] Search error:', error.message || error);
     return NextResponse.json(
-      { error: 'Erreur lors de la recherche Chronopost', points: [] },
+      { error: 'Erreur lors de la recherche de points relais', points: [] },
       { status: 500 }
     );
   }
 }
 
-function parseChronopostResponse(xml: string): any[] {
-  const points: any[] = [];
+function formatOpeningHours(
+  openTomorrow: any,
+  formattedTimes: any
+): Record<string, string> {
+  const days: Record<string, string> = {
+    monday: '', tuesday: '', wednesday: '', thursday: '',
+    friday: '', saturday: '', sunday: '',
+  };
 
-  // Extraire chaque bloc <listePointRelais>
-  const blockRegex = /<listePointRelais>([\s\S]*?)<\/listePointRelais>/g;
-  let match;
-
-  while ((match = blockRegex.exec(xml)) !== null) {
-    const block = match[1];
-    const get = (tag: string) => {
-      const m = block.match(new RegExp(`<${tag}>(.*?)</${tag}>`));
-      return m ? m[1].trim() : '';
+  if (formattedTimes && typeof formattedTimes === 'object') {
+    const dayMap: Record<number, string> = {
+      0: 'monday', 1: 'tuesday', 2: 'wednesday', 3: 'thursday',
+      4: 'friday', 5: 'saturday', 6: 'sunday',
     };
 
-    const lat = parseFloat(get('coordGeolocalisationLatitude'));
-    const lng = parseFloat(get('coordGeolocalisationLongitude'));
-
-    if (isNaN(lat) || isNaN(lng)) continue;
-
-    points.push({
-      id: get('identifiantChronopostPointA2PAS'),
-      name: get('nomEnseigne'),
-      address: get('adresse1'),
-      city: get('localite'),
-      postalCode: get('codePostal'),
-      country: 'FR',
-      lat,
-      lng,
-      distance: get('distanceEnMetre') ? parseInt(get('distanceEnMetre')) : null,
-      openingHours: {
-        monday: `${get('horairesOuvertureLundi')} - ${get('horairesFermetureLundi')}`,
-        tuesday: `${get('horairesOuvertureMardi')} - ${get('horairesFermetureMardi')}`,
-        wednesday: `${get('horairesOuvertureMercredi')} - ${get('horairesFermetureMercredi')}`,
-        thursday: `${get('horairesOuvertureJeudi')} - ${get('horairesFermetureJeudi')}`,
-        friday: `${get('horairesOuvertureVendredi')} - ${get('horairesFermetureVendredi')}`,
-        saturday: `${get('horairesOuvertureSamedi')} - ${get('horairesFermetureSamedi')}`,
-        sunday: `${get('horairesOuvertureDimanche')} - ${get('horairesFermetureDimanche')}`,
-      },
-    });
+    for (const [idx, dayName] of Object.entries(dayMap)) {
+      const dayData = formattedTimes[idx];
+      if (dayData && Array.isArray(dayData)) {
+        days[dayName] = dayData.map((slot: string) => slot).join(', ');
+      } else if (typeof dayData === 'string') {
+        days[dayName] = dayData;
+      }
+    }
   }
 
-  return points;
+  return days;
 }
