@@ -9,9 +9,9 @@
 - [x] Executer `20260401_fix_pages_seo_and_live_rls.sql` sur Supabase SQL Editor — FAIT 02/04/2026
 - [x] Ajouter `INTERNAL_API_SECRET` dans Vercel env vars — FAIT (il y a 2j)
 - [x] Ajouter `SENDCLOUD_WEBHOOK_SECRET` dans Vercel env vars — FAIT (il y a 2j)
-- [ ] Executer le SQL `20260331_final_cleanup.sql` sur Supabase (si pas encore fait)
-- [ ] Vérifier config SMTP dans Vercel (SMTP_HOST, SMTP_USER, SMTP_PASS) — André a eu des problèmes o2switch
-- [ ] Confirmer avec André : Stripe et PayPal testés et fonctionnels ?
+- [x] Executer le SQL `20260331_final_cleanup.sql` sur Supabase — FAIT 02/04/2026
+- [x] SMTP o2switch — résolu par André
+- [x] Stripe et PayPal — testés et fonctionnels (confirmé André)
 
 ## FIXE SESSION 02/04/2026 — BUGS ANDRÉ + FAVICON
 
