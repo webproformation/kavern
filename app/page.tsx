@@ -8,6 +8,7 @@ import KeyFigures from '@/components/sections/KeyFigures';
 import { HomeReviewsCarousel } from '@/components/HomeReviewsCarousel';
 import { GamePopupManager } from '@/components/GamePopupManager';
 import { LiveBanner } from '@/components/LiveBanner';
+import { createClient } from '@/lib/supabase/server';
 
 export const revalidate = 0;
 
@@ -17,7 +18,14 @@ export const metadata: Metadata = {
   alternates: { canonical: '/' },
 };
 
-export default function Home() {
+export default async function Home() {
+  const supabase = createClient();
+  const { data: seoPage } = await supabase
+    .from('pages_seo')
+    .select('content')
+    .eq('slug', 'accueil')
+    .maybeSingle();
+
   return (
     <div className="min-h-screen bg-white">
       <LiveBanner />
@@ -40,6 +48,16 @@ export default function Home() {
 
         {/* Affichage des statistiques animées */}
         <KeyFigures />
+
+        {/* Contenu éditorial WYSIWYG depuis l'admin (pages_seo slug=accueil) */}
+        {seoPage?.content && (
+          <section className="max-w-4xl mx-auto px-4 py-10">
+            <div
+              className="prose prose-gray max-w-none"
+              dangerouslySetInnerHTML={{ __html: seoPage.content }}
+            />
+          </section>
+        )}
       </main>
     </div>
   );

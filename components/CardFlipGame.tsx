@@ -272,10 +272,10 @@ export function CardFlipGame({ gameId, onClose }: CardFlipGameProps) {
         {/* En-tête : Textes Dorés imposés */}
         <div className="text-center pt-10 pb-4 px-4 relative z-10">
           <h2 className="text-3xl md:text-4xl font-bold text-[#D4AF37] uppercase tracking-wider mb-2 drop-shadow-md">
-            Grand jeu de Janvier !
+            {game.name}
           </h2>
           <p className="text-[#D4AF37]/90 text-lg font-medium">
-            Cliquez sur la carte de votre choix et tentez de gagner <span className="text-white font-bold">90% de réduction</span> !!!
+            {game.description}
           </p>
         </div>
 

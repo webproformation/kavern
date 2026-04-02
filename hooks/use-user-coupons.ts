@@ -16,7 +16,7 @@ export function useUserCoupons(userId: string | undefined) {
       // On ne charge que les coupons NON utilisés pour le checkout
       const { data, error } = await supabase
         .from('user_coupons')
-        .select('*, coupons(*)')
+        .select('*, coupon:coupons(*)')
         .eq('user_id', userId)
         .eq('is_used', false)
         .order('obtained_at', { ascending: false });

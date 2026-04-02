@@ -243,6 +243,7 @@ export default function ProductPage() {
 
   const isOutOfStock = useMemo(() => {
     if (!product) return false;
+    if (product.is_pack) return false; // Les packs ne sont jamais "en rupture" — le stock est géré par les articles composants
     if (product.has_variations || product.type === 'variable') {
       if (selectedVariation) return (selectedVariation.stock_quantity ?? 0) <= 0;
       return !product.product_variations?.some((v: any) => (v.stock_quantity ?? 0) > 0);

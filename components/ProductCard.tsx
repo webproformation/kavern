@@ -24,6 +24,7 @@ interface ProductCardProps {
     stock_quantity?: number | null;
     is_featured?: boolean;
     is_diamond?: boolean;
+    is_pack?: boolean;
     attributes?: any;
     product_variations?: Array<{ stock_quantity?: number | null }>;
   };
@@ -89,8 +90,8 @@ export function ProductCard({ product, showAddToCart = false }: ProductCardProps
     e.preventDefault();
     e.stopPropagation();
 
-    // Rediriger si produit à variantes (flag OU variantes réelles)
-    if (product.is_variable_product || (product.product_variations && product.product_variations.length > 0)) {
+    // Rediriger si pack ou produit à variantes (flag OU variantes réelles)
+    if (product.is_pack || product.is_variable_product || (product.product_variations && product.product_variations.length > 0)) {
       window.location.href = `/product/${product.slug}`;
       return;
     }
@@ -243,10 +244,10 @@ export function ProductCard({ product, showAddToCart = false }: ProductCardProps
         {showAddToCart && (
           <Button
             onClick={handleAddToCart}
-            disabled={!isInStock && !product.is_variable_product && !(product.product_variations && product.product_variations.length > 0)}
+            disabled={!isInStock && !product.is_pack && !product.is_variable_product && !(product.product_variations && product.product_variations.length > 0)}
             className="w-full bg-[#b8933d] hover:bg-[#D4AF37] text-white font-bold rounded-lg transition-all text-[11px] h-8 mt-auto"
           >
-            {(product.is_variable_product || product.has_variations || (product.product_variations && product.product_variations.length > 0)) ? (
+            {(product.is_pack || product.is_variable_product || product.has_variations || (product.product_variations && product.product_variations.length > 0)) ? (
               "Choisir ma pépite"
             ) : (
               <><ShoppingCart className="h-3 w-3 mr-1.5" />{CUSTOM_TEXTS.buttons.addToCart}</>

@@ -263,6 +263,8 @@ export function WheelGame({ game, onClose, onWin }: WheelGameProps) {
                 {game.segments.map((segment, index) => {
                   const angle = segmentAngle;
                   const rotation = index * angle;
+                  const fallbackColors = game.wheel_design?.wheelColors;
+                  const segmentColor = segment.color || (fallbackColors && fallbackColors.length > 0 ? fallbackColors[index % fallbackColors.length] : '#b8933d');
 
                   return (
                     <div
@@ -276,7 +278,7 @@ export function WheelGame({ game, onClose, onWin }: WheelGameProps) {
                       <div
                         className="absolute inset-0"
                         style={{
-                          background: `conic-gradient(from ${rotation}deg, ${segment.color} 0deg, ${segment.color} ${angle}deg, transparent ${angle}deg)`,
+                          background: `conic-gradient(from ${rotation}deg, ${segmentColor} 0deg, ${segmentColor} ${angle}deg, transparent ${angle}deg)`,
                         }}
                       />
                       <div
