@@ -26,9 +26,9 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'KAVERN - L\'artisanat et l\'inattendu',
     description: 'KAVERN, concept store en ligne d\'artisanat francais. Bougies artisanales, epicerie fine, bijoux, spa et bien-etre.',
-    url: 'https://kavern-france.fr',
+    url: 'https://www.kavern-france.fr',
     siteName: 'KAVERN',
-    images: [{ url: '/kavern-logo.png', width: 800, height: 400, alt: 'KAVERN' }],
+    images: [{ url: '/kavern-logo.png', width: 1200, height: 630, alt: 'KAVERN - L\'artisanat et l\'inattendu' }],
     locale: 'fr_FR',
     type: 'website',
   },
