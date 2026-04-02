@@ -18,7 +18,7 @@ async function getLoyaltyStats() {
 
   const [profilesResult, transactionsResult] = await Promise.all([
     supabase.from("profiles").select("*"),
-    supabase.from("loyalty_transactions").select("*").order("created_at", { ascending: false }).limit(20),
+    supabase.from("loyalty_euro_transactions").select("*").order("created_at", { ascending: false }).limit(20),
   ]);
 
   const profiles = profilesResult.data || [];

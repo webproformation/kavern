@@ -45,7 +45,7 @@ export function useGuestbook(limit = 20, status: 'approved' | 'all' = 'approved'
     try {
       setLoading(true)
       let query = supabase
-        .from('guestbook_entries')
+        .from('livre-dor')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(limit)
@@ -116,7 +116,7 @@ export function useHearts(entryId: string) {
 
   async function fetchHeartsCount() {
     const { data } = await supabase
-      .from('guestbook_entries')
+      .from('livre-dor')
       .select('hearts_count')
       .eq('id', entryId)
       .maybeSingle()
@@ -174,7 +174,7 @@ export function useAmbassador() {
       setLoading(true)
       const { data, error } = await supabase
         .from('ambassador_weekly')
-        .select('*, entry:guestbook_entries(*)')
+        .select('*, entry:livre-dor(*)')
         .order('week_start', { ascending: false })
         .limit(1)
         .maybeSingle()
@@ -202,7 +202,7 @@ export async function submitGuestbookEntry(data: {
   if (!user) throw new Error('User not authenticated')
 
   const { data: entry, error } = await supabase
-    .from('guestbook_entries')
+    .from('livre-dor')
     .insert({
       ...data,
       status: 'pending'
@@ -233,7 +233,7 @@ export async function submitGuestbookEntry(data: {
 
 export async function canUserReview(userId: string, orderNumber: string) {
   const { data: existingReview } = await supabase
-    .from('guestbook_entries')
+    .from('livre-dor')
     .select('id')
     .eq('user_id', userId)
     .eq('order_number', orderNumber)

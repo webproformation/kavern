@@ -19,7 +19,7 @@ export default function AdminGuestbookPage() {
   const handleApprove = async (id: string) => {
     // 1. Approuver l'avis
     const { error } = await supabase
-      .from('guestbook_entries')
+      .from('livre-dor')
       .update({ status: 'approved' })
       .eq('id', id)
 
@@ -85,7 +85,7 @@ export default function AdminGuestbookPage() {
 
   const handleReject = async (id: string) => {
     const { error } = await supabase
-      .from('guestbook_entries')
+      .from('livre-dor')
       .update({ status: 'rejected' })
       .eq('id', id)
 
@@ -107,7 +107,7 @@ export default function AdminGuestbookPage() {
     }
 
     const { error } = await supabase
-      .from('guestbook_entries')
+      .from('livre-dor')
       .update({ admin_response: response })
       .eq('id', id)
 
@@ -153,7 +153,7 @@ export default function AdminGuestbookPage() {
     }
 
     const { error: updateError } = await supabase
-      .from('guestbook_entries')
+      .from('livre-dor')
       .update({
         is_ambassador: true,
         ambassador_week: nextMonday.toISOString().split('T')[0]

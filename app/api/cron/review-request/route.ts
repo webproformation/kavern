@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
       // Vérifier si la cliente a déjà posté un avis pour cette commande
       const { data: existingReview } = await supabase
-        .from('reviews')
+        .from('customer_reviews')
         .select('id')
         .eq('user_id', order.user_id)
         .eq('order_id', order.id)

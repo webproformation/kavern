@@ -23,7 +23,7 @@ async function verifyDatabase() {
 
   console.log('📦 CATÉGORIES PRODUITS\n');
   const { data: categories, error: catError } = await supabase
-    .from('product_categories')
+    .from('product_category_mapping')
     .select('id, name, slug, parent_id')
     .order('name');
 

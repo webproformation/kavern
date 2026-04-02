@@ -610,7 +610,7 @@ export default function BackupPage() {
       setExportStep('Chargement des actualités...');
       setExportProgress(70);
       const { data: news } = await supabase
-        .from('news')
+        .from('news_posts')
         .select('id, slug, title, updated_at')
         .eq('is_published', true)
         .order('updated_at', { ascending: false });
