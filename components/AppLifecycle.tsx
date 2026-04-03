@@ -2,34 +2,36 @@
 
 import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { isAbortError } from '@/lib/supabase-error';
 
 export function AppLifecycle() {
   useEffect(() => {
+    // Filtre global : silencier les AbortError dans toute la console
+    const originalConsoleError = console.error;
+    console.error = (...args: any[]) => {
+      const msg = args.map(a => String(a)).join(' ');
+      if (msg.includes('AbortError') || msg.includes('signal is aborted')) return;
+      originalConsoleError(...args);
+    };
+
     const handleVisibilityChange = async () => {
       if (document.visibilityState !== 'visible') return;
-
       try {
-        // Tenter de rafraîchir la session silencieusement
         const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          // Session valide, rien à faire
-          return;
-        }
-
-        // Pas de session, tenter un refresh
+        if (session) return;
         const { error } = await supabase.auth.refreshSession();
-        if (error) {
+        if (error && !isAbortError(error)) {
           console.error('[AppLifecycle] Session expirée, refresh impossible');
         }
       } catch (e) {
-        console.error('[AppLifecycle] Erreur refresh session:', e);
+        if (!isAbortError(e)) console.error('[AppLifecycle] Erreur refresh session:', e);
       }
     };
 
     window.addEventListener('visibilitychange', handleVisibilityChange);
-
     return () => {
       window.removeEventListener('visibilitychange', handleVisibilityChange);
+      console.error = originalConsoleError;
     };
   }, []);
 
