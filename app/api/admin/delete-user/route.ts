@@ -35,7 +35,7 @@ export async function DELETE(request: NextRequest) {
     // wallet_transactions n'a pas de user_id direct — skip (pas de FK vers profiles)
     await supabaseAdmin.from('user_coupons').delete().eq('user_id', userId);
     await supabaseAdmin.from('cart_items').delete().eq('user_id', userId);
-    await supabaseAdmin.from('wishlist_items').delete().eq('user_id', userId);
+    await supabaseAdmin.from('wishlist').delete().eq('user_id', userId);
     await supabaseAdmin.from('customer_reviews').delete().eq('user_id', userId);
     await supabaseAdmin.from('newsletter_subscriptions').delete().eq('email',
       (await supabaseAdmin.from('profiles').select('email').eq('id', userId).maybeSingle()).data?.email || ''
