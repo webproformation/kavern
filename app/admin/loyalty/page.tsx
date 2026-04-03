@@ -148,23 +148,23 @@ export default async function LoyaltyPage() {
                       <TableCell>
                         <Badge
                           variant={
-                            transaction.type === "earn"
+                            transaction.amount > 0
                               ? "default"
                               : "destructive"
                           }
                         >
-                          {transaction.type === "earn" ? "Gain" : "Dépense"}
+                          {transaction.amount > 0 ? "Gain" : "Dépense"}
                         </Badge>
                       </TableCell>
                       <TableCell
                         className={`font-bold ${
-                          transaction.type === "earn"
+                          transaction.amount > 0
                             ? "text-green-600"
                             : "text-red-600"
                         }`}
                       >
-                        {transaction.type === "earn" ? "+" : "-"}
-                        {Math.abs(transaction.points)}
+                        {transaction.amount > 0 ? "+" : ""}
+                        {Number(transaction.amount).toFixed(2)} €
                       </TableCell>
                       <TableCell className="text-sm text-gray-600">
                         {transaction.description || "Aucune description"}
