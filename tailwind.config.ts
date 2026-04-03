@@ -93,6 +93,16 @@ const config: Config = {
         'accordion-up': 'accordion-up 0.2s ease-out',
         marquee: 'marquee 25s linear infinite',
       },
+      typography: {
+        DEFAULT: {
+          css: {
+            h1: { color: '#D4AF37' },
+            h2: { color: '#D4AF37' },
+            h3: { color: '#D4AF37' },
+            h4: { color: '#D4AF37' },
+          },
+        },
+      },
     },
   },
   plugins: [require('tailwindcss-animate'), require('@tailwindcss/typography')],
