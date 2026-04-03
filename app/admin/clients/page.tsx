@@ -253,11 +253,14 @@ export default function ClientsPage() {
 
     setDeletingClient(clientId);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch('/api/admin/delete-user', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token ?? ''}`,
+        },
         body: JSON.stringify({ userId: clientId }),
-        credentials: 'include',
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Suppression impossible');

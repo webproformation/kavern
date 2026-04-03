@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { createClient as createServerClient } from '@/lib/supabase/server';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,15 +9,18 @@ const supabaseAdmin = createClient(
 
 export async function DELETE(request: NextRequest) {
   try {
-    // Vérifier que le demandeur est admin
-    const supabase = await createServerClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+    // Vérifier que le demandeur est admin via le token JWT du header Authorization
+    const authHeader = request.headers.get('Authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    if (!token) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+
+    const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
+    if (authErr || !user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
 
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('role')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .maybeSingle();
 
     if (profile?.role !== 'admin') {
