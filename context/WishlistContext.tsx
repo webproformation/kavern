@@ -39,12 +39,16 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         .select('product_id')
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        const isAbort = error.message?.includes('AbortError') || error.details?.includes('AbortError');
+        if (!isAbort) console.error('Error loading wishlist:', error);
+        return;
+      }
 
       const productIds = data?.map(item => item.product_id) || [];
       setWishlistItems(productIds);
-    } catch (error) {
-      console.error('Error loading wishlist:', error);
+    } catch (error: any) {
+      if (error?.name !== 'AbortError') console.error('Error loading wishlist:', error);
     }
   };
 
