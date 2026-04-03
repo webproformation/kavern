@@ -11,7 +11,7 @@ const supabaseAdmin = createClient(
 export async function DELETE(request: NextRequest) {
   try {
     // Vérifier que le demandeur est admin
-    const supabase = createServerClient();
+    const supabase = await createServerClient();
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
 
