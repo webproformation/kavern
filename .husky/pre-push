@@ -1,0 +1,7 @@
+echo "🔨 Vérification du build avant push..."
+npm run build
+if [ $? -ne 0 ]; then
+  echo "❌ Build échoué — push annulé. Corrige les erreurs d'abord."
+  exit 1
+fi
+echo "✅ Build OK — push autorisé."

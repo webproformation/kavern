@@ -1,0 +1,2 @@
+echo "🔍 ESLint (informatif, ne bloque pas)..."
+npm run lint || true

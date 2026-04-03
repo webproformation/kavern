@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "verify-project": "bash .bolt/verify-qcqbtmv.sh",
     "migrate:categories": "node scripts/migrate-categories.js",
-    "sync:product-categories": "node scripts/sync-product-categories.js"
+    "sync:product-categories": "node scripts/sync-product-categories.js",
+    "prepare": "husky"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -101,6 +102,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
-    "@types/canvas-confetti": "^1.9.0"
+    "@types/canvas-confetti": "^1.9.0",
+    "husky": "^9.1.7"
   }
 }
