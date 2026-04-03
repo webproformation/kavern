@@ -7,7 +7,7 @@ import { generateInvoicePDF } from '@/lib/invoiceGenerator';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, FileText, CreditCard, RefreshCw } from 'lucide-react';
+import { Loader2, FileText, CreditCard, RefreshCw, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 
