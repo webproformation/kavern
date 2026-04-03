@@ -223,7 +223,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           if (supabaseCart.length > 0) {
             setCart(supabaseCart);
           }
-        });
+        }).catch((e) => console.warn('[CartContext] visibilitychange reload error:', e));
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);

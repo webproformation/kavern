@@ -257,7 +257,7 @@ export function WheelGame({ game, onClose, onWin }: WheelGameProps) {
                 style={{
                   transform: `rotate(${rotation}deg)`,
                   transition: spinning ? 'transform 5s cubic-bezier(0.17, 0.67, 0.12, 0.99)' : 'none',
-                  backgroundColor: game.wheel_design.backgroundColor,
+                  backgroundColor: game.wheel_design?.backgroundColor || '#1a1a1a',
                 }}
               >
                 {game.segments.map((segment, index) => {

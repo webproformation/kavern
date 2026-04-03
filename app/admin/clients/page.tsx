@@ -253,22 +253,14 @@ export default function ClientsPage() {
 
     setDeletingClient(clientId);
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', clientId)
-        .select();
-
-      if (error) {
-        console.error('[DELETE CLIENT] Error:', error);
-        throw error;
-      }
-
-      if (!data || data.length === 0) {
-        console.error('[DELETE CLIENT] No rows deleted');
-        toast.error('Aucune suppression effectuée. Vérifiez vos permissions.');
-        return;
-      }
+      const res = await fetch('/api/admin/delete-user', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: clientId }),
+        credentials: 'include',
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Suppression impossible');
 
       toast.success('Client supprimé avec succès');
       await loadProfiles();

@@ -25,7 +25,7 @@ export default async function Home() {
     const { data } = await supabase
       .from('pages_seo')
       .select('content')
-      .eq('slug', 'accueil')
+      .eq('slug', 'home')
       .maybeSingle();
     seoPage = data;
   } catch {

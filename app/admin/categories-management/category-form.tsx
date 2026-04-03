@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import { Switch } from "@/components/ui/switch";
 import {
   Card,
@@ -203,13 +203,11 @@ export default function CategoryForm({ category, categories }: CategoryFormProps
               </div>
 
               <div>
-                <Label htmlFor="description" className="text-[#d4af37]">Description</Label>
-                <Textarea
-                  id="description"
+                <Label className="text-[#d4af37]">Description</Label>
+                <RichTextEditor
                   value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(val) => setFormData(prev => ({ ...prev, description: val }))}
                   placeholder="Description de la catégorie..."
-                  rows={4}
                 />
               </div>
             </CardContent>

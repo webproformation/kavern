@@ -191,7 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (currentUser) {
             loadProfile(currentUser.id, true);
           }
-        });
+        }).catch((e) => console.warn('[AuthContext] visibilitychange getSession error:', e));
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);

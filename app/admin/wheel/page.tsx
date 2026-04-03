@@ -131,7 +131,7 @@ export default function WheelPage() {
     try {
       const { data, error } = await supabase
         .from('coupons')
-        .select('id, code, discount_type, discount_value, is_active')
+        .select('id, code, name, discount_type, discount_value, is_active')
         .eq('is_active', true)
         .order('code');
 
@@ -444,7 +444,7 @@ export default function WheelPage() {
                           <SelectContent>
                             {coupons.map((coupon) => (
                               <SelectItem key={coupon.id} value={coupon.id}>
-                                {coupon.code} ({coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : `${coupon.discount_value}€`})
+                                {coupon.name || coupon.code} ({coupon.discount_type === 'percentage' ? `-${coupon.discount_value}%` : `-${Number(coupon.discount_value).toFixed(2)}€`})
                               </SelectItem>
                             ))}
                           </SelectContent>
