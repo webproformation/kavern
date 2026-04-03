@@ -30,7 +30,7 @@ export async function DELETE(request: NextRequest) {
 
     // Supprimer les données liées (ordre important pour les FK)
     await supabaseAdmin.from('loyalty_euro_transactions').delete().eq('user_id', userId);
-    await supabaseAdmin.from('wallet_transactions').delete().eq('user_id', userId);
+    // wallet_transactions n'a pas de user_id direct — skip (pas de FK vers profiles)
     await supabaseAdmin.from('user_coupons').delete().eq('user_id', userId);
     await supabaseAdmin.from('cart_items').delete().eq('user_id', userId);
     await supabaseAdmin.from('wishlist_items').delete().eq('user_id', userId);
