@@ -38,10 +38,14 @@ export function LoyaltyEuroBar() {
         .eq('id', user.id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        const isAbort = error.message?.includes('AbortError') || error.details?.includes('AbortError');
+        if (!isAbort) console.error('Error loading loyalty data:', error);
+        return;
+      }
       setLoyaltyData({ loyalty_euros: parseFloat(data.loyalty_euros || '0') });
-    } catch (error) {
-      console.error('Error loading loyalty data:', error);
+    } catch (error: any) {
+      if (error?.name !== 'AbortError') console.error('Error loading loyalty data:', error);
     } finally {
       setLoading(false);
     }
