@@ -22,14 +22,16 @@ export default async function Home() {
   let seoPage: { content: string } | null = null;
   try {
     const supabase = createClient();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('pages_seo')
       .select('content')
       .eq('slug', 'home')
       .maybeSingle();
+    if (error) console.error('[page.tsx] pages_seo error:', error);
+    console.log('[page.tsx] pages_seo data:', data);
     seoPage = data;
-  } catch {
-    // Pas critique — la homepage s'affiche sans le contenu SEO si Supabase échoue
+  } catch (e) {
+    console.error('[page.tsx] pages_seo exception:', e);
   }
 
   return (
