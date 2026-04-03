@@ -194,42 +194,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       if (user) {
         const supabaseCart = await loadCartFromSupabase(abortController.signal);
-        const localCart = loadCartFromLocalStorage();
 
-        const mergedCart: CartItem[] = [...supabaseCart];
-        let hasMerged = false;
-
-        localCart.forEach(localItem => {
-          // Un lot est unique par sa composition
-          const localPackKey = localItem.isPack ? JSON.stringify(localItem.packItems) : "";
-          
-          const existingIndex = mergedCart.findIndex(
-            item => {
-              const itemPackKey = item.isPack ? JSON.stringify(item.packItems) : "";
-              return item.id === localItem.id && 
-                     item.variationId === localItem.variationId && 
-                     itemPackKey === localPackKey;
-            }
-          );
-
-          if (existingIndex >= 0) {
-            mergedCart[existingIndex].quantity = Math.max(mergedCart[existingIndex].quantity, localItem.quantity);
-            hasMerged = true;
-          } else {
-            // Assigner un ID unique lors de la fusion pour React
-            mergedCart.push({ ...localItem, cartItemId: uuidv4() } as CartItem);
-            hasMerged = true;
-          }
-        });
+        // Sécurité cross-session : on ignore toujours le localStorage quand un
+        // utilisateur est connecté. Le localStorage peut contenir le panier d'un
+        // autre compte ou d'une session anonyme précédente.
+        localStorage.removeItem('cart');
 
         // On ne met à jour le state que si la requête n'a pas été annulée
         if (!abortController.signal.aborted) {
-          setCart(mergedCart);
-          // Retarder la synchro pour éviter le conflit 400 immédiat
-          setTimeout(() => {
-            syncCartToSupabase(mergedCart, hasMerged || mergedCart.length > 0);
-          }, 500);
-          // Garder le localStorage comme backup (évite perte panier si session expire)
+          setCart(supabaseCart);
         }
       } else {
         const localCart = loadCartFromLocalStorage();
