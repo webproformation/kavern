@@ -57,8 +57,8 @@ export default function LivreDorPage() {
         .from('orders')
         .select('id, order_number, created_at')
         .eq('user_id', user.id)
-        .in('status', ['delivered', 'shipped', 'completed', 'processing'])
-        .eq('payment_status', 'paid')
+        .in('status', ['delivered', 'shipped', 'processing'])
+        .in('payment_status', ['paid', 'completed', 'succeeded'])
         .order('created_at', { ascending: false });
 
       if (!orders || orders.length === 0) { setEligibleOrders([]); return; }

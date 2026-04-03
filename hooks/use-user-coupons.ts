@@ -14,11 +14,13 @@ export function useUserCoupons(userId: string | undefined) {
   const loadCoupons = async () => {
     try {
       // On ne charge que les coupons NON utilisés pour le checkout
+      const now = new Date().toISOString();
       const { data, error } = await supabase
         .from('user_coupons')
         .select('*, coupon:coupons(*)')
         .eq('user_id', userId)
         .eq('is_used', false)
+        .or(`valid_until.is.null,valid_until.gt.${now}`)
         .order('obtained_at', { ascending: false });
 
       if (error) throw error;

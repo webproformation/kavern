@@ -58,7 +58,7 @@ export function FeaturedProducts() {
       try {
         const { data, error } = await supabase
           .from('products')
-          .select('id, name, slug, regular_price, sale_price, image_url, gallery_images, is_variable_product, has_variations, stock_quantity, is_featured, is_diamond, attributes, marketing_badge, product_variations(product_id, stock_quantity)')
+          .select('id, name, slug, regular_price, sale_price, image_url, gallery_images, is_variable_product, has_variations, stock_quantity, is_featured, is_diamond, is_pack, attributes, marketing_badge, product_variations(product_id, stock_quantity)')
           .eq('is_featured', true)
           .eq('status', 'publish')
           .order('created_at', { ascending: false })
