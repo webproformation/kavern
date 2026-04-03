@@ -172,12 +172,22 @@ export function useOpenPackage() {
     try {
       const { error } = await supabase
         .from('open_packages')
-        .update({
-          status: 'closed'
-        })
+        .update({ status: 'closed' })
         .eq('id', openPackage.id);
 
       if (error) throw error;
+
+      // RÈGLE 3 Sendcloud : push des données consolidées vers Sendcloud à la fermeture
+      const { data: { session } } = await supabase.auth.getSession();
+      fetch('/api/sendcloud/push', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`,
+        },
+        body: JSON.stringify({ openPackageId: openPackage.id }),
+      }).catch(e => console.warn('[sendcloud] règle 3 push failed (non-blocking):', e));
+
       await loadActivePackage();
     } catch (error) {
       console.error('Error closing package:', error);

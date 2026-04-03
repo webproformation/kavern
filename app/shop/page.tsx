@@ -113,7 +113,7 @@ export default function ShopPage() {
       // OPTIMISATION : Ne charger que les champs nécessaires pour les cartes produit (réduit de 1.1Mo → ~150Ko)
       const { data: productsData } = await supabase
         .from('products')
-        .select('id, name, slug, regular_price, sale_price, image_url, gallery_images, is_variable_product, has_variations, stock_quantity, is_featured, is_diamond, attributes, marketing_badge, status, created_at')
+        .select('id, name, slug, regular_price, sale_price, image_url, gallery_images, is_variable_product, has_variations, stock_quantity, is_featured, is_diamond, attributes, marketing_badge, status, created_at, tva_rate, is_pack')
         .eq('status', 'publish')
         .order('created_at', { ascending: false });
 

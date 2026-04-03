@@ -210,6 +210,17 @@ export default function CheckoutPage() {
     tvaBreakdown[key].tva += tva;
     tvaBreakdown[key].ttc += ttc;
   });
+  // TVA livraison : transport = taux standard 20% en France
+  if (shippingCost > 0) {
+    const shippingTvaRate = 0.20;
+    const shippingHT = shippingCost / (1 + shippingTvaRate);
+    const shippingTva = shippingCost - shippingHT;
+    const shippingKey = `${(shippingTvaRate * 100).toFixed(1)}`;
+    if (!tvaBreakdown[shippingKey]) tvaBreakdown[shippingKey] = { ht: 0, tva: 0, ttc: 0 };
+    tvaBreakdown[shippingKey].ht += shippingHT;
+    tvaBreakdown[shippingKey].tva += shippingTva;
+    tvaBreakdown[shippingKey].ttc += shippingCost;
+  }
   const tvaAmount = Object.values(tvaBreakdown).reduce((sum, v) => sum + v.tva, 0);
   const totalHT = totalAfterWallet - tvaAmount;
 
@@ -490,6 +501,22 @@ export default function CheckoutPage() {
 
       if (newsletterConsent && profile?.email) {
         await supabase.from('newsletter_subscriptions').upsert([{ email: profile.email }], { onConflict: 'email', ignoreDuplicates: true });
+      }
+
+      // RÈGLE 1 Sendcloud : commande normale avec expédition immédiate → push vers Sendcloud
+      // RÈGLE 2 : Colis Ouvert → ne pas envoyer (la cliente a payé les frais mais on attend la fermeture)
+      if (!addToOpenPackage && !createPendingPackage && !isStorePickup && selectedAddress) {
+        try {
+          const { data: { session: scSession } } = await supabase.auth.getSession();
+          fetch('/api/sendcloud/push', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${scSession?.access_token || ''}`,
+            },
+            body: JSON.stringify({ orderId }),
+          }).catch(e => console.warn('[sendcloud] push failed (non-blocking):', e));
+        } catch { /* non-bloquant */ }
       }
 
       if (useWallet && walletAmountToUse > 0) {

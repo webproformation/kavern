@@ -115,7 +115,7 @@ export default function CategoryPage() {
       if (termsData) {
         termsData.forEach(t => { dict[String(t.id).toLowerCase()] = t.name; });
       }
-      let productsQuery = supabase.from('products').select('id, name, slug, regular_price, sale_price, image_url, gallery_images, is_variable_product, has_variations, stock_quantity, is_featured, is_diamond, attributes, marketing_badge, status, created_at').eq('status', 'publish').order('created_at', { ascending: false });
+      let productsQuery = supabase.from('products').select('id, name, slug, regular_price, sale_price, image_url, gallery_images, is_variable_product, has_variations, stock_quantity, is_featured, is_diamond, attributes, marketing_badge, status, created_at, tva_rate, is_pack').eq('status', 'publish').order('created_at', { ascending: false });
 
       if (slug !== 'tous') {
         const { data: categoryData } = await supabase.from('categories').select('*').eq('slug', slug).maybeSingle();
