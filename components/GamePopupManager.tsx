@@ -58,7 +58,7 @@ export function GamePopupManager() {
   const [showScratchGame, setShowScratchGame] = useState(false);
   const [showWheelGame, setShowWheelGame] = useState(false);
   const [showCardFlipGame, setShowCardFlipGame] = useState(false);
-  const [debugMode] = useState(true); // MODE DEBUG ACTIVÉ - Force l'affichage du jeu
+  const [debugMode] = useState(false); // Debug désactivé en production
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

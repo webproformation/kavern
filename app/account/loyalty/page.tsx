@@ -8,9 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, PiggyBank, TrendingUp, Star, Sparkles } from 'lucide-react';
 
 const TIERS = [
-  { name: 'Esprit Curieux', multiplier: 1, color: 'bg-gray-100 text-gray-800', min: 0 },
-  { name: 'Passionné', multiplier: 2, color: 'bg-blue-100 text-blue-800', min: 50 },
-  { name: 'Collectionneur', multiplier: 3, color: 'bg-[#D4AF37]/20 text-[#D4AF37]', min: 200 },
+  { name: 'Esprit Curieux', multiplier: 1, color: 'bg-gray-100 text-gray-800', min: 0, max: 5 },
+  { name: 'Passionné', multiplier: 2, color: 'bg-blue-100 text-blue-800', min: 5, max: 15 },
+  { name: 'Collectionneur', multiplier: 3, color: 'bg-[#D4AF37]/20 text-[#D4AF37]', min: 15, max: Infinity },
 ];
 
 export default function LoyaltyPage() {
@@ -42,7 +42,7 @@ export default function LoyaltyPage() {
   const loyaltyEuros = profile?.loyalty_euros || 0;
   const walletBalance = profile?.wallet_balance || 0;
   const currentTier = TIERS.slice().reverse().find(t => loyaltyEuros >= t.min) || TIERS[0];
-  const nextTier = TIERS.find(t => t.min > loyaltyEuros);
+  const nextTier = TIERS.find(t => t.min > loyaltyEuros && t.max !== Infinity) || null;
 
   if (loading) {
     return <div className="flex justify-center py-12"><Loader2 className="animate-spin h-8 w-8 text-[#D4AF37]" /></div>;
@@ -104,7 +104,7 @@ export default function LoyaltyPage() {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Progression vers {nextTier.name}</span>
-                <span className="font-bold">{loyaltyEuros.toFixed(2)} / {nextTier.min} &euro;</span>
+                <span className="font-bold">{loyaltyEuros.toFixed(2)} / {nextTier.min}€ ({nextTier.name})</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3">
                 <div
@@ -120,7 +120,7 @@ export default function LoyaltyPage() {
               <div key={tier.name} className={`text-center p-3 rounded-lg border ${currentTier.name === tier.name ? 'border-[#D4AF37] bg-[#D4AF37]/5' : 'border-gray-100'}`}>
                 <p className="font-bold text-sm">{tier.name}</p>
                 <p className="text-lg font-black text-[#D4AF37]">x{tier.multiplier}</p>
-                <p className="text-xs text-gray-500">dès {tier.min} &euro;</p>
+                <p className="text-xs text-gray-500">{tier.max === Infinity ? `${tier.min}€+` : `${tier.min}-${tier.max}€`}</p>
               </div>
             ))}
           </div>

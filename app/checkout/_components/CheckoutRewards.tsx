@@ -46,6 +46,7 @@ interface CheckoutRewardsProps {
   handleApplyGiftCard: () => Promise<void>;
   giftCardLoading: boolean;
   handleApplyCoupon: () => Promise<void>;
+  onUserCouponSelect?: (couponId: string, discount: number) => void;
 }
 
 export function CheckoutRewards({
@@ -82,6 +83,7 @@ export function CheckoutRewards({
   handleApplyGiftCard,
   giftCardLoading,
   handleApplyCoupon,
+  onUserCouponSelect,
 }: CheckoutRewardsProps) {
   return (
     <Card className="border-l-4 border-[#C6A15B]">
@@ -283,28 +285,29 @@ export function CheckoutRewards({
             </div>
           ) : userCoupons.length > 0 ? (
             <div className="space-y-3">
-              <RadioGroup
-                value={selectedUserCouponId}
-                onValueChange={(value) => {
-                  setSelectedUserCouponId(value);
-                  const selectedCoupon = userCoupons.find(c => c.id === value);
-                  if (selectedCoupon && selectedCoupon.coupon) {
-                    const discount = selectedCoupon.coupon.discount_type === 'percentage'
-                      ? (subtotal * selectedCoupon.coupon.discount_value / 100)
-                      : Number(selectedCoupon.coupon.discount_value);
-                    setDiscountAmount(discount);
-                  } else {
-                    setDiscountAmount(0);
-                  }
-                }}
-              >
-                {userCoupons.map((coupon) => (
+              <RadioGroup value={selectedUserCouponId} onValueChange={() => {}}>
+                {userCoupons.map((coupon) => {
+                  const computedDiscount = coupon.coupon?.discount_type === 'percentage'
+                    ? (subtotal * coupon.coupon.discount_value / 100)
+                    : Number(coupon.coupon?.discount_value || 0);
+                  return (
                   <div
                     key={coupon.id}
+                    onClick={() => {
+                      if (onUserCouponSelect) {
+                        onUserCouponSelect(coupon.id, computedDiscount);
+                      } else if (coupon.id === selectedUserCouponId) {
+                        setSelectedUserCouponId('');
+                        setDiscountAmount(0);
+                      } else {
+                        setSelectedUserCouponId(coupon.id);
+                        setDiscountAmount(computedDiscount);
+                      }
+                    }}
                     className="border border-gray-200 rounded-lg p-4 bg-gray-50 hover:border-[#D4AF37] transition-all cursor-pointer"
                   >
                     <div className="flex items-start space-x-3">
-                      <RadioGroupItem value={coupon.id} id={coupon.id} className="mt-1" />
+                      <RadioGroupItem value={coupon.id} id={coupon.id} className="mt-1" onClick={(e) => e.stopPropagation()} />
                       <label htmlFor={coupon.id} className="flex-1 cursor-pointer">
                         <div className="flex items-start justify-between gap-3">
                           <div>
@@ -335,7 +338,8 @@ export function CheckoutRewards({
                       </label>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </RadioGroup>
             </div>
           ) : (
@@ -352,21 +356,21 @@ export function CheckoutRewards({
         {/* Code promo manuel */}
         <div className="space-y-2">
           <Label htmlFor="coupon" className="text-base font-semibold">Code promo</Label>
-          <p className="text-xs text-gray-500">Une seule réduction par commande (code promo OU cagnotte, non cumulables).</p>
+          <p className="text-xs text-gray-500">Une seule réduction par commande — non cumulable avec les autres avantages.</p>
           <div className="flex gap-2">
             <Input
               id="coupon"
-              disabled={useWallet || useLoyalty}
+              disabled={useWallet || useLoyalty || !!selectedUserCouponId || giftCardApplied || !!appliedReferral}
               value={couponCode}
               onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-              placeholder={useWallet || useLoyalty ? "Non cumulable avec la cagnotte" : "Entrez votre code"}
+              placeholder={useWallet || useLoyalty || !!selectedUserCouponId || giftCardApplied || !!appliedReferral ? "Non cumulable avec les autres avantages" : "Entrez votre code"}
               className="focus:border-[#C6A15B] focus:ring-[#C6A15B]"
             />
             <Button
               type="button"
               variant="outline"
               className="border-[#C6A15B] text-[#C6A15B] hover:bg-[#C6A15B] hover:text-white"
-              disabled={useWallet || useLoyalty || !couponCode.trim()}
+              disabled={useWallet || useLoyalty || !!selectedUserCouponId || giftCardApplied || !!appliedReferral || !couponCode.trim()}
               onClick={handleApplyCoupon}
             >
               Appliquer

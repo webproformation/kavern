@@ -133,22 +133,36 @@ export default function CheckoutPage() {
     }
   }, [cart, loading, router, isSuccess]);
 
-  useEffect(() => {
-    if (useLoyalty && loyaltyAmountToUse > 0) {
-      setDiscountAmount(0);
-      setCouponCode('');
-      setSelectedUserCouponId('');
-      setReferralDiscount(0);
-      setAppliedReferral(null);
-    }
-  }, [useLoyalty, loyaltyAmountToUse]);
+  // ─── Exclusivité stricte : un seul mode de remise par commande ───────────────
+  const clearAllDiscounts = () => {
+    setUseWallet(false); setWalletAmountToUse(0);
+    setUseLoyalty(false); setLoyaltyAmountToUse(0);
+    setDiscountAmount(0); setCouponCode(''); setAppliedCoupon(null);
+    setSelectedUserCouponId('');
+    setReferralDiscount(0); setAppliedReferral(null);
+    setGiftCardAmount(0); setGiftCardApplied(false); setGiftCardId(null);
+  };
 
-  useEffect(() => {
-    if (discountAmount > 0 || referralDiscount > 0) {
-      setUseLoyalty(false);
-      setLoyaltyAmountToUse(0);
+  const handleSetUseWallet = (val: boolean) => {
+    if (val) { clearAllDiscounts(); setUseWallet(true); }
+    else { setUseWallet(false); setWalletAmountToUse(0); }
+  };
+
+  const handleSetUseLoyalty = (val: boolean) => {
+    if (val) { clearAllDiscounts(); setUseLoyalty(true); }
+    else { setUseLoyalty(false); setLoyaltyAmountToUse(0); }
+  };
+
+  const handleSelectUserCoupon = (couponId: string, discount: number) => {
+    if (couponId === selectedUserCouponId) {
+      setSelectedUserCouponId('');
+      setDiscountAmount(0);
+    } else {
+      clearAllDiscounts();
+      setSelectedUserCouponId(couponId);
+      setDiscountAmount(discount);
     }
-  }, [discountAmount, referralDiscount]);
+  };
 
   useEffect(() => {
     if (addToOpenPackage) {
@@ -252,6 +266,7 @@ export default function CheckoutPage() {
       if (sameAddress) { toast.error('Le parrain et le filleul ne peuvent pas avoir la même adresse.'); return; }
     }
 
+    clearAllDiscounts();
     setAppliedReferral(data);
     setReferralDiscount(5);
     toast.success('Code parrainage appliqué ! -5€');
@@ -275,6 +290,8 @@ export default function CheckoutPage() {
       }
 
       const amountToUse = Math.min(data.current_balance, totalAfterDiscount);
+      clearAllDiscounts();
+      setGiftCardCode(giftCardCode);
       setGiftCardAmount(amountToUse);
       setGiftCardApplied(true);
       setGiftCardId(data.id);
@@ -359,6 +376,10 @@ export default function CheckoutPage() {
         discount = subtotal * (coupon.discount_value / 100);
       }
 
+      // Exclusivité : effacer les autres modes avant d'appliquer
+      const savedCode = couponCode;
+      clearAllDiscounts();
+      setCouponCode(savedCode);
       setDiscountAmount(discount);
       setAppliedCoupon(coupon);
       toast.success(`Code promo appliqué ! -${discount.toFixed(2)}€`);
@@ -800,15 +821,15 @@ export default function CheckoutPage() {
               setBankDialogOpen={setBankDialogOpen}
             />
 
-            <CheckoutRewards 
+            <CheckoutRewards
               profile={profile}
               useWallet={useWallet}
-              setUseWallet={setUseWallet}
+              setUseWallet={handleSetUseWallet}
               walletAmountToUse={walletAmountToUse}
               setWalletAmountToUse={setWalletAmountToUse}
               maxWalletAllowed={maxWalletAllowed}
               useLoyalty={useLoyalty}
-              setUseLoyalty={setUseLoyalty}
+              setUseLoyalty={handleSetUseLoyalty}
               loyaltyAmountToUse={loyaltyAmountToUse}
               setLoyaltyAmountToUse={setLoyaltyAmountToUse}
               maxLoyaltyAllowed={maxLoyaltyAllowed}
@@ -819,6 +840,7 @@ export default function CheckoutPage() {
               setCouponCode={setCouponCode}
               selectedUserCouponId={selectedUserCouponId}
               setSelectedUserCouponId={setSelectedUserCouponId}
+              onUserCouponSelect={handleSelectUserCoupon}
               userCoupons={userCoupons}
               couponsLoading={couponsLoading}
               subtotal={subtotal}

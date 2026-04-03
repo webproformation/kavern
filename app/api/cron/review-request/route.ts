@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
         profiles(email, first_name)
       `)
       .in('status', ['delivered', 'shipped'])
+      .in('payment_status', ['paid', 'completed', 'succeeded'])
       .gte('shipped_at', fiveDaysAgo.toISOString())
       .lt('shipped_at', threeDaysAgo.toISOString())
       .is('review_email_sent', false);
