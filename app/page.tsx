@@ -8,7 +8,7 @@ import KeyFigures from '@/components/sections/KeyFigures';
 import { HomeReviewsCarousel } from '@/components/HomeReviewsCarousel';
 import { GamePopupManager } from '@/components/GamePopupManager';
 import { LiveBanner } from '@/components/LiveBanner';
-import { createClient } from '@/lib/supabase/server';
+import { createClient as createSupabase } from '@supabase/supabase-js';
 
 export const revalidate = 0;
 
@@ -21,14 +21,17 @@ export const metadata: Metadata = {
 export default async function Home() {
   let seoPage: { content: string } | null = null;
   try {
-    const supabase = createClient();
+    const supabase = createSupabase(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
     const { data, error } = await supabase
       .from('pages_seo')
       .select('content')
       .eq('slug', 'home')
       .maybeSingle();
     if (error) console.error('[page.tsx] pages_seo error:', error);
-    console.log('[page.tsx] pages_seo data:', data);
     seoPage = data;
   } catch (e) {
     console.error('[page.tsx] pages_seo exception:', e);
