@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient as createSupabase } from '@supabase/supabase-js';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -14,7 +14,11 @@ import { Gift, TrendingUp, Users } from "lucide-react";
 export const revalidate = 0;
 
 async function getLoyaltyStats() {
-  const supabase = createClient();
+  const supabase = createSupabase(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
 
   const [profilesResult, transactionsResult] = await Promise.all([
     supabase.from("profiles").select("*"),
