@@ -13,7 +13,7 @@ import { createClient } from '@/lib/supabase/server';
 export const revalidate = 0;
 
 export const metadata: Metadata = {
-  title: 'KAVERN - Concept Store Artisanat Francais | Bougies, Bijoux, Epicerie Fine',
+  title: 'KAVERN — L\'Artisanat et l\'Inattendu | Concept Store',
   description: 'Decouvrez KAVERN, votre concept store en ligne d\'artisanat francais. Bougies artisanales, bijoux, epicerie fine, spa et bien-etre. Livraison rapide, satisfait ou rembourse. Live shopping chaque semaine.',
   alternates: { canonical: '/' },
 };

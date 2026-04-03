@@ -185,6 +185,7 @@ export default function CategoryPage() {
 
   if (loading) return (
     <div className="min-h-screen bg-white flex items-center justify-center font-black uppercase text-[#b8933d] animate-pulse">
+      <h1 className="sr-only">{slug === 'tous' ? 'Tous les produits' : slug.replace(/-/g, ' ')}</h1>
       Chargement de la malle...
     </div>
   );
