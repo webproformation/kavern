@@ -131,6 +131,7 @@ export function FeaturedProducts() {
             size="icon"
             className="absolute -left-2 top-1/2 -translate-y-1/2 rounded-full bg-white shadow-lg border-none text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 hidden md:flex z-10"
             onClick={scrollPrev}
+            aria-label="Produit précédent"
           >
             <ChevronLeft className="h-6 w-6" />
           </Button>
@@ -140,6 +141,7 @@ export function FeaturedProducts() {
             size="icon"
             className="absolute -right-2 top-1/2 -translate-y-1/2 rounded-full bg-white shadow-lg border-none text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0 hidden md:flex z-10"
             onClick={scrollNext}
+            aria-label="Produit suivant"
           >
             <ChevronRight className="h-6 w-6" />
           </Button>

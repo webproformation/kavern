@@ -88,6 +88,7 @@ export function CustomerReviewsSection() {
                     src={currentReview.photo_url}
                     alt={`Photo de ${currentReview.customer_name}`}
                     className="w-32 h-32 rounded-full object-cover border-4 border-[#D4AF37]"
+                    loading="lazy"
                   />
                 </div>
               )}

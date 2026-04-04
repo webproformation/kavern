@@ -56,6 +56,7 @@ export function ShareButtons({ url, title, description }: ShareButtonsProps) {
         onClick={handleFacebookShare}
         className="hover:bg-blue-50 hover:border-blue-300"
         title="Partager sur Facebook"
+        aria-label="Partager sur Facebook"
       >
         <Facebook className="h-4 w-4 text-blue-600" />
       </Button>
@@ -66,6 +67,7 @@ export function ShareButtons({ url, title, description }: ShareButtonsProps) {
         onClick={handleTwitterShare}
         className="hover:bg-sky-50 hover:border-sky-300"
         title="Partager sur Twitter"
+        aria-label="Partager sur Twitter"
       >
         <Twitter className="h-4 w-4 text-sky-500" />
       </Button>
@@ -76,6 +78,7 @@ export function ShareButtons({ url, title, description }: ShareButtonsProps) {
         onClick={handleWhatsAppShare}
         className="hover:bg-green-50 hover:border-green-300"
         title="Partager sur WhatsApp"
+        aria-label="Partager sur WhatsApp"
       >
         <svg
           className="h-4 w-4 text-green-600"
@@ -92,6 +95,7 @@ export function ShareButtons({ url, title, description }: ShareButtonsProps) {
         onClick={handleCopyLink}
         className="hover:bg-gray-50"
         title="Copier le lien"
+        aria-label="Copier le lien"
       >
         {copied ? (
           <Check className="h-4 w-4 text-green-600" />

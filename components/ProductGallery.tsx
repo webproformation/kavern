@@ -130,6 +130,7 @@ export function ProductGallery({
             size="icon"
             className="h-10 w-10 rounded-full bg-white/80 backdrop-blur-md shadow-lg pointer-events-auto opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={() => emblaApi?.scrollPrev()}
+            aria-label="Image précédente"
           >
             <ChevronLeft className="h-6 w-6" />
           </Button>
@@ -138,6 +139,7 @@ export function ProductGallery({
             size="icon"
             className="h-10 w-10 rounded-full bg-white/80 backdrop-blur-md shadow-lg pointer-events-auto opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={() => emblaApi?.scrollNext()}
+            aria-label="Image suivante"
           >
             <ChevronRight className="h-6 w-6" />
           </Button>

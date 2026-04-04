@@ -86,6 +86,7 @@ export function FloatingButtons() {
           size="icon"
           className="h-14 w-14 rounded-full bg-[#D4AF37] hover:bg-[#B4941F] text-white shadow-lg transition-all duration-300 hover:scale-110"
           title="Paramètres des cookies"
+          aria-label="Paramètres des cookies"
         >
           <Cookie className="h-6 w-6" />
         </Button>
@@ -96,6 +97,7 @@ export function FloatingButtons() {
             size="icon"
             className="h-14 w-14 rounded-full bg-[#D4AF37] hover:bg-[#B4941F] text-white shadow-lg transition-all duration-300 hover:scale-110 animate-in fade-in slide-in-from-bottom-2"
             title="Retour en haut"
+            aria-label="Retour en haut de la page"
           >
             <ArrowUp className="h-6 w-6" />
           </Button>

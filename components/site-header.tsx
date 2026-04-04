@@ -171,6 +171,7 @@ export function SiteHeader() {
                 size="icon"
                 className="md:hidden text-gray-900 hover:text-[#C6A15B] hover:bg-amber-50"
                 onClick={() => setMobileMenuOpen(true)}
+                aria-label="Ouvrir le menu"
               >
                 <Menu className="h-6 w-6" />
               </Button>
@@ -225,6 +226,7 @@ export function SiteHeader() {
                 size="icon"
                 onClick={() => setSearchModalOpen(true)}
                 className="flex text-gray-900 hover:text-[#D4AF37] hover:bg-transparent"
+                aria-label="Rechercher"
               >
                 <Search className="h-5 w-5" />
               </Button>
@@ -234,6 +236,7 @@ export function SiteHeader() {
                   variant="ghost"
                   size="icon"
                   className="relative text-gray-900 hover:text-[#D4AF37] hover:bg-transparent"
+                  aria-label="Ma liste de souhaits"
                 >
                   <Heart className="h-5 w-5" />
                   {(wishlistCount || 0) > 0 && (
@@ -250,6 +253,7 @@ export function SiteHeader() {
                     variant="ghost"
                     size="icon"
                     className="text-gray-900 hover:text-[#D4AF37] hover:bg-transparent"
+                    aria-label="Mon compte"
                   >
                     <User className="h-5 w-5" />
                   </Button>

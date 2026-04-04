@@ -98,6 +98,7 @@ export function HeroSlider() {
             src={slide.image_url}
             alt={slide.title}
             className="w-full h-full object-cover"
+            loading={index === 0 ? 'eager' : 'lazy'}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/30 flex items-center">
             <div className="container mx-auto px-4 z-20">
@@ -148,6 +149,7 @@ export function HeroSlider() {
             size="icon"
             className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full h-12 w-12 z-30"
             onClick={prevSlide}
+            aria-label="Diapositive précédente"
           >
             <ChevronLeft className="h-6 w-6" />
           </Button>
@@ -157,6 +159,7 @@ export function HeroSlider() {
             size="icon"
             className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full h-12 w-12 z-30"
             onClick={nextSlide}
+            aria-label="Diapositive suivante"
           >
             <ChevronRight className="h-6 w-6" />
           </Button>

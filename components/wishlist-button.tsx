@@ -33,10 +33,11 @@ export function WishlistButton({
         variant="outline"
         size="icon"
         onClick={handleClick}
+        aria-label={inWishlist ? 'Retirer des favoris' : 'Ajouter aux favoris'}
         className={cn(
           'transition-all duration-300 flex items-center justify-center border-gray-200',
-          inWishlist 
-            ? 'bg-pink-50 border-pink-200 hover:bg-pink-100 hover:border-pink-300' 
+          inWishlist
+            ? 'bg-pink-50 border-pink-200 hover:bg-pink-100 hover:border-pink-300'
             : 'bg-white hover:bg-gray-50 hover:text-pink-500 hover:border-pink-200',
           className
         )}

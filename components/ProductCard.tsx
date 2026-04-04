@@ -125,6 +125,7 @@ export function ProductCard({ product, showAddToCart = false }: ProductCardProps
                     src={img}
                     alt={`${product.name} - Vue ${index + 1}`}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none"
+                    loading={index === 0 ? 'eager' : 'lazy'}
                   />
                 </div>
               ))}

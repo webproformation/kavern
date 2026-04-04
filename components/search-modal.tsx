@@ -130,6 +130,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                           src={product.image_url}
                           alt={decodeHtmlEntities(product.name)}
                           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-gray-800">
