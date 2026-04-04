@@ -1,6 +1,14 @@
 # TACHES RESTANTES — KAVERN
 
-> Mise a jour le 02/04/2026 (session bugs André + QA Engine cohérence métier)
+> Mise a jour le 04/04/2026 — KAVERN TERMINÉ ✅ Zéro dette technique restante.
+
+---
+
+## FIXE SESSION 04/04/2026 — Dette technique finale
+
+- [x] `app/api/auth/check-birthday/route.ts` : createRouteHandlerClient → createServerClient (@supabase/ssr)
+- [x] `app/api/sendcloud/push/route.ts` : createRouteHandlerClient → createServerClient (@supabase/ssr)
+- [x] `app/api/create-payment-intent/route.ts` : apiVersion '2023-10-16' → '2025-12-15.clover'
 
 ---
 

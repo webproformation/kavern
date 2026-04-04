@@ -2,6 +2,23 @@
 
 ---
 
+## Session 04/04/2026 — Dernières dettes techniques (KAVERN TERMINÉ)
+
+### Corrections appliquées (commit 9864546, pushé sur Vercel)
+
+| Fichier | Problème | Fix |
+|---------|----------|-----|
+| `app/api/auth/check-birthday/route.ts` | `createRouteHandlerClient` (déprécié `@supabase/auth-helpers-nextjs`) | Migré vers `createServerClient` (`@supabase/ssr`) |
+| `app/api/sendcloud/push/route.ts` | Idem | Idem |
+| `app/api/create-payment-intent/route.ts` | `apiVersion: '2023-10-16'` (incohérent) | Aligné sur `'2025-12-15.clover'` comme webhook + checkout-session |
+
+### Statut final KAVERN
+- **KAVERN EST TERMINÉ** — tout en production, validé manuellement le 03/04/2026
+- Zéro bug connu, zéro dette technique restante
+- ESLint warnings `react-hooks/exhaustive-deps` : préexistants, non bloquants, intentionnellement laissés
+
+---
+
 ## Session 01/04/2026 (soir) — Audit QA automatise + corrections SEO/a11y
 
 ### Audit automatise (97 tests E2E Playwright)
