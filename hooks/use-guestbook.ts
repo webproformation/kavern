@@ -215,6 +215,7 @@ export async function submitGuestbookEntry(data: {
     .from('livre-dor')
     .insert({
       ...data,
+      user_id: user.id,
       status: 'pending'
     })
     .select()
