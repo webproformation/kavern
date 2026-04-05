@@ -135,10 +135,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               loyalty_euros: 0,
               current_tier: 1,
               tier_multiplier: 1,
-              is_admin: false,
+              // is_admin intentionnellement absent : ne jamais écraser une valeur existante
               is_blocked: false,
               cancelled_orders_count: 0,
-            }, { onConflict: 'id' })
+            }, { onConflict: 'id', ignoreDuplicates: true })
             .select()
             .single();
 
