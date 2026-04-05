@@ -196,7 +196,7 @@ export default function CouponsPage() {
         <CardContent className="space-y-3">
             {/* ... Le reste de votre contenu ... */}
              <div className="grid grid-cols-2 gap-4 text-sm">
-                {coupon.min_purchase && (
+                {!!coupon.min_purchase && typeof coupon.min_purchase !== 'object' && (
                   <div className="flex items-center gap-2 text-gray-600">
                     <Gift className="h-4 w-4" />
                     <span>Achat min: {Number(coupon.min_purchase).toFixed(2)}€</span>

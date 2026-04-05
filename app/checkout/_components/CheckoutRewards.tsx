@@ -287,7 +287,9 @@ export function CheckoutRewards({
             <div className="space-y-3">
               <RadioGroup value={selectedUserCouponId} onValueChange={() => {}}>
                 {userCoupons.map((coupon) => {
-                  const couponData = Array.isArray(coupon.coupon) ? (coupon.coupon[0] ?? {}) : (coupon.coupon ?? {});
+                  const rawCoupon = Array.isArray(coupon.coupon) ? (coupon.coupon[0] ?? null) : (coupon.coupon ?? null);
+                  if (!rawCoupon) return null;
+                  const couponData = rawCoupon;
                   const computedDiscount = couponData.discount_type === 'percentage'
                     ? (subtotal * Number(couponData.discount_value || 0) / 100)
                     : Number(couponData.discount_value || 0);
@@ -314,14 +316,14 @@ export function CheckoutRewards({
                           <div>
                             <div className="flex items-center gap-2 mb-1">
                               <p className="font-semibold text-gray-900">
-                                {couponData.name || 'Coupon'}
+                                {typeof couponData.name === 'string' ? couponData.name : (typeof couponData.code === 'string' ? couponData.code : 'Coupon')}
                               </p>
                               <Badge className="bg-[#D4AF37] text-white border-0 text-xs">
                                 {coupon.code}
                               </Badge>
                             </div>
                             <p className="text-sm text-gray-600 mb-2">
-                              {couponData.description || 'Réduction applicable'}
+                              {typeof couponData.description === 'string' ? couponData.description : 'Réduction applicable'}
                             </p>
                             <p className="text-xs text-gray-500">
                               Valable jusqu&apos;au {coupon.valid_until ? new Date(coupon.valid_until).toLocaleDateString('fr-FR') : '—'}
