@@ -83,36 +83,45 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return [];
       }
 
-      // Récupérer les tva_rate des produits en une requête
+      // Récupérer tva_rate et stock_quantity des produits en une requête
       const productIds = (data || []).map(item => item.product_id).filter(Boolean);
-      let tvaRates: Record<string, number> = {};
+      let productData: Record<string, { tva_rate: number; stock_quantity: number | null }> = {};
       if (productIds.length > 0) {
         const { data: products } = await supabase
           .from('products')
-          .select('id, tva_rate')
+          .select('id, tva_rate, stock_quantity')
           .in('id', productIds);
         if (products) {
-          tvaRates = Object.fromEntries(products.map(p => [p.id, p.tva_rate ?? 20]));
+          productData = Object.fromEntries(products.map(p => [p.id, {
+            tva_rate: p.tva_rate ?? 20,
+            stock_quantity: p.stock_quantity ?? null,
+          }]));
         }
       }
 
-      return (data || []).map(item => ({
-        id: item.product_id,
-        name: item.product_name,
-        slug: item.product_slug,
-        price: item.product_price,
-        image: item.product_image_url ? { sourceUrl: item.product_image_url } : undefined,
-        quantity: item.quantity,
-        variationId: item.variation_id === 'default' ? null : item.variation_id,
-        variationPrice: item.variation_data?.price || null,
-        variationImage: item.variation_data?.image || null,
-        selectedAttributes: item.variation_data?.attributes || {},
-        // RÉCUPÉRATION DES DONNÉES PACK DEPUIS SUPABASE
-        isPack: item.variation_data?.isPack || false,
-        packItems: item.variation_data?.packItems || null,
-        cartItemId: uuidv4(), // Assure l'unicité à la récupération
-        tva_rate: tvaRates[item.product_id] ?? 20,
-      }));
+      return (data || []).map(item => {
+        const pData = productData[item.product_id];
+        const stockQty = pData?.stock_quantity;
+        return {
+          id: item.product_id,
+          name: item.product_name,
+          slug: item.product_slug,
+          price: item.product_price,
+          image: item.product_image_url ? { sourceUrl: item.product_image_url } : undefined,
+          quantity: item.quantity,
+          variationId: item.variation_id === 'default' ? null : item.variation_id,
+          variationPrice: item.variation_data?.price || null,
+          variationImage: item.variation_data?.image || null,
+          selectedAttributes: item.variation_data?.attributes || {},
+          // RÉCUPÉRATION DES DONNÉES PACK DEPUIS SUPABASE
+          isPack: item.variation_data?.isPack || false,
+          packItems: item.variation_data?.packItems || null,
+          cartItemId: uuidv4(), // Assure l'unicité à la récupération
+          tva_rate: pData?.tva_rate ?? 20,
+          // Stock réel récupéré depuis la base — null = illimité
+          stockQuantity: stockQty !== null && stockQty !== undefined ? stockQty : undefined,
+        };
+      });
     } catch (error: any) {
       if (error.name !== 'AbortError') {
         console.error('Error in loadCartFromSupabase:', error);
@@ -220,9 +229,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && user) {
         loadCartFromSupabase().then(supabaseCart => {
-          if (supabaseCart.length > 0) {
-            setCart(supabaseCart);
-          }
+          // Toujours synchroniser — y compris si le panier est vide (vidé sur un autre onglet)
+          setCart(supabaseCart);
         }).catch((e) => console.warn('[CartContext] visibilitychange reload error:', e));
       }
     };

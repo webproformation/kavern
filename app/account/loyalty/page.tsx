@@ -130,24 +130,35 @@ export default function LoyaltyPage() {
       {/* COMMENT GAGNER */}
       <Card className="bg-[#D4AF37]/5 border-[#D4AF37]/20">
         <CardContent className="pt-6">
-          <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+          <h3 className="font-bold text-lg mb-1 flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-[#D4AF37]" />
             Comment gagner des euros ?
           </h3>
+          {currentTier.multiplier > 1 && (
+            <p className="text-sm text-[#D4AF37] font-semibold mb-3">
+              Rang {currentTier.name} — vos gains sont ×{currentTier.multiplier} (montants ci-dessous déjà appliqués)
+            </p>
+          )}
           <div className="grid md:grid-cols-2 gap-3">
             {[
-              { action: 'Cashback sur chaque achat', gain: '2% du montant' },
-              { action: 'Avis sur le Livre d\'Or', gain: '0,20 €' },
-              { action: 'Pépite Diamant découverte', gain: '0,10 €' },
-              { action: 'Connexion quotidienne', gain: '0,10 €' },
-              { action: 'Présence en Live (10 min)', gain: '0,20 €' },
-              { action: 'Parrainage réussi', gain: '5,00 €' },
-            ].map(({ action, gain }) => (
-              <div key={action} className="flex justify-between items-center p-3 bg-white rounded-lg border border-gray-100">
-                <span className="text-sm text-gray-700">{action}</span>
-                <Badge variant="outline" className="text-[#D4AF37] border-[#D4AF37]">+{gain}</Badge>
-              </div>
-            ))}
+              { action: 'Cashback sur chaque achat', base: null, label: `${currentTier.multiplier * 2}% du montant` },
+              { action: 'Avis sur le Livre d\'Or', base: 0.20, label: null },
+              { action: 'Pépite Diamant découverte', base: 0.10, label: null },
+              { action: 'Connexion quotidienne', base: 0.10, label: null },
+              { action: 'Présence en Live (10 min)', base: 0.20, label: null },
+              { action: 'Parrainage réussi', base: 5.00, label: null },
+            ].map(({ action, base, label }) => {
+              const displayGain = label ?? `${(base! * currentTier.multiplier).toFixed(2).replace('.', ',')} €`;
+              const baseGain = base != null && currentTier.multiplier > 1
+                ? ` (base: ${base.toFixed(2).replace('.', ',')} €)`
+                : '';
+              return (
+                <div key={action} className="flex justify-between items-center p-3 bg-white rounded-lg border border-gray-100">
+                  <span className="text-sm text-gray-700">{action}{baseGain && <span className="text-xs text-gray-400 ml-1">{baseGain}</span>}</span>
+                  <Badge variant="outline" className="text-[#D4AF37] border-[#D4AF37] whitespace-nowrap">+{displayGain}</Badge>
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>

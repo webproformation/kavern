@@ -174,8 +174,6 @@ export default function OpenPackageDetailPage() {
 
     try {
       const weight = parseFloat(finalWeight);
-      const trackingNumber = `TRK-${Date.now()}`;
-      const shippingLabelUrl = `https://placeholder.com/label-${packageId}.pdf`;
       const now = new Date().toISOString();
 
       const { error: packageError } = await supabase
@@ -183,8 +181,6 @@ export default function OpenPackageDetailPage() {
         .update({
           status: 'shipped',
           final_weight: weight,
-          tracking_number: trackingNumber,
-          shipping_label_url: shippingLabelUrl,
           shipped_at: now,
           updated_at: now
         })
@@ -386,7 +382,7 @@ export default function OpenPackageDetailPage() {
         </CardContent>
       </Card>
 
-      {packageData.status === 'ready_to_prepare' && groupedItems.length > 0 && (
+      {(['closed', 'ready_to_prepare'] as string[]).includes(packageData.status) && groupedItems.length > 0 && (
         <div className="flex gap-4">
           <Button
             onClick={() => setShowPickingList(true)}
