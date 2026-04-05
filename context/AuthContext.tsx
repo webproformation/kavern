@@ -224,13 +224,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('cart');
       localStorage.removeItem('wishlist');
     } catch {}
-    await supabase.auth.signOut();
+
+    // scope:'local' efface la session locale sans appel API — évite le 403 si le token est expiré
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch {}
+
+    // Force le nettoyage d'état même si l'appel API a échoué
     setUser(null);
     setProfile(null);
     useAuthStore.getState().signOut();
     dailyLoginCheckedRef.current = false;
-    // Émettre un événement custom pour forcer le reset des contextes Cart et Wishlist
-    // (évite la race condition où le debounce re-sauvegarde l'ancien panier)
     window.dispatchEvent(new Event('kavern:logout'));
   };
 
