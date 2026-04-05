@@ -27,10 +27,12 @@ export async function POST(request: NextRequest) {
     }
 
     // API Sendcloud Service Points
+    // On ne filtre PAS par carrier : le slug Sendcloud de Chronopost Shop2Shop
+    // peut varier (chronopost, shop2shop, etc.) selon le compte.
+    // On retourne tous les service points et on laisse le client choisir.
     const params = new URLSearchParams({
       country: 'FR',
       postal_code: postalCode,
-      carrier: carrier,
       radius: '10000', // 10km en mètres
     });
 
@@ -39,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     const url = `https://servicepoints.sendcloud.sc/api/v2/service-points/?${params.toString()}`;
-    console.log(`[Sendcloud] Recherche relay: ${url}`);
+    console.log(`[Sendcloud] Recherche relay (tous carriers): ${url}`);
 
     const auth = Buffer.from(`${publicKey}:${secretKey}`).toString('base64');
 
@@ -60,7 +62,9 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    const servicePoints = data || [];
+    const servicePoints = Array.isArray(data) ? data : (data?.results ?? data?.service_points ?? []);
+
+    console.log(`[Sendcloud] Réponse brute: ${servicePoints.length} points, carriers: ${[...new Set(servicePoints.map((sp: any) => sp.carrier))].join(', ')}`);
 
     // Mapper au format attendu par le RelayPointSelector
     const points = servicePoints.map((sp: any) => ({
