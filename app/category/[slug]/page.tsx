@@ -110,19 +110,27 @@ export default function CategoryPage() {
   async function loadCategoryAndProducts() {
     setLoading(true);
     try {
-      const { data: termsData } = await supabase.from('product_attribute_terms').select('id, name');
+      // Étape 1 — requêtes indépendantes en parallèle
+      const [termsResult, categoryResult] = await Promise.all([
+        supabase.from('product_attribute_terms').select('id, name'),
+        slug !== 'tous'
+          ? supabase.from('categories').select('*').eq('slug', slug).maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+      ]);
+
       const dict: Record<string, string> = {};
-      if (termsData) {
-        termsData.forEach(t => { dict[String(t.id).toLowerCase()] = t.name; });
+      if (termsResult.data) {
+        termsResult.data.forEach((t: any) => { dict[String(t.id).toLowerCase()] = t.name; });
       }
+
       let productsQuery = supabase.from('products').select('id, name, slug, regular_price, sale_price, image_url, gallery_images, is_variable_product, has_variations, stock_quantity, is_featured, is_diamond, attributes, marketing_badge, status, created_at, tva_rate, is_pack').eq('status', 'publish').order('created_at', { ascending: false });
 
       if (slug !== 'tous') {
-        const { data: categoryData } = await supabase.from('categories').select('*').eq('slug', slug).maybeSingle();
+        const categoryData = categoryResult.data;
         if (!categoryData) { router.push('/'); return; }
         setCategory(categoryData);
         const { data: mappingData } = await supabase.from('product_category_mapping').select('product_id').eq('category_id', categoryData.id);
-        const productIds = mappingData?.map(m => m.product_id) || [];
+        const productIds = mappingData?.map((m: any) => m.product_id) || [];
         if (productIds.length > 0) productsQuery = productsQuery.in('id', productIds);
         else { setAllProducts([]); setLoading(false); return; }
       }
@@ -130,11 +138,12 @@ export default function CategoryPage() {
       const { data: productsData } = await productsQuery;
 
       if (productsData) {
-        const productIds = productsData.map(p => p.id);
+        const productIds = productsData.map((p: any) => p.id);
+        // Étape 2 — produits et variations en parallèle
         const { data: variationsData } = await supabase.from('product_variations').select('product_id, stock_quantity, attributes, is_active').in('product_id', productIds);
-        const finalProducts = productsData.map(p => ({
+        const finalProducts = productsData.map((p: any) => ({
           ...p,
-          product_variations: variationsData?.filter(v => v.product_id === p.id) || []
+          product_variations: variationsData?.filter((v: any) => v.product_id === p.id) || []
         }));
 
         const globalSet = new Set<string>();
