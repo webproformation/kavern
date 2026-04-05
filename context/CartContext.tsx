@@ -196,29 +196,32 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   useEffect(() => {
-    const abortController = new AbortController();
+    let cancelled = false;
 
     const initCart = async () => {
       setLoading(true);
 
       if (user) {
-        const supabaseCart = await loadCartFromSupabase(abortController.signal);
+        const supabaseCart = await loadCartFromSupabase();
 
         // Sécurité cross-session : on ignore toujours le localStorage quand un
         // utilisateur est connecté. Le localStorage peut contenir le panier d'un
         // autre compte ou d'une session anonyme précédente.
         localStorage.removeItem('cart');
 
-        // On ne met à jour le state que si la requête n'a pas été annulée
-        if (!abortController.signal.aborted) {
+        if (!cancelled) {
           setCart(supabaseCart);
         }
       } else {
         const localCart = loadCartFromLocalStorage();
-        setCart(localCart.map(item => ({ ...item, cartItemId: item.cartItemId || uuidv4() })));
+        if (!cancelled) {
+          setCart(localCart.map(item => ({ ...item, cartItemId: item.cartItemId || uuidv4() })));
+        }
       }
 
-      if (!abortController.signal.aborted) {
+      // Toujours libérer le loading, même si annulé — évite le skeleton infini
+      // lors des navigations admin → front qui déclenchent plusieurs re-renders
+      if (!cancelled) {
         setLoading(false);
       }
     };
@@ -237,10 +240,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      abortController.abort();
+      cancelled = true;
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [user, syncCartToSupabase]);
+  }, [user]);
 
   useEffect(() => {
     if (loading) return;
