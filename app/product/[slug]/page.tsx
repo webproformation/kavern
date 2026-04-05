@@ -94,20 +94,25 @@ export default function ProductPage() {
 
   async function loadProduct() {
     try {
+      // Requête produit sans join embedded — évite les hangs PostgREST sur
+      // maybeSingle() + product_variations(*) pour les produits variables/packs
       const { data, error } = await supabase
         .from("products")
-        .select(`
-          *,
-          product_variations (*)
-        `)
+        .select("*")
         .eq("slug", slug)
         .maybeSingle();
 
       if (error) throw error;
       if (data) {
-        setProduct(data);
+        // Charger les variations séparément
+        const { data: variations } = await supabase
+          .from("product_variations")
+          .select("*")
+          .eq("product_id", data.id);
+
+        setProduct({ ...data, product_variations: variations || [] });
         loadRelatedAndReviews(data);
-        
+
         // Si c'est un pack, on charge les produits de la catégorie source
         if (data.is_pack) {
           loadPackSourceProducts(data.pack_source_category_id);
