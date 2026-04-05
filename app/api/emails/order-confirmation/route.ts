@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    const { orderId } = await request.json();
+    const { orderId, email: emailFromBody, firstName: firstNameFromBody, orderNumber: orderNumberFromBody, items: itemsFromBody, total: totalFromBody, isOpenPackage: isOpenPackageFromBody } = await request.json();
 
     if (!orderId) {
       return NextResponse.json(
@@ -31,11 +31,7 @@ export async function POST(request: NextRequest) {
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select(`
-        *,
-        order_items(*),
-        profiles(email, first_name)
-      `)
+      .select('*, order_items(*)')
       .eq('id', orderId)
       .single();
 
@@ -46,9 +42,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const profile = order.profiles as any;
-    const email = profile?.email;
-    const firstName = profile?.first_name || 'Client';
+    const email = emailFromBody || order.user_email || null;
+    const firstName = firstNameFromBody || order.shipping_first_name || 'Client';
 
     if (!email) {
       return NextResponse.json(
@@ -57,8 +52,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Formater les items pour l'email
-    const items = (order.order_items || []).map((item: any) => ({
+    // Formater les items pour l'email (priorité aux items du body s'ils existent)
+    const items = itemsFromBody?.length > 0 ? itemsFromBody : (order.order_items || []).map((item: any) => ({
       image_url: item.image_url || item.product_image || null,
       product_name: item.product_name || 'Produit',
       variation_details: item.variation_data || item.variation_details || null,
@@ -70,13 +65,17 @@ export async function POST(request: NextRequest) {
       console.warn('⚠️ Email confirmation - AUCUN ARTICLE dans la commande', orderId);
     }
 
+    const orderNumber = orderNumberFromBody || order.order_number;
+    const total = totalFromBody ?? Number(order.total_amount || order.total || 0);
+    const isOpenPackage = isOpenPackageFromBody ?? (order.is_open_package || false);
+
     const result = await sendOrderConfirmationEmail(
       email,
       firstName,
-      order.order_number,
+      orderNumber,
       items,
-      Number(order.total_amount || order.total || 0),
-      order.is_open_package || false
+      total,
+      isOpenPackage
     );
 
     if (!result.success) {
