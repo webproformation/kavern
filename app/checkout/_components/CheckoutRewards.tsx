@@ -85,6 +85,16 @@ export function CheckoutRewards({
   handleApplyCoupon,
   onUserCouponSelect,
 }: CheckoutRewardsProps) {
+  // DEBUG TEMPORAIRE — à supprimer après diagnostic
+  if (typeof window !== 'undefined') {
+    console.log('[RewardsDebug] profile types:', JSON.stringify({
+      wb: typeof profile?.wallet_balance, wb_val: profile?.wallet_balance,
+      le: typeof profile?.loyalty_euros, le_val: profile?.loyalty_euros,
+      disc: typeof discountAmount, ref: typeof referralDiscount,
+      coup: typeof couponCode,
+    }));
+    console.log('[RewardsDebug] userCoupons count:', userCoupons.length);
+  }
   return (
     <Card className="border-l-4 border-[#C6A15B]">
       <CardHeader>
