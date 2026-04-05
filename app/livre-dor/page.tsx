@@ -278,7 +278,7 @@ export default function LivreDorPage() {
               <Button
                 onClick={() => setShowForm(!showForm)}
                 size="lg"
-                className="w-full sm:w-auto bg-[#C6A15B] hover:bg-[#B59149] text-white px-6 md:px-12 h-16 rounded-full shadow-xl shadow-amber-500/20 text-base md:text-lg font-bold hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3"
+                className="w-full sm:w-auto sm:mx-auto bg-[#C6A15B] hover:bg-[#B59149] text-white px-6 md:px-12 h-16 rounded-full shadow-xl shadow-amber-500/20 text-base md:text-lg font-bold hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3"
               >
                 <Coins className="h-6 w-6 shrink-0" />
                 <span className="truncate">Laisser un avis et cagnotter 0,20 €</span>

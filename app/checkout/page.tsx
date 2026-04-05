@@ -511,7 +511,7 @@ export default function CheckoutPage() {
         }]).select().single();
 
         if (pkgError) {
-          console.error('[Colis Ouvert] Erreur création:', pkgError);
+          console.error('[Colis Ouvert] Erreur création:', pkgError?.message, '| code:', pkgError?.code, '| details:', pkgError?.details, '| hint:', pkgError?.hint);
           toast.error('Erreur lors de la création du colis ouvert');
         }
 

@@ -76,8 +76,9 @@ export default function CouponsPage() {
 
       // --- TRAITEMENT DES DONNEES ---
 
-      // Liste des disponibles (ceux du wallet)
-      setUserCoupons(myWalletCoupons || []);
+      // Liste des disponibles (ceux du wallet) — normalisation coupon array→object
+      const normalize = (c: any) => ({ ...c, coupon: Array.isArray(c.coupon) ? (c.coupon[0] ?? null) : c.coupon });
+      setUserCoupons((myWalletCoupons || []).map(normalize));
 
       // Liste des utilisés
       const usedList = (usageHistory || []).map((usage: any) => ({
@@ -91,7 +92,7 @@ export default function CouponsPage() {
         order_id: usage.order_id,
         obtained_at: usage.obtained_at || usage.used_at,
         valid_until: usage.coupon?.valid_until || usage.valid_until,
-        coupon: usage.coupon
+        coupon: Array.isArray(usage.coupon) ? (usage.coupon[0] ?? null) : usage.coupon
       }));
       setUsedUserCoupons(usedList);
 
@@ -99,7 +100,7 @@ export default function CouponsPage() {
       const now = new Date();
       const in7Days = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-      const expiring = (myWalletCoupons || []).filter((c: UserCoupon) => {
+      const expiring = (myWalletCoupons || []).map(normalize).filter((c: any) => {
         if (!c.valid_until) return false;
         const validUntil = new Date(c.valid_until);
         return validUntil >= now && validUntil <= in7Days;
