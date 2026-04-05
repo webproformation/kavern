@@ -25,13 +25,6 @@ export function CheckoutPayment({
   bankDialogOpen,
   setBankDialogOpen
 }: CheckoutPaymentProps) {
-  // DEBUG TEMPORAIRE
-  if (typeof window !== 'undefined') {
-    console.log('[PaymentDebug] render', { methods: paymentMethods.length });
-    if (paymentMethods.length > 0) {
-      console.log('[PaymentDebug] method[0]', { icon: typeof paymentMethods[0].icon, iconVal: paymentMethods[0].icon, name: typeof paymentMethods[0].name });
-    }
-  }
   return (
     <Card className="border-l-4 border-[#C6A15B]">
       <CardHeader>

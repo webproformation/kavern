@@ -53,10 +53,6 @@ export function CheckoutDelivery({
   setShippingInsurance,
   isStorePickup
 }: CheckoutDeliveryProps) {
-  // DEBUG TEMPORAIRE
-  if (typeof window !== 'undefined') {
-    console.log('[DeliveryDebug] render', { openPackage: typeof openPackage, shippingMethods: shippingMethods.length, addresses: addresses.length });
-  }
   return (
     <>
       {/* COLIS EN ATTENTE */}

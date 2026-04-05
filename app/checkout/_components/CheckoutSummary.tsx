@@ -69,13 +69,6 @@ export function CheckoutSummary({
   onPayPalSuccess,
   onPayPalError
 }: CheckoutSummaryProps) {
-  // DEBUG TEMPORAIRE
-  if (typeof window !== 'undefined') {
-    console.log('[SummaryDebug] render', { cartLength: cart.length, tvaKeys: Object.keys(tvaBreakdown || {}), selectedPaymentType: typeof selectedPaymentMethod });
-    if (cart.length > 0) {
-      console.log('[SummaryDebug] cart[0] types', { name: typeof cart[0].name, price: typeof cart[0].price, qty: typeof cart[0].quantity });
-    }
-  }
   return (
     <>
       {/* NOTES & CONSENTEMENTS */}

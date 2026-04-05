@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Wallet, Gift, PiggyBank } from 'lucide-react';
@@ -85,16 +85,6 @@ export function CheckoutRewards({
   handleApplyCoupon,
   onUserCouponSelect,
 }: CheckoutRewardsProps) {
-  // DEBUG TEMPORAIRE — à supprimer après diagnostic
-  if (typeof window !== 'undefined') {
-    console.log('[RewardsDebug] profile types:', JSON.stringify({
-      wb: typeof profile?.wallet_balance, wb_val: profile?.wallet_balance,
-      le: typeof profile?.loyalty_euros, le_val: profile?.loyalty_euros,
-      disc: typeof discountAmount, ref: typeof referralDiscount,
-      coup: typeof couponCode,
-    }));
-    console.log('[RewardsDebug] userCoupons count:', userCoupons.length);
-  }
   return (
     <Card className="border-l-4 border-[#C6A15B]">
       <CardHeader>
@@ -295,69 +285,67 @@ export function CheckoutRewards({
             </div>
           ) : userCoupons.length > 0 ? (
             <div className="space-y-3">
-              <RadioGroup value={selectedUserCouponId} onValueChange={() => {}}>
-                {userCoupons.map((coupon) => {
-                  const rawCoupon = Array.isArray(coupon.coupon) ? (coupon.coupon[0] ?? null) : (coupon.coupon ?? null);
-                  if (!rawCoupon) return null;
-                  const couponData = rawCoupon;
-                  // DEBUG: log coupon data to console
-                  if (typeof window !== 'undefined') {
-                    console.log('[CouponDebug]', JSON.stringify({ id: coupon.id, code: coupon.code, couponKeys: Object.keys(rawCoupon), name: typeof rawCoupon.name, desc: typeof rawCoupon.description, discType: typeof rawCoupon.discount_type, discVal: typeof rawCoupon.discount_value }));
-                  }
-                  const computedDiscount = couponData.discount_type === 'percentage'
-                    ? (subtotal * Number(couponData.discount_value || 0) / 100)
-                    : Number(couponData.discount_value || 0);
-                  return (
-                  <div
-                    key={coupon.id}
-                    onClick={() => {
-                      if (onUserCouponSelect) {
-                        onUserCouponSelect(coupon.id, computedDiscount);
-                      } else if (coupon.id === selectedUserCouponId) {
-                        setSelectedUserCouponId('');
-                        setDiscountAmount(0);
-                      } else {
-                        setSelectedUserCouponId(coupon.id);
-                        setDiscountAmount(computedDiscount);
-                      }
-                    }}
-                    className="border border-gray-200 rounded-lg p-4 bg-gray-50 hover:border-[#D4AF37] transition-all cursor-pointer"
-                  >
-                    <div className="flex items-start space-x-3">
-                      <RadioGroupItem value={coupon.id} id={coupon.id} className="mt-1" onClick={(e) => e.stopPropagation()} />
-                      <label htmlFor={coupon.id} className="flex-1 cursor-pointer">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <p className="font-semibold text-gray-900">
-                                {typeof couponData.name === 'string' ? couponData.name : (typeof couponData.code === 'string' ? couponData.code : 'Coupon')}
-                              </p>
-                              <Badge className="bg-[#D4AF37] text-white border-0 text-xs">
-                                {coupon.code}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-gray-600 mb-2">
-                              {typeof couponData.description === 'string' ? couponData.description : 'Réduction applicable'}
+              {userCoupons.map((coupon) => {
+                const rawCoupon = Array.isArray(coupon.coupon) ? (coupon.coupon[0] ?? null) : (coupon.coupon ?? null);
+                if (!rawCoupon) return null;
+                const couponData = rawCoupon;
+                const computedDiscount = couponData.discount_type === 'percentage'
+                  ? (subtotal * Number(couponData.discount_value || 0) / 100)
+                  : Number(couponData.discount_value || 0);
+                const isSelected = selectedUserCouponId === coupon.id;
+                return (
+                <div
+                  key={coupon.id}
+                  onClick={() => {
+                    if (onUserCouponSelect) {
+                      onUserCouponSelect(coupon.id, computedDiscount);
+                    } else if (isSelected) {
+                      setSelectedUserCouponId('');
+                      setDiscountAmount(0);
+                    } else {
+                      setSelectedUserCouponId(coupon.id);
+                      setDiscountAmount(computedDiscount);
+                    }
+                  }}
+                  className={cn("border rounded-lg p-4 bg-gray-50 hover:border-[#D4AF37] transition-all cursor-pointer", isSelected ? "border-[#D4AF37]" : "border-gray-200")}
+                >
+                  <div className="flex items-start space-x-3">
+                    {/* Custom radio indicator — no Radix BubbleInput to prevent click-bubble loop */}
+                    <div className={cn("mt-1 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors", isSelected ? "border-[#D4AF37]" : "border-gray-300")}>
+                      {isSelected && <div className="w-2 h-2 rounded-full bg-[#D4AF37]" />}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-semibold text-gray-900">
+                              {typeof couponData.name === 'string' ? couponData.name : (typeof couponData.code === 'string' ? couponData.code : 'Coupon')}
                             </p>
-                            <p className="text-xs text-gray-500">
-                              Valable jusqu&apos;au {coupon.valid_until ? new Date(coupon.valid_until).toLocaleDateString('fr-FR') : '—'}
-                            </p>
+                            <Badge className="bg-[#D4AF37] text-white border-0 text-xs">
+                              {coupon.code}
+                            </Badge>
                           </div>
-                          <div className="text-right">
-                            <p className="text-xl font-bold text-[#D4AF37]">
-                              {couponData.discount_type === 'percentage'
-                                ? `-${couponData.discount_value}%`
-                                : `-${Number(couponData.discount_value || 0).toFixed(2)}€`
-                              }
-                            </p>
-                          </div>
+                          <p className="text-sm text-gray-600 mb-2">
+                            {typeof couponData.description === 'string' ? couponData.description : 'Réduction applicable'}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Valable jusqu&apos;au {coupon.valid_until ? new Date(coupon.valid_until).toLocaleDateString('fr-FR') : '—'}
+                          </p>
                         </div>
-                      </label>
+                        <div className="text-right">
+                          <p className="text-xl font-bold text-[#D4AF37]">
+                            {couponData.discount_type === 'percentage'
+                              ? `-${couponData.discount_value}%`
+                              : `-${Number(couponData.discount_value || 0).toFixed(2)}€`
+                            }
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  );
-                })}
-              </RadioGroup>
+                </div>
+                );
+              })}
             </div>
           ) : (
             <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
