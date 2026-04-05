@@ -290,6 +290,10 @@ export function CheckoutRewards({
                   const rawCoupon = Array.isArray(coupon.coupon) ? (coupon.coupon[0] ?? null) : (coupon.coupon ?? null);
                   if (!rawCoupon) return null;
                   const couponData = rawCoupon;
+                  // DEBUG: log coupon data to console
+                  if (typeof window !== 'undefined') {
+                    console.log('[CouponDebug]', JSON.stringify({ id: coupon.id, code: coupon.code, couponKeys: Object.keys(rawCoupon), name: typeof rawCoupon.name, desc: typeof rawCoupon.description, discType: typeof rawCoupon.discount_type, discVal: typeof rawCoupon.discount_value }));
+                  }
                   const computedDiscount = couponData.discount_type === 'percentage'
                     ? (subtotal * Number(couponData.discount_value || 0) / 100)
                     : Number(couponData.discount_value || 0);
