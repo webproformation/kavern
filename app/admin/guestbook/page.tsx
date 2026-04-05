@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { CheckCircle2, XCircle, Crown, Gem, Heart, Loader2 } from 'lucide-react'
+import { CheckCircle2, XCircle, Crown, Gem, Heart, Loader2, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import { useState } from 'react'
@@ -80,6 +80,24 @@ export default function AdminGuestbookPage() {
       toast.success('Avis approuvé')
     }
 
+    refetch()
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Supprimer définitivement cet avis ? Cette action est irréversible.')) return
+
+    const { error } = await supabase
+      .from('livre-dor')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      toast.error('Erreur lors de la suppression')
+      console.error(error)
+      return
+    }
+
+    toast.success('Avis supprimé')
     refetch()
   }
 
@@ -356,6 +374,16 @@ export default function AdminGuestbookPage() {
                           Réactiver
                         </Button>
                       )}
+
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDelete(entry.id)}
+                        className="ml-auto"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Supprimer
+                      </Button>
                     </div>
                   </div>
                 </div>
