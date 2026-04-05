@@ -66,7 +66,7 @@ export default function LivreDorPage() {
       // Exclure celles déjà notées dans le livre d'or
       const { data: reviewed } = await supabase
         .from('livre-dor')
-        .select('order_number')
+        .select('id, order_number')
         .eq('user_id', user.id);
 
       const reviewedNumbers = new Set((reviewed || []).map(r => r.order_number));

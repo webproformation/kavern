@@ -172,15 +172,25 @@ export function useAmbassador() {
   async function fetchCurrentAmbassador() {
     try {
       setLoading(true)
-      const { data, error } = await supabase
+      // Note: on ne peut pas faire entry:livre-dor(*) — PostgREST refuse les joins
+      // sur les tables dont le nom contient un tiret. On fait 2 requêtes séparées.
+      const { data: ambData, error } = await supabase
         .from('ambassador_weekly')
-        .select('*, entry:livre-dor(*)')
+        .select('*')
         .order('week_start', { ascending: false })
         .limit(1)
         .maybeSingle()
 
       if (error) throw error
-      setCurrentAmbassador(data)
+      if (!ambData) { setCurrentAmbassador(null); return; }
+
+      const { data: entryData } = await supabase
+        .from('livre-dor')
+        .select('*')
+        .eq('id', ambData.entry_id)
+        .maybeSingle()
+
+      setCurrentAmbassador({ ...ambData, entry: entryData ?? undefined })
     } catch (error) {
       console.error('Error fetching ambassador:', error)
     } finally {
