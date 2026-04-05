@@ -67,7 +67,7 @@ export function RelayPointSelector({ provider, onSelect, selectedPoint, customer
       setSearchPostalCode(initialZip);
       setSearchCity(initialCity);
       if (initialZip && relayPoints.length === 0) {
-        setTimeout(() => searchRelayPoints(initialZip, initialCity), 150);
+        setTimeout(() => searchRelayPoints(initialZip), 150);
       }
     }
   }, [open]);
@@ -88,7 +88,7 @@ export function RelayPointSelector({ provider, onSelect, selectedPoint, customer
       const response = await fetch(`/api/${provider}/search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postalCode: zipToUse, city: cityToUse }),
+        body: JSON.stringify({ postalCode: zipToUse }),
       });
 
       const data = await response.json();

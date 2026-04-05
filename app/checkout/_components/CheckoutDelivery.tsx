@@ -209,6 +209,7 @@ export function CheckoutDelivery({
               {selectedShippingMethod?.is_relay && (
                 <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
                   <RelayPointSelector
+                    key={selectedShippingMethodId}
                     provider={(() => {
                       const code = selectedShippingMethod.code;
                       if (code === 'mondial_relay') return 'mondial-relay';
