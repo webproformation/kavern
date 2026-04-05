@@ -199,7 +199,7 @@ function WishlistProductCard({
 
       {isInStock && (
         <div className="p-4 pt-0">
-          {product.has_variations || product.is_variable_product ? (
+          {product.has_variations || product.is_variable_product || product.is_pack ? (
             <Link href={`/product/${product.slug}`}>
               <Button
                 className="w-full bg-[#C6A15B] hover:bg-[#b8933d] text-white font-semibold rounded-xl"
@@ -249,7 +249,7 @@ export default function WishlistPage() {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, slug, regular_price, sale_price, image_url, gallery_images, stock_quantity, has_variations, is_variable_product, product_variations(stock_quantity)')
+        .select('id, name, slug, regular_price, sale_price, image_url, gallery_images, stock_quantity, has_variations, is_variable_product, is_pack, product_variations(stock_quantity)')
         .in('id', wishlistItems);
 
       if (error) throw error;

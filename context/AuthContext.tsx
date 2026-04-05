@@ -46,6 +46,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkDailyLogin = async (userId: string) => {
     if (dailyLoginCheckedRef.current) return;
     const today = new Date().toISOString().split('T')[0];
+
+    // Vérification anniversaire — toujours, indépendamment du bonus quotidien
+    const birthdayKey = `birthday_${userId}_${today}`;
+    if (!localStorage.getItem(birthdayKey)) {
+      try {
+        const bdRes = await fetch('/api/auth/check-birthday', { method: 'POST', credentials: 'include' });
+        const bdData = await bdRes.json();
+        if (bdData.credited) {
+          localStorage.setItem(birthdayKey, '1');
+          toast.success("🎂 Joyeux anniversaire ! +5€ crédités sur votre cagnotte !");
+          try {
+            const confetti = (await import('canvas-confetti')).default;
+            confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#D4AF37', '#FF6B9D', '#FFD700', '#FF0000'] });
+          } catch {}
+        }
+      } catch { /* non-bloquant */ }
+    }
+
     if (localStorage.getItem(`login_${userId}`) === today) {
       dailyLoginCheckedRef.current = true;
       return;
@@ -69,18 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 }, colors: ['#D4AF37', '#C6A15B', '#FFD700'] });
         } catch {}
       }
-      // Vérification anniversaire (sans dépendre du cron Vercel)
-      try {
-        const bdRes = await fetch('/api/auth/check-birthday', { method: 'POST', credentials: 'include' });
-        const bdData = await bdRes.json();
-        if (bdData.credited) {
-          toast.success("🎂 Joyeux anniversaire ! +5€ crédités sur votre cagnotte !");
-          try {
-            const confetti = (await import('canvas-confetti')).default;
-            confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#D4AF37', '#FF6B9D', '#FFD700', '#FF0000'] });
-          } catch {}
-        }
-      } catch { /* non-bloquant */ }
+      // Vérification anniversaire déjà faite en début de checkDailyLogin
     } catch (e: any) {
       console.error("Daily login bonus exception:", e.message);
       dailyLoginCheckedRef.current = true;

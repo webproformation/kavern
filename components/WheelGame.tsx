@@ -257,45 +257,54 @@ export function WheelGame({ game, onClose, onWin }: WheelGameProps) {
                 style={{
                   transform: `rotate(${rotation}deg)`,
                   transition: spinning ? 'transform 5s cubic-bezier(0.17, 0.67, 0.12, 0.99)' : 'none',
-                  backgroundColor: game.wheel_design?.backgroundColor || '#1a1a1a',
                 }}
               >
-                {game.segments.map((segment, index) => {
-                  const angle = segmentAngle;
-                  const rotation = index * angle;
-                  const fallbackColors = game.wheel_design?.wheelColors;
-                  const segmentColor = segment.color || (fallbackColors && fallbackColors.length > 0 ? fallbackColors[index % fallbackColors.length] : '#b8933d');
+                {/* Roue SVG — couleurs segments correctement appliquées */}
+                <svg viewBox="0 0 200 200" className="absolute inset-0 w-full h-full">
+                  {game.segments.map((segment, index) => {
+                    const angle = segmentAngle;
+                    const fallbackColors = game.wheel_design?.wheelColors;
+                    const segmentColor = segment.color || (fallbackColors?.[index % (fallbackColors?.length || 1)]) || '#b8933d';
+                    const startAngle = (index * angle - 90) * (Math.PI / 180);
+                    const endAngle = ((index + 1) * angle - 90) * (Math.PI / 180);
+                    const x1 = 100 + 100 * Math.cos(startAngle);
+                    const y1 = 100 + 100 * Math.sin(startAngle);
+                    const x2 = 100 + 100 * Math.cos(endAngle);
+                    const y2 = 100 + 100 * Math.sin(endAngle);
+                    const largeArc = angle > 180 ? 1 : 0;
+                    const midAngle = ((index + 0.5) * angle - 90) * (Math.PI / 180);
+                    const tx = 100 + 65 * Math.cos(midAngle);
+                    const ty = 100 + 65 * Math.sin(midAngle);
+                    const textRotation = (index + 0.5) * angle;
 
-                  return (
-                    <div
-                      key={index}
-                      className="absolute inset-0 origin-center"
-                      style={{
-                        transform: `rotate(${rotation}deg)`,
-                        clipPath: `polygon(50% 50%, 50% 0%, ${50 + Math.tan((angle / 2) * Math.PI / 180) * 50}% 0%)`,
-                      }}
-                    >
-                      <div
-                        className="absolute inset-0"
-                        style={{
-                          background: `conic-gradient(from ${rotation}deg, ${segmentColor} 0deg, ${segmentColor} ${angle}deg, transparent ${angle}deg)`,
-                        }}
-                      />
-                      <div
-                        className="absolute top-[20%] left-1/2 -translate-x-1/2 text-center max-w-[80px]"
-                        style={{
-                          transform: `rotate(${angle / 2}deg)`,
-                        }}
-                      >
-                        <p className="text-white font-bold text-xs drop-shadow-lg leading-tight break-words">
-                          {segment.label || segment.coupon_code}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
+                    return (
+                      <g key={index}>
+                        <path
+                          d={`M 100 100 L ${x1} ${y1} A 100 100 0 ${largeArc} 1 ${x2} ${y2} Z`}
+                          fill={segmentColor}
+                          stroke="white"
+                          strokeWidth="1"
+                        />
+                        <text
+                          x={tx}
+                          y={ty}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          fill="white"
+                          fontSize="8"
+                          fontWeight="bold"
+                          transform={`rotate(${textRotation}, ${tx}, ${ty})`}
+                          style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.8))' }}
+                        >
+                          {(segment.label || segment.coupon_code || '').substring(0, 12)}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
 
-                <div className="absolute inset-0 m-auto w-20 h-20 rounded-full bg-gradient-to-br from-[#d4af37] to-[#b8933d] border-4 border-white shadow-xl flex items-center justify-center">
+                <div className="absolute inset-0 m-auto w-20 h-20 rounded-full bg-gradient-to-br from-[#d4af37] to-[#b8933d] border-4 border-white shadow-xl flex items-center justify-center"
+                  style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', position: 'absolute', width: '5rem', height: '5rem' }}>
                   <Sparkles className="h-8 w-8 text-white" />
                 </div>
               </div>

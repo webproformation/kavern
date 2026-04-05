@@ -287,9 +287,10 @@ export function CheckoutRewards({
             <div className="space-y-3">
               <RadioGroup value={selectedUserCouponId} onValueChange={() => {}}>
                 {userCoupons.map((coupon) => {
-                  const computedDiscount = coupon.coupon?.discount_type === 'percentage'
-                    ? (subtotal * coupon.coupon.discount_value / 100)
-                    : Number(coupon.coupon?.discount_value || 0);
+                  const couponData = coupon.coupon ?? {};
+                  const computedDiscount = couponData.discount_type === 'percentage'
+                    ? (subtotal * Number(couponData.discount_value || 0) / 100)
+                    : Number(couponData.discount_value || 0);
                   return (
                   <div
                     key={coupon.id}
@@ -313,24 +314,24 @@ export function CheckoutRewards({
                           <div>
                             <div className="flex items-center gap-2 mb-1">
                               <p className="font-semibold text-gray-900">
-                                {coupon.coupon?.name || 'Coupon'}
+                                {couponData.name || 'Coupon'}
                               </p>
                               <Badge className="bg-[#D4AF37] text-white border-0 text-xs">
                                 {coupon.code}
                               </Badge>
                             </div>
                             <p className="text-sm text-gray-600 mb-2">
-                              {coupon.coupon?.description || 'Réduction applicable'}
+                              {couponData.description || 'Réduction applicable'}
                             </p>
                             <p className="text-xs text-gray-500">
-                              Valable jusqu&apos;au {new Date(coupon.valid_until).toLocaleDateString('fr-FR')}
+                              Valable jusqu&apos;au {coupon.valid_until ? new Date(coupon.valid_until).toLocaleDateString('fr-FR') : '—'}
                             </p>
                           </div>
                           <div className="text-right">
                             <p className="text-xl font-bold text-[#D4AF37]">
-                              {coupon.coupon?.discount_type === 'percentage'
-                                ? `-${coupon.coupon.discount_value}%`
-                                : `-${Number(coupon.coupon?.discount_value || 0).toFixed(2)}€`
+                              {couponData.discount_type === 'percentage'
+                                ? `-${couponData.discount_value}%`
+                                : `-${Number(couponData.discount_value || 0).toFixed(2)}€`
                               }
                             </p>
                           </div>

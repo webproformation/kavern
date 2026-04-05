@@ -92,22 +92,32 @@ export default function LivreDorPage() {
 
     setUploading(true)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        toast.error('Session expirée, veuillez vous reconnecter')
+        return
+      }
+
       const formData = new FormData()
       formData.append('file', file)
 
       const response = await fetch('/api/storage/upload', {
         method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
         body: formData
       })
 
-      if (!response.ok) throw new Error('Upload failed')
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        throw new Error(err.error || 'Upload failed')
+      }
 
       const { url } = await response.json()
       setFormData(prev => ({ ...prev, customer_photo_url: url }))
       toast.success('Photo uploadée avec succès')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Upload error:', error)
-      toast.error('Erreur lors de l\'upload de la photo')
+      toast.error(error.message || 'Erreur lors de l\'upload de la photo')
     } finally {
       setUploading(false)
     }

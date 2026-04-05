@@ -232,12 +232,18 @@ export async function submitGuestbookEntry(data: {
 }
 
 export async function canUserReview(userId: string, orderNumber: string) {
-  const { data: existingReview } = await supabase
+  const query = supabase
     .from('livre-dor')
     .select('id')
     .eq('user_id', userId)
-    .eq('order_number', orderNumber)
-    .maybeSingle()
 
+  // Si pas de numéro de commande, vérifier qu'il n'a pas déjà laissé un avis sans commande
+  if (orderNumber) {
+    query.eq('order_number', orderNumber)
+  } else {
+    query.is('order_number', null).or('order_number.eq.,order_number.is.null')
+  }
+
+  const { data: existingReview } = await query.maybeSingle()
   return !existingReview
 }
