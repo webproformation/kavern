@@ -50,7 +50,11 @@ export function useCoupons() {
         console.error('Error loading coupons:', error);
         setCoupons([]);
       } else {
-        const validCoupons = (data || []).filter(c => {
+        const normalized = (data || []).map((c: any) => ({
+          ...c,
+          coupon: Array.isArray(c.coupon) ? (c.coupon[0] ?? null) : c.coupon,
+        }));
+        const validCoupons = normalized.filter((c: any) => {
           if (!c.coupon) return false;
           if (!c.coupon.is_active) return false;
           if (c.valid_until && new Date(c.valid_until) < new Date()) return false;

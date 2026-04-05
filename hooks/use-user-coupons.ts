@@ -24,7 +24,13 @@ export function useUserCoupons(userId: string | undefined) {
         .order('obtained_at', { ascending: false });
 
       if (error) throw error;
-      setCoupons(data || []);
+      // Normalise coupon: PostgREST peut retourner un tableau au lieu d'un objet
+      // si la FK n'est pas explicitement déclarée → "Objects are not valid as a React child"
+      const normalized = (data || []).map((item: any) => ({
+        ...item,
+        coupon: Array.isArray(item.coupon) ? (item.coupon[0] ?? null) : item.coupon,
+      }));
+      setCoupons(normalized);
     } catch (error) {
       console.error('Erreur chargement coupons:', error);
     } finally {

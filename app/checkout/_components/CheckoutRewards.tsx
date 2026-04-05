@@ -287,7 +287,7 @@ export function CheckoutRewards({
             <div className="space-y-3">
               <RadioGroup value={selectedUserCouponId} onValueChange={() => {}}>
                 {userCoupons.map((coupon) => {
-                  const couponData = coupon.coupon ?? {};
+                  const couponData = Array.isArray(coupon.coupon) ? (coupon.coupon[0] ?? {}) : (coupon.coupon ?? {});
                   const computedDiscount = couponData.discount_type === 'percentage'
                     ? (subtotal * Number(couponData.discount_value || 0) / 100)
                     : Number(couponData.discount_value || 0);
