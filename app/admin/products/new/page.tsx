@@ -339,6 +339,10 @@ export default function NewProductPage() {
                 <div className="space-y-2"><Label>Slug (URL)</Label><Input value={slug} onChange={(e) => setSlug(e.target.value)} className="bg-gray-50 font-mono text-xs" /></div>
               </div>
               <div className="space-y-2">
+                <Label>Référence (SKU)</Label>
+                <Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="Ex: KAV-BOUGIE-001" className="font-mono text-sm" />
+              </div>
+              <div className="space-y-2">
                 <div className="flex justify-between"><Label>La &quot;Phrase d&apos;Accroche&quot;</Label><span className="text-[10px] text-gray-400">{shortDescription.length}/150</span></div>
                 <Input value={shortDescription} onChange={(e) => setShortDescription(e.target.value.substring(0, 150))} placeholder="Le goût authentique..." className="italic" />
               </div>

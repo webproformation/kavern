@@ -107,8 +107,10 @@ export async function POST(request: NextRequest) {
             // Cashback & Coupons Croisés
             const userId = session.metadata?.userId;
             if (userId) {
-                 const cashbackAmount = Number(orderDetails.total || orderDetails.subtotal) * 0.02;
-                 await supabase.rpc('add_loyalty_gain', { p_user_id: userId, p_type: 'order_cashback', p_base_amount: cashbackAmount, p_description: `Cashback commande ${orderDetails.order_number}` });
+                 const { data: profileTier } = await supabase.from('profiles').select('tier_multiplier').eq('id', userId).maybeSingle();
+                 const tierMultiplier = profileTier?.tier_multiplier || 1;
+                 const cashbackAmount = Number(orderDetails.total || orderDetails.subtotal) * 0.02 * tierMultiplier;
+                 await supabase.rpc('add_loyalty_gain', { p_user_id: userId, p_type: 'order_cashback', p_base_amount: cashbackAmount, p_description: `Cashback commande ${orderDetails.order_number} (×${tierMultiplier})` });
             }
 
             // Génération facture auto (sauf colis ouvert — facture à la clôture)

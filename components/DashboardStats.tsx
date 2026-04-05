@@ -25,14 +25,19 @@ export function DashboardStats() {
 
   async function loadStats() {
     try {
-      const { data, error } = await supabase
-        .from('dashboard_stats')
-        .select('*')
-        .maybeSingle();
+      const [{ data }, { count: ordersCount }] = await Promise.all([
+        supabase.from('dashboard_stats').select('*').maybeSingle(),
+        supabase.from('orders').select('id', { count: 'exact', head: true }).in('status', ['shipped', 'delivered']),
+      ]);
 
-      if (error) throw error;
       if (data) {
-        setStats(data);
+        setStats({
+          ...data,
+          // Si la valeur manuelle est <= auto-count, utiliser l'auto-count
+          packages_sent: Math.max(data.packages_sent || 0, ordersCount || 0),
+        });
+      } else {
+        setStats(prev => ({ ...prev, packages_sent: ordersCount || 0 }));
       }
     } catch (error) {
       console.error('Error loading stats:', error);

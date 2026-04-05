@@ -301,19 +301,21 @@ export default function OrdersPage() {
         setSelectedOrder({ ...selectedOrder, ...updateData });
       }
 
-      // Cashback 2% + Génération facture quand on valide manuellement un paiement
+      // Cashback 2% × multiplicateur de rang + Génération facture quand on valide manuellement un paiement
       if (wasPending && isNowPaid && order) {
         // Cashback
         try {
-          const cashbackAmount = Number(order.total || order.subtotal) * 0.02;
+          const { data: profileData } = await supabase.from('profiles').select('tier_multiplier').eq('id', order.user_id).maybeSingle();
+          const tierMultiplier = profileData?.tier_multiplier || 1;
+          const cashbackAmount = Number(order.total || order.subtotal) * 0.02 * tierMultiplier;
           if (cashbackAmount > 0 && order.user_id) {
             await supabase.rpc('add_loyalty_gain', {
               p_user_id: order.user_id,
               p_type: 'order_cashback',
               p_base_amount: cashbackAmount,
-              p_description: `Cashback commande #${order.order_number}`
+              p_description: `Cashback commande #${order.order_number} (×${tierMultiplier})`
             });
-            toast.success(`Cashback de ${cashbackAmount.toFixed(2)}€ crédité !`);
+            toast.success(`Cashback de ${cashbackAmount.toFixed(2)}€ crédité ! (rang ×${tierMultiplier})`);
           }
         } catch (cashbackErr) {
           console.error("Cashback error (non-blocking):", cashbackErr);

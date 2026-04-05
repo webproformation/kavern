@@ -55,8 +55,8 @@ export function CheckoutDelivery({
 }: CheckoutDeliveryProps) {
   return (
     <>
-      {/* COLIS EN ATTENTE */}
-      <Card className="bg-gradient-to-br from-[#D4AF37]/20 to-[#b8933d]/20 border-l-4 border-[#C6A15B]">
+      {/* COLIS EN ATTENTE — masqué si un colis ouvert actif existe déjà */}
+      {!openPackage && <Card className="bg-gradient-to-br from-[#D4AF37]/20 to-[#b8933d]/20 border-l-4 border-[#C6A15B]">
         <CardHeader>
           <div className="flex items-center gap-3">
             <Clock className="h-8 w-8 text-[#C6A15B]" />
@@ -90,7 +90,7 @@ export function CheckoutDelivery({
             </div>
           </div>
         </CardContent>
-      </Card>
+      </Card>}
 
       {/* COLIS OUVERT EXISTANT */}
       {openPackage && !packageLoading && (

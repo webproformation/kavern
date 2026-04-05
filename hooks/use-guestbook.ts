@@ -115,13 +115,13 @@ export function useHearts(entryId: string) {
   }
 
   async function fetchHeartsCount() {
-    const { data } = await supabase
-      .from('livre-dor')
-      .select('hearts_count')
-      .eq('id', entryId)
-      .maybeSingle()
+    // Compter directement depuis guestbook_hearts pour avoir le vrai total
+    const { count } = await supabase
+      .from('guestbook_hearts')
+      .select('id', { count: 'exact', head: true })
+      .eq('entry_id', entryId)
 
-    setHeartsCount(data?.hearts_count || 0)
+    setHeartsCount(count || 0)
   }
 
   async function toggleHeart() {
@@ -137,19 +137,22 @@ export function useHearts(entryId: string) {
           .eq('user_id', user.id)
 
         if (error) throw error
+        const newCount = Math.max(0, heartsCount - 1)
         setHasHearted(false)
-        setHeartsCount(prev => Math.max(0, prev - 1))
+        setHeartsCount(newCount)
+        // Persister le compteur en DB
+        await supabase.from('livre-dor').update({ hearts_count: newCount }).eq('id', entryId)
       } else {
         const { error } = await supabase
           .from('guestbook_hearts')
-          .insert({
-            entry_id: entryId,
-            user_id: user.id
-          })
+          .insert({ entry_id: entryId, user_id: user.id })
 
         if (error) throw error
+        const newCount = heartsCount + 1
         setHasHearted(true)
-        setHeartsCount(prev => prev + 1)
+        setHeartsCount(newCount)
+        // Persister le compteur en DB
+        await supabase.from('livre-dor').update({ hearts_count: newCount }).eq('id', entryId)
       }
     } catch (error) {
       console.error('Error toggling heart:', error)

@@ -439,7 +439,10 @@ export default function CheckoutPage() {
         variation_data: item.isPack ? { isPack: true, packItems: item.packItems, attributes: item.selectedAttributes } : (item.selectedAttributes || null),
       }));
 
-      await supabase.from('order_items').insert(orderItems);
+      const { error: paypalItemsError } = await supabase.from('order_items').insert(orderItems);
+      if (paypalItemsError) {
+        console.error('[PayPal] order_items insert failed:', paypalItemsError);
+      }
 
       const orderNumber = newOrder.order_number;
       clearCart();
@@ -582,6 +585,7 @@ export default function CheckoutPage() {
     if (!addToOpenPackage && !isStorePickup) {
         if (!selectedShippingMethodId) { toast.error('Veuillez sélectionner un mode de livraison'); return; }
         if (!selectedAddressId) { toast.error('Veuillez sélectionner une adresse de livraison'); return; }
+        if (selectedShippingMethod?.is_relay && !relayPointData) { toast.error('Veuillez sélectionner un point relais pour ce mode de livraison'); return; }
     }
 
     if (!rgpdConsent) { toast.error('Vous devez accepter les CGV et la politique de confidentialité'); return; }
@@ -640,9 +644,9 @@ export default function CheckoutPage() {
         notes: notes || null,
         newsletter_consent: newsletterConsent,
         rgpd_consent: rgpdConsent,
-        is_open_package: addToOpenPackage,
+        is_open_package: addToOpenPackage || createPendingPackage,
         total_virtual_weight: totalVirtualWeight,
-        shipping_type: addToOpenPackage ? 'open_package' : 'immediate',
+        shipping_type: (addToOpenPackage || createPendingPackage) ? 'open_package' : 'immediate',
       };
 
       const { data: newOrder, error: orderError } = await supabase.from('orders').insert([orderData]).select().single();
@@ -662,7 +666,12 @@ export default function CheckoutPage() {
         variation_data: item.isPack ? { isPack: true, packItems: item.packItems, attributes: item.selectedAttributes } : (item.selectedAttributes || null),
       }));
 
-      await supabase.from('order_items').insert(orderItems);
+      const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
+      if (itemsError) {
+        console.error('[Checkout] order_items insert failed:', itemsError);
+        // Non-bloquant : la commande est créée, on notifie sans bloquer
+        toast.error('Commande créée mais erreur sur les articles — contactez le support.');
+      }
 
       // --- STRIPE : afficher le formulaire de paiement ---
       // NE PAS appeler runPostOrderTasks ici — attendre le onSuccess Stripe

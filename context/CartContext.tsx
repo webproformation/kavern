@@ -85,16 +85,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       // Récupérer tva_rate et stock_quantity des produits en une requête
       const productIds = (data || []).map(item => item.product_id).filter(Boolean);
-      let productData: Record<string, { tva_rate: number; stock_quantity: number | null }> = {};
+      let productData: Record<string, { tva_rate: number; stock_quantity: number | null; virtual_weight: number }> = {};
       if (productIds.length > 0) {
         const { data: products } = await supabase
           .from('products')
-          .select('id, tva_rate, stock_quantity')
+          .select('id, tva_rate, stock_quantity, virtual_weight')
           .in('id', productIds);
         if (products) {
           productData = Object.fromEntries(products.map(p => [p.id, {
             tva_rate: p.tva_rate ?? 20,
             stock_quantity: p.stock_quantity ?? null,
+            virtual_weight: p.virtual_weight ?? 300,
           }]));
         }
       }
@@ -118,6 +119,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           packItems: item.variation_data?.packItems || null,
           cartItemId: uuidv4(), // Assure l'unicité à la récupération
           tva_rate: pData?.tva_rate ?? 20,
+          weight: pData?.virtual_weight ?? 300,
           // Stock réel récupéré depuis la base — null = illimité
           stockQuantity: stockQty !== null && stockQty !== undefined ? stockQty : undefined,
         };

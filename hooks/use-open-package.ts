@@ -169,16 +169,18 @@ export function useOpenPackage() {
   async function closePackage() {
     if (!openPackage) return;
 
-    try {
-      const { error } = await supabase
-        .from('open_packages')
-        .update({ status: 'closed' })
-        .eq('id', openPackage.id);
+    const { error } = await supabase
+      .from('open_packages')
+      .update({ status: 'closed' })
+      .eq('id', openPackage.id);
 
-      if (error) throw error;
+    if (error) {
+      console.error('Error closing package:', error);
+      throw new Error(error.message || 'Impossible de fermer le colis');
+    }
 
-      // RÈGLE 3 Sendcloud : push des données consolidées vers Sendcloud à la fermeture
-      const { data: { session } } = await supabase.auth.getSession();
+    // RÈGLE 3 Sendcloud : push non-bloquant
+    supabase.auth.getSession().then(({ data: { session } }) => {
       fetch('/api/sendcloud/push', {
         method: 'POST',
         headers: {
@@ -187,12 +189,9 @@ export function useOpenPackage() {
         },
         body: JSON.stringify({ openPackageId: openPackage.id }),
       }).catch(e => console.warn('[sendcloud] règle 3 push failed (non-blocking):', e));
+    });
 
-      await loadActivePackage();
-    } catch (error) {
-      console.error('Error closing package:', error);
-      throw error;
-    }
+    await loadActivePackage();
   }
 
   return {

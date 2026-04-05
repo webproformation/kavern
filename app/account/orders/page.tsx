@@ -324,15 +324,31 @@ export default function OrdersPage() {
                         )}
                         <div className="flex-1">
                           <h4 className="font-semibold">{item.product_name}</h4>
-                          {item.variation_data && Object.keys(item.variation_data).length > 0 && (
+
+                          {/* Contenu du pack / lot */}
+                          {item.variation_data?.isPack && item.variation_data?.packItems && (
+                            <div className="mt-2 p-2 bg-amber-50 border border-amber-100 rounded text-xs space-y-1">
+                              <p className="font-semibold text-amber-700">Composition du lot :</p>
+                              {item.variation_data.packItems.map((pItem: any, idx: number) => (
+                                <div key={idx} className="flex justify-between text-gray-700">
+                                  <span>{pItem.name}{pItem.sku ? ` (${pItem.sku})` : ''}</span>
+                                  <span className="font-medium">×{pItem.quantity}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Variations normales (hors pack) */}
+                          {item.variation_data && !item.variation_data.isPack && Object.keys(item.variation_data).length > 0 && (
                             <div className="text-sm text-gray-600 mt-1">
-                              {Object.entries(item.variation_data).map(([key, value]) => (
+                              {Object.entries(item.variation_data).filter(([key]) => !['price','image','isPack','packItems','attributes'].includes(key)).map(([key, value]) => (
                                 <span key={key} className="mr-3">
                                   {key}: <strong>{typeof value === 'object' ? (value as any)?.name || (value as any)?.option || String(value) : String(value)}</strong>
                                 </span>
                               ))}
                             </div>
                           )}
+
                           <div className="flex items-center justify-between mt-2">
                             <span className="text-sm text-gray-600">Quantité: {item.quantity}</span>
                             <span className="font-semibold">{(Number(item.price) || 0).toFixed(2)}€</span>

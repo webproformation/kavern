@@ -198,9 +198,10 @@ export default function OpenPackagePage() {
 
     try {
       await closePackage();
-      toast.success('Colis fermé avec succès');
-    } catch (error) {
-      toast.error('Erreur lors de la fermeture du colis');
+      toast.success('Colis fermé avec succès ! Nous allons procéder à l\'expédition.');
+    } catch (error: any) {
+      console.error('Close package error:', error);
+      toast.error(`Erreur lors de la fermeture : ${error?.message || 'Contactez le support'}`);
     }
   }
 
