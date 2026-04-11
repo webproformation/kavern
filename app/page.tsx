@@ -9,6 +9,7 @@ import { HomeReviewsCarousel } from '@/components/HomeReviewsCarousel';
 import { GamePopupManager } from '@/components/GamePopupManager';
 import { LiveBanner } from '@/components/LiveBanner';
 import { createClient as createSupabase } from '@supabase/supabase-js';
+import PageContentDisplay from '@/components/PageContentDisplay';
 
 export const revalidate = 0;
 
@@ -63,10 +64,7 @@ export default async function Home() {
         {/* Contenu éditorial WYSIWYG depuis l'admin (pages_seo slug=accueil) */}
         {seoPage?.content && (
           <section className="max-w-4xl mx-auto px-4 py-10">
-            <div
-              className="prose prose-gray max-w-none"
-              dangerouslySetInnerHTML={{ __html: seoPage.content }}
-            />
+            <PageContentDisplay content={seoPage.content} className="prose-gray" />
           </section>
         )}
       </main>

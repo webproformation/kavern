@@ -80,11 +80,11 @@ export function ProductCard({ product, showAddToCart = false }: ProductCardProps
   const displayPrice = product.sale_price || product.regular_price || 0;
   const hasDiscount = product.sale_price && product.sale_price < (product.regular_price || 0);
   // Pour les produits à variantes, sommer le stock des variantes actives
-  const hasVariations = (product.is_variable_product || product.has_variations) && product.product_variations?.length > 0;
+  const hasVariations = (product.is_variable_product || product.has_variations) && (product.product_variations?.length ?? 0) > 0;
   const totalStock = hasVariations
-    ? product.product_variations.reduce((sum: number, v: any) => sum + (v.stock_quantity ?? 0), 0)
+    ? (product.product_variations ?? []).reduce((sum: number, v: any) => sum + (v.stock_quantity ?? 0), 0)
     : product.stock_quantity;
-  const isInStock = hasVariations ? totalStock > 0 : (totalStock === null || totalStock === undefined || totalStock > 0);
+  const isInStock = hasVariations ? (totalStock ?? 0) > 0 : (totalStock === null || totalStock === undefined || totalStock > 0);
   const isLowStock = totalStock != null && totalStock > 0 && totalStock <= 5;
 
   const highlights = product.attributes?.["Mise en avant"] || [];

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import DOMPurify from 'dompurify';
 import { supabase, ProductCategory } from '@/lib/supabase';
 import { 
   SlidersHorizontal, Filter, AlertTriangle, ChevronRight, Home,
@@ -236,7 +237,7 @@ export default function CategoryPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-10">
               <div className="space-y-1">
                 <h1 className="text-xl md:text-2xl font-black text-gray-900 uppercase tracking-tighter leading-none">{categoryName}</h1>
-                {category?.description && <p className="text-gray-400 font-medium italic text-sm" dangerouslySetInnerHTML={{ __html: category.description }} />}
+                {category?.description && <p className="text-gray-400 font-medium italic text-sm" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(category.description) }} />}
               </div>
               {allProducts.length > 0 && (
                 <div className="flex items-center gap-3 lg:hidden">

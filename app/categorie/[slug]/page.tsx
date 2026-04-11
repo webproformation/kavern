@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import DOMPurify from 'dompurify';
 import { supabase, ProductCategory } from '@/lib/supabase';
 import { 
   SlidersHorizontal, Filter, AlertTriangle, ChevronRight, Home,
@@ -237,7 +238,7 @@ export default function CategoryPage() {
                 {category?.description && (
                   <div
                     className="prose prose-sm max-w-none text-gray-700"
-                    dangerouslySetInnerHTML={{ __html: category.description }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(category.description) }}
                   />
                 )}
               </div>

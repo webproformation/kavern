@@ -40,6 +40,7 @@ interface WheelGame {
 interface Coupon {
   id: string;
   code: string;
+  name?: string;
   discount_type: string;
   discount_value: number;
   is_active: boolean;

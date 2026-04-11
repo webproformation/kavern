@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import DOMPurify from 'dompurify';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
@@ -267,7 +268,7 @@ export default function NewsDetailPage() {
         <div className="bg-white/90 backdrop-blur-sm rounded-xl p-8 mb-12 shadow-sm border border-gray-100">
           <div
             className="news-content"
-            dangerouslySetInnerHTML={{ __html: post.content || '' }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content || '') }}
           />
         </div>
 

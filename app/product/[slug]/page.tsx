@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import DOMPurify from 'dompurify';
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -510,7 +511,7 @@ export default function ProductPage() {
               <AccordionItem value="description" className="border-none bg-white rounded-2xl px-6 shadow-sm">
                 <AccordionTrigger className="font-black text-gray-900 uppercase text-[10px] tracking-[0.2em] py-5">L&apos;histoire & Secrets</AccordionTrigger>
                 <AccordionContent className="pb-8 font-medium leading-relaxed text-gray-600">
-                  <div dangerouslySetInnerHTML={{ __html: product.description }} className="prose prose-amber prose-sm max-w-none prose-h2:text-gray-900 prose-h2:text-2xl prose-h2:font-black prose-h2:mt-8 prose-h2:mb-4 prose-a:text-[#b8933d] prose-a:font-bold hover:prose-a:underline" />
+                  <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.description) }} className="prose prose-amber prose-sm max-w-none prose-h2:text-gray-900 prose-h2:text-2xl prose-h2:font-black prose-h2:mt-8 prose-h2:mb-4 prose-a:text-[#b8933d] prose-a:font-bold hover:prose-a:underline" />
                   {product.tags && product.tags.length > 0 && (
                     <div className="mt-8 pt-6 border-t border-gray-100">
                       <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-2"><Tag className="h-3 w-3" /> Mots-clés de la pépite</p>
@@ -524,7 +525,7 @@ export default function ProductPage() {
               <AccordionItem value="composition" className="border-none bg-white rounded-2xl px-6 shadow-sm">
                 <AccordionTrigger className="font-black text-gray-900 uppercase text-[10px] tracking-[0.2em] py-5">Composition</AccordionTrigger>
                 <AccordionContent className="pb-8 text-sm text-gray-700">
-                  <div dangerouslySetInnerHTML={{ __html: product.composition }} />
+                  <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.composition) }} />
                 </AccordionContent>
               </AccordionItem>
               )}
