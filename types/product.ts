@@ -18,6 +18,13 @@ export interface Product {
   category_ids: string[] | null;
   is_diamond: boolean;
   is_featured: boolean;
+  is_pack?: boolean;
+  has_variations?: boolean;
+  is_variable_product?: boolean;
+  manage_stock?: boolean;
+  virtual_weight?: number | null;
+  tva_rate?: number;
+  product_variations?: { id: string; stock_quantity: number; [key: string]: any }[];
   created_at: string;
   updated_at: string;
 }

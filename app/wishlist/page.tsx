@@ -24,6 +24,7 @@ interface Product {
   stock_quantity: number;
   has_variations?: boolean;
   is_variable_product?: boolean;
+  is_pack?: boolean;
   product_variations?: { stock_quantity: number }[];
 }
 

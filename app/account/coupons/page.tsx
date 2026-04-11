@@ -15,11 +15,13 @@ import { fr } from 'date-fns/locale';
 interface Coupon {
   id: string;
   code: string;
+  name?: string;
   discount_type: string;
   discount_value: number;
   description?: string;
   valid_until: string | null;
   is_active: boolean;
+  min_purchase?: number | null;
 }
 
 interface UserCoupon {

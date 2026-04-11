@@ -41,6 +41,8 @@ interface Order {
   order_items?: OrderItem[];
   shipping_method?: any;
   payment_method?: any;
+  is_open_package?: boolean;
+  tracking_url?: string | null;
 }
 
 const statusLabels: Record<string, { label: string; color: string }> = {
