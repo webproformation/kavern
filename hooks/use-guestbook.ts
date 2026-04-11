@@ -226,21 +226,8 @@ export async function submitGuestbookEntry(data: {
 
   if (error) throw error
 
-  try {
-    const { data: loyaltyData, error: loyaltyError } = await supabase.rpc('add_loyalty_gain', {
-      p_user_id: user.id,
-      p_type: 'review',
-      p_base_amount: 0.20,
-      p_description: 'Avis déposé sur le Livre d\'Or'
-    })
-
-    if (!loyaltyError && loyaltyData) {
-      const result = typeof loyaltyData === 'string' ? JSON.parse(loyaltyData) : loyaltyData
-      // Loyalty reward added successfully
-    }
-  } catch (loyaltyErr) {
-    console.error('Error adding loyalty reward for review:', loyaltyErr)
-  }
+  // Pas de récompense à la soumission — elle est créditée par André lors de l'approbation
+  // (anti-triche : une seule récompense par colis expédié, contrôlée côté admin)
 
   return entry
 }

@@ -29,10 +29,10 @@ export default function AdminGuestbookPage() {
       return
     }
 
-    // 2. Créditer 0.20€ sur la cagnotte de l'auteur
+    // 2. Anti-triche : créditer 0.20€ × tier_multiplier uniquement si commande expédiée
     const entry = entries.find((e: any) => e.id === id)
     if (entry?.user_id) {
-      // Vérifier qu'on n'a pas déjà crédité pour cet avis
+      // Vérifier qu'on n'a pas déjà crédité pour cet avis (anti-doublon)
       const { data: existing } = await supabase
         .from('loyalty_euro_transactions')
         .select('id')
@@ -42,37 +42,48 @@ export default function AdminGuestbookPage() {
         .maybeSingle()
 
       if (!existing) {
+        // Anti-triche : vérifier que le colis lié est bien expédié
+        let orderShipped = false
+        if (entry.order_number) {
+          const { data: orderData } = await supabase
+            .from('orders')
+            .select('status')
+            .eq('order_number', entry.order_number)
+            .maybeSingle()
+          orderShipped = ['shipped', 'delivered', 'completed'].includes(orderData?.status || '')
+        }
+
+        if (!orderShipped) {
+          toast.error('Avis approuvé mais cagnotte non créditée : commande pas encore expédiée')
+          refetch()
+          return
+        }
+
+        // Récupérer le multiplicateur de rang du client
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('tier_multiplier, loyalty_euros')
+          .eq('id', entry.user_id)
+          .maybeSingle()
+        const tierMultiplier = profileData?.tier_multiplier || 1
+        const rewardAmount = Math.round(0.20 * tierMultiplier * 100) / 100
+
         // Insérer la transaction fidélité
         await supabase.from('loyalty_euro_transactions').insert({
           user_id: entry.user_id,
           type: 'review_reward',
-          amount: 0.20,
-          description: 'Avis approuvé sur le Livre d\'Or',
+          amount: rewardAmount,
+          description: `Avis approuvé sur le Livre d'Or (×${tierMultiplier})`,
           reference_id: id
         })
 
         // Mettre à jour le solde cagnotte
-        await supabase.rpc('increment_loyalty_euros', {
-          p_user_id: entry.user_id,
-          p_amount: 0.20
-        }).then(({ error: rpcError }) => {
-          if (rpcError) {
-            // Fallback: mise à jour directe
-            supabase.from('profiles')
-              .select('loyalty_euros')
-              .eq('id', entry.user_id)
-              .single()
-              .then(({ data: profile }) => {
-                if (profile) {
-                  supabase.from('profiles')
-                    .update({ loyalty_euros: (profile.loyalty_euros || 0) + 0.20 })
-                    .eq('id', entry.user_id)
-                }
-              })
-          }
-        })
+        const newBalance = (profileData?.loyalty_euros || 0) + rewardAmount
+        await supabase.from('profiles')
+          .update({ loyalty_euros: newBalance })
+          .eq('id', entry.user_id)
 
-        toast.success('Avis approuvé + 0,20 € crédités sur la cagnotte !')
+        toast.success(`Avis approuvé + ${rewardAmount.toFixed(2)} € crédités (rang ×${tierMultiplier}) !`)
       } else {
         toast.success('Avis approuvé (cagnotte déjà créditée)')
       }

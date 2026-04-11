@@ -4,6 +4,11 @@ import { createClient } from '@/lib/supabase';
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
+// Vercel Crons envoient GET
+export async function GET(request: NextRequest) {
+  return POST(request);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization');
