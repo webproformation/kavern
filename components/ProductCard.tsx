@@ -21,10 +21,13 @@ interface ProductCardProps {
     image_url: string | null;
     gallery_images?: string[] | null;
     is_variable_product?: boolean;
+    has_variations?: boolean;
     stock_quantity?: number | null;
     is_featured?: boolean;
     is_diamond?: boolean;
     is_pack?: boolean;
+    tva_rate?: number | null;
+    marketing_badge?: string | null;
     attributes?: any;
     product_variations?: Array<{ stock_quantity?: number | null }>;
   };

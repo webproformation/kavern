@@ -35,40 +35,36 @@ export async function POST(request: NextRequest) {
     // 2. Remettre le stock en place
     for (const item of expiredCarts) {
       if (item.variation_id && item.variation_id !== 'default') {
-        await supabase.rpc('increment_variation_stock', {
-          p_variation_id: item.variation_id,
-          p_quantity: item.quantity
-        }).catch(() => {
+        try {
+          await supabase.rpc('increment_variation_stock', {
+            p_variation_id: item.variation_id,
+            p_quantity: item.quantity
+          });
+        } catch {
           // Fallback: mise à jour directe
-          supabase.from('product_variations')
-            .select('stock_quantity')
-            .eq('id', item.variation_id)
-            .single()
-            .then(({ data }) => {
-              if (data) {
-                supabase.from('product_variations')
-                  .update({ stock_quantity: (data.stock_quantity || 0) + item.quantity })
-                  .eq('id', item.variation_id);
-              }
-            });
-        });
+          const { data } = await supabase.from('product_variations')
+            .select('stock_quantity').eq('id', item.variation_id).single();
+          if (data) {
+            await supabase.from('product_variations')
+              .update({ stock_quantity: (data.stock_quantity || 0) + item.quantity })
+              .eq('id', item.variation_id);
+          }
+        }
       } else {
-        await supabase.rpc('increment_product_stock', {
-          p_product_id: item.product_id,
-          p_quantity: item.quantity
-        }).catch(() => {
-          supabase.from('products')
-            .select('stock_quantity')
-            .eq('id', item.product_id)
-            .single()
-            .then(({ data }) => {
-              if (data) {
-                supabase.from('products')
-                  .update({ stock_quantity: (data.stock_quantity || 0) + item.quantity })
-                  .eq('id', item.product_id);
-              }
-            });
-        });
+        try {
+          await supabase.rpc('increment_product_stock', {
+            p_product_id: item.product_id,
+            p_quantity: item.quantity
+          });
+        } catch {
+          const { data } = await supabase.from('products')
+            .select('stock_quantity').eq('id', item.product_id).single();
+          if (data) {
+            await supabase.from('products')
+              .update({ stock_quantity: (data.stock_quantity || 0) + item.quantity })
+              .eq('id', item.product_id);
+          }
+        }
       }
     }
 
