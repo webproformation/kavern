@@ -32,6 +32,13 @@ function getSupabaseInstance(): SupabaseClient {
         autoRefreshToken: true,
         detectSessionInUrl: true,
         storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        // Web Locks API : un seul onglet à la fois rafraîchit le token.
+        // Sans ça, deux onglets ouverts en simultané créent une course au refresh
+        // qui invalide mutuellement leurs tokens → requêtes Supabase en échec → pages bloquées.
+        lock: typeof navigator !== 'undefined' && typeof (navigator as any).locks !== 'undefined'
+          ? (name: string, _acquireTimeout: number, fn: () => Promise<unknown>) =>
+              (navigator as any).locks.acquire(name, fn)
+          : undefined,
       },
     });
   }

@@ -58,42 +58,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   initialize: async () => {
-    set({ isLoading: true });
-
-    const { data: { session } } = await supabase.auth.getSession();
-
-    if (session?.user) {
-      set({ user: session.user });
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .maybeSingle();
-
-      if (profile) {
-        set({ profile, isAdmin: profile.is_admin || false });
-      }
-    }
-
-    supabase.auth.onAuthStateChange(async (event, session) => {
-      if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user) {
-        set({ user: session.user });
-
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .maybeSingle();
-
-        if (profile) {
-          set({ profile, isAdmin: profile.is_admin || false });
-        }
-      } else if (event === 'SIGNED_OUT') {
-        set({ user: null, profile: null, isAdmin: false });
-      }
-    });
-
+    // NB: Ne pas créer de onAuthStateChange ici — AuthContext gère toutes les transitions
+    // et synchronise ce store via setUser/setProfile. Une double subscription causerait
+    // des requêtes Supabase dupliquées et des cascades de re-renders en multi-onglets.
     set({ isLoading: false });
   },
 

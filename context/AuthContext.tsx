@@ -105,7 +105,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       if (data) {
-        setProfile(data);
+        // Évite les re-renders inutiles quand les données n'ont pas changé.
+        // setProfile avec fonction fonctionnelle : React ne re-rendra que si la référence change.
+        setProfile(prev => {
+          if (!prev) return data;
+          if (
+            prev.wallet_balance === data.wallet_balance &&
+            prev.loyalty_euros === data.loyalty_euros &&
+            prev.is_admin === data.is_admin &&
+            prev.is_blocked === data.is_blocked &&
+            prev.blocked === data.blocked &&
+            prev.first_name === data.first_name &&
+            prev.last_name === data.last_name &&
+            prev.phone === data.phone
+          ) return prev; // Même données → même référence → pas de re-render
+          return data;
+        });
         useAuthStore.getState().setProfile(data);
 
         if (data.is_blocked || data.blocked) {
@@ -163,20 +178,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Déclaré AVANT init() pour que init() puisse mettre à jour le timestamp
+    // et éviter le double-chargement quand SIGNED_IN fire juste après getSession().
+    let lastProfileLoad = 0;
+    const PROFILE_DEBOUNCE_MS = 30000; // 30s entre chaque reload forcé
+
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUser(session.user);
         useAuthStore.getState().setUser(session.user);
         await loadProfile(session.user.id);
+        lastProfileLoad = Date.now(); // Empêche SIGNED_IN de re-charger dans la foulée
       }
       setLoading(false);
     };
     init();
-
-    // Debounce : éviter de marteler Supabase si plusieurs événements arrivent en rafale (multi-onglets)
-    let lastProfileLoad = 0;
-    const PROFILE_DEBOUNCE_MS = 10000; // 10s entre chaque reload forcé
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       const currentUser = session?.user ?? null;
@@ -191,16 +208,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (currentUser && event === 'SIGNED_IN') {
-        // Login réel : toujours recharger
-        loadProfile(currentUser.id, true);
-        lastProfileLoad = Date.now();
-      } else if (currentUser && (event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED')) {
-        // Token refresh multi-onglet : debounce pour éviter la tempête
+        // Debounce : init() vient peut-être de charger le profil il y a < 30s
+        const now = Date.now();
+        if (now - lastProfileLoad > PROFILE_DEBOUNCE_MS) {
+          loadProfile(currentUser.id, true);
+          lastProfileLoad = now;
+        } else {
+          lastProfileLoad = now; // On marque quand même pour les events suivants
+        }
+      } else if (currentUser && event === 'USER_UPDATED') {
+        // Mise à jour de l'utilisateur (email, métadonnées) — recharger le profil
         const now = Date.now();
         if (now - lastProfileLoad > PROFILE_DEBOUNCE_MS) {
           loadProfile(currentUser.id, true);
           lastProfileLoad = now;
         }
+        // TOKEN_REFRESHED : intentionnellement ignoré — seul le JWT change, pas le profil.
+        // Le Web Locks API dans supabase.ts garantit qu'un seul onglet rafraîchit à la fois.
       } else if (event === 'SIGNED_OUT') {
         // Vérifier que c'est bien un vrai sign-out (pas un glitch multi-onglet)
         supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
