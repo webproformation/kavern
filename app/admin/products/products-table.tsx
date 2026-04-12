@@ -444,7 +444,7 @@ export default function ProductsTable({
                                 onClick={() => { setEditingStockId(product.id); setEditingStockValue(product.stock_quantity || 0); }}
                               >
                                 {effStock > 0 ? `${effStock} en stock` : "Rupture"}
-                                {product.has_variations && product.product_variations?.length > 0 && ` (${product.product_variations.length} var.)`}
+                                {product.has_variations && (product.product_variations?.length ?? 0) > 0 && ` (${product.product_variations?.length} var.)`}
                               </Badge>
                             );
                           })()}
