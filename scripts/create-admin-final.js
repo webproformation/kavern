@@ -15,8 +15,12 @@ async function createAdminFinal() {
   try {
     console.log('\n🔧 CRÉATION ADMIN FINAL (qcqbtmvbvipsxwjlgjvk)\n');
 
-    const email = 'contact@webproformation.fr';
-    const password = 'WebPro2026!';
+    const email = process.env.ADMIN_EMAIL || 'contact@webproformation.fr';
+    const password = process.env.ADMIN_PASSWORD;
+    if (!password) {
+      console.error('❌ ADMIN_PASSWORD manquant — définir dans .env avant de lancer ce script');
+      process.exit(1);
+    }
 
     const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
     if (listError) {
@@ -97,7 +101,7 @@ async function createAdminFinal() {
     console.log('Nom:', verifyData.full_name);
     console.log('Admin:', verifyData.is_admin);
     console.log('Bloqué:', verifyData.blocked);
-    console.log('\n🔐 Connexion: contact@webproformation.fr / WebPro2026!\n');
+    console.log('\n🔐 Connexion:', email, '(mot de passe défini dans ADMIN_PASSWORD)\n');
 
     console.log('Test de connexion...');
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
