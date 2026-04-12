@@ -144,7 +144,8 @@ export default function ShopPage() {
         setMaxPrice(max);
         setPriceRange([0, max]);
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.name === 'AbortError' || error?.message?.includes('AbortError')) return;
       console.error('Erreur chargement produits:', error);
     } finally {
       setLoading(false);

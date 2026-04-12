@@ -174,22 +174,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     init();
 
+    // Debounce : éviter de marteler Supabase si plusieurs événements arrivent en rafale (multi-onglets)
+    let lastProfileLoad = 0;
+    const PROFILE_DEBOUNCE_MS = 10000; // 10s entre chaque reload forcé
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      useAuthStore.getState().setUser(currentUser);
 
-      if (currentUser && (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED')) {
+      // Ne setter user que si l'ID change réellement (évite les re-renders inutiles sur TOKEN_REFRESHED)
+      if (currentUser?.id !== undefined) {
+        setUser(prev => prev?.id === currentUser.id ? prev : currentUser);
+        useAuthStore.getState().setUser(currentUser);
+      } else if (!currentUser) {
+        setUser(null);
+        useAuthStore.getState().setUser(null);
+      }
+
+      if (currentUser && event === 'SIGNED_IN') {
+        // Login réel : toujours recharger
         loadProfile(currentUser.id, true);
+        lastProfileLoad = Date.now();
+      } else if (currentUser && (event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED')) {
+        // Token refresh multi-onglet : debounce pour éviter la tempête
+        const now = Date.now();
+        if (now - lastProfileLoad > PROFILE_DEBOUNCE_MS) {
+          loadProfile(currentUser.id, true);
+          lastProfileLoad = now;
+        }
       } else if (event === 'SIGNED_OUT') {
         // Vérifier que c'est bien un vrai sign-out (pas un glitch multi-onglet)
-        // Si une session est toujours active, on recharge le profil au lieu de tout vider
         supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
           if (currentSession?.user) {
-            // Faux SIGNED_OUT (multi-onglet / token refresh) — on recharge le profil
+            // Faux SIGNED_OUT (multi-onglet) — ne rien faire, onAuthStateChange reviendra
             setUser(currentSession.user);
             useAuthStore.getState().setUser(currentSession.user);
-            loadProfile(currentSession.user.id, true);
           } else {
             // Vrai sign-out
             setProfile(null);
@@ -204,24 +222,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // Rafraîchir la session quand l'onglet revient en foreground (évite les bugs multi-onglet)
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          const currentUser = session?.user ?? null;
-          setUser(currentUser);
-          useAuthStore.getState().setUser(currentUser);
-          if (currentUser) {
-            loadProfile(currentUser.id, true);
-          }
-        }).catch((e) => console.warn('[AuthContext] visibilitychange getSession error:', e));
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    // NB: le visibilitychange a été supprimé — il causait une tempête de requêtes Supabase
+    // en multi-onglets (TOKEN_REFRESHED + visibilitychange = cascade de re-renders bloquants).
+    // onAuthStateChange gère déjà TOKEN_REFRESHED entre onglets.
 
     return () => {
       subscription.unsubscribe();
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
