@@ -140,7 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               cancelled_orders_count: 0,
             }, { onConflict: 'id', ignoreDuplicates: true })
             .select()
-            .single();
+            .maybeSingle();
 
           if (insertErr) {
             console.error('[AuthContext] Fallback profil échoué:', insertErr.message);
@@ -182,9 +182,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (currentUser && (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED')) {
         loadProfile(currentUser.id, true);
       } else if (event === 'SIGNED_OUT') {
-        setProfile(null);
-        useAuthStore.getState().setProfile(null);
-        dailyLoginCheckedRef.current = false;
+        // Vérifier que c'est bien un vrai sign-out (pas un glitch multi-onglet)
+        // Si une session est toujours active, on recharge le profil au lieu de tout vider
+        supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+          if (currentSession?.user) {
+            // Faux SIGNED_OUT (multi-onglet / token refresh) — on recharge le profil
+            setUser(currentSession.user);
+            useAuthStore.getState().setUser(currentSession.user);
+            loadProfile(currentSession.user.id, true);
+          } else {
+            // Vrai sign-out
+            setProfile(null);
+            useAuthStore.getState().setProfile(null);
+            dailyLoginCheckedRef.current = false;
+          }
+        }).catch(() => {
+          setProfile(null);
+          useAuthStore.getState().setProfile(null);
+          dailyLoginCheckedRef.current = false;
+        });
       }
     });
 

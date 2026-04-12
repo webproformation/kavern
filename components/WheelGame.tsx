@@ -132,8 +132,7 @@ export function WheelGame({ game, onClose, onWin }: WheelGameProps) {
               user_id: user.id,
               game_type: 'wheel',
               game_id: game.id,
-              prize_won: segment.coupon_code,
-              coupon_id: segment.coupon_id,
+              coupon_code: segment.coupon_code,
             }]);
 
           if (!isLosingSegment && segment.coupon_code) {

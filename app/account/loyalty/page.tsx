@@ -14,13 +14,15 @@ const TIERS = [
 ];
 
 export default function LoyaltyPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) return;
     if (user) loadTransactions();
-  }, [user]);
+    else setLoading(false); // pas connecté → on arrête le spinner
+  }, [user, authLoading]);
 
   async function loadTransactions() {
     try {

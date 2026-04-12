@@ -221,8 +221,7 @@ export function ScratchCardGame({ game, onClose, onWin }: ScratchCardGameProps) 
             user_id: user.id,
             game_type: 'scratch_card',
             game_id: game.id,
-            prize_won: selectedPrize,
-            coupon_id: coupon?.coupon_id || null,
+            coupon_code: selectedPrize,
           }]);
 
         if (!isLosingPrize && selectedPrize) {

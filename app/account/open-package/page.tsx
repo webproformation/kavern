@@ -160,10 +160,13 @@ export default function OpenPackagePage() {
   const [loadingOrders, setLoadingOrders] = useState(true);
 
   useEffect(() => {
+    if (loading) return; // attendre que useOpenPackage ait fini
     if (openPackage) {
       loadOrders();
+    } else {
+      setLoadingOrders(false); // pas de colis actif → arrêter le spinner
     }
-  }, [openPackage]);
+  }, [openPackage, loading]);
 
   async function loadOrders() {
     if (!openPackage) return;

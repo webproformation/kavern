@@ -70,7 +70,7 @@ const MAX_PACKAGE_WEIGHT_KG = 10;
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const { cart, cartTotal, clearCart } = useCart();
   const { openPackage, loading: packageLoading } = useOpenPackage();
   const { coupons: userCoupons, loading: couponsLoading, markCouponAsUsed } = useUserCoupons(user?.id);
@@ -550,6 +550,9 @@ export default function CheckoutPage() {
       if (useLoyalty && loyaltyAmountToUse > 0) {
         await supabase.from('profiles').update({ loyalty_euros: Math.max(0, (profile?.loyalty_euros || 0) - loyaltyAmountToUse) }).eq('id', user!.id);
       }
+
+      // Rafraîchir le profil pour que le solde wallet/loyalty soit à jour dans tout l'app
+      await refreshProfile();
 
       if (selectedUserCouponId) await markCouponAsUsed(selectedUserCouponId, orderId);
 

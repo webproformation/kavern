@@ -27,6 +27,7 @@ const nextConfig = {
               "media-src 'self' https: http:",
               "frame-src 'self' https://js.stripe.com https://www.paypal.com https://www.youtube.com https://player.vimeo.com",
               "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://www.paypal.com https://kavern-france.fr https://www.kavern-france.fr",
+              "worker-src 'self' blob:",
             ].join('; '),
           },
         ],
