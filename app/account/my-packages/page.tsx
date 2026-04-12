@@ -33,25 +33,29 @@ interface PackageOrder {
     order_number: string;
     total: number;
     created_at: string;
-    order_items: Array<{
-      product_name: string;
+    items: Array<{
+      name: string;
       quantity: number;
       price: number;
+      weight?: number;
     }>;
   };
 }
 
 export default function MyPackagesPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [packages, setPackages] = useState<OpenPackage[]>([]);
   const [packageOrders, setPackageOrders] = useState<Record<string, PackageOrder[]>>({});
 
   useEffect(() => {
+    if (authLoading) return;
     if (user) {
       loadPackages();
+    } else {
+      setLoading(false);
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   async function loadPackages() {
     if (!user) return;
@@ -79,7 +83,7 @@ export default function MyPackagesPage() {
               order_number,
               total,
               created_at,
-              order_items(product_name, quantity, price)
+              items
             )
           `)
           .eq('open_package_id', pkg.id);
@@ -90,7 +94,9 @@ export default function MyPackagesPage() {
       }
 
       setPackageOrders(ordersMap);
-    } catch (error) {
+    } catch (error: any) {
+      // Ignorer les AbortError (composant démonté / re-render React 18)
+      if (error?.name === 'AbortError' || error?.message?.includes('AbortError')) return;
       console.error('Error loading packages:', error);
       toast.error('Erreur lors du chargement des colis');
     } finally {
@@ -143,7 +149,8 @@ export default function MyPackagesPage() {
   function calculateTotalItems(packageId: string) {
     const orders = packageOrders[packageId] || [];
     return orders.reduce((sum, order) => {
-      const orderTotal = order.order?.order_items?.reduce((s, item) => s + item.quantity, 0) || 0;
+      const items = order.order?.items;
+      const orderTotal = Array.isArray(items) ? items.reduce((s, item) => s + (item.quantity || 0), 0) : 0;
       return sum + orderTotal;
     }, 0);
   }
@@ -312,7 +319,8 @@ export default function MyPackagesPage() {
                           <span className="text-sm font-bold text-gray-900">
                             {(() => {
                               const totalWeight = orders.reduce((sum, o) => {
-                                const itemsWeight = (o.order?.order_items || []).reduce((s: number, item: any) => s + ((item.weight || 0.3) * item.quantity), 0);
+                                const items = Array.isArray(o.order?.items) ? o.order.items : [];
+                                const itemsWeight = items.reduce((s: number, item: any) => s + ((item.weight || 0.3) * (item.quantity || 1)), 0);
                                 return sum + itemsWeight;
                               }, 0);
                               return `${totalWeight.toFixed(1)} kg / 10 kg`;
@@ -326,7 +334,10 @@ export default function MyPackagesPage() {
                                 ? 'bg-red-500' : 'bg-[#D4AF37]'
                             }`}
                             style={{
-                              width: `${Math.min(100, (orders.reduce((sum, o) => sum + (o.order?.order_items || []).reduce((s: number, item: any) => s + ((item.weight || 0.3) * item.quantity), 0), 0) / 10) * 100)}%`
+                              width: `${Math.min(100, (orders.reduce((sum, o) => {
+                                const items = Array.isArray(o.order?.items) ? o.order.items : [];
+                                return sum + items.reduce((s: number, item: any) => s + ((item.weight || 0.3) * (item.quantity || 1)), 0);
+                              }, 0) / 10) * 100)}%`
                             }}
                           />
                         </div>
@@ -376,11 +387,11 @@ export default function MyPackagesPage() {
                               <p className="text-sm text-gray-600 mb-2">
                                 Ajoutée le {formatDate(orderItem.added_at)}
                               </p>
-                              {orderItem.order?.order_items && orderItem.order.order_items.length > 0 && (
+                              {Array.isArray(orderItem.order?.items) && orderItem.order.items.length > 0 && (
                                 <div className="mt-3 space-y-1">
-                                  {orderItem.order.order_items.map((item, idx) => (
+                                  {orderItem.order.items.map((item, idx) => (
                                     <p key={idx} className="text-sm text-gray-700">
-                                      • {item.product_name} × {item.quantity}
+                                      • {item.name} × {item.quantity}
                                     </p>
                                   ))}
                                 </div>
